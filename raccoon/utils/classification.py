@@ -5,6 +5,8 @@ F. Comitani     @2020
 
 import os
 import pickle
+import psutil
+
 import umap
 import pandas as pd
 import numpy as np
@@ -12,14 +14,20 @@ from sklearn.neighbors import NearestNeighbors as NN
 from sklearn.decomposition import TruncatedSVD as tSVD
 from scipy.sparse import csr_matrix
 
+import logging
+import time
+
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 class knn:
 
+
+    #TODO: add logging!
+
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
 
-    def __init__(self, data, oriData, oriClust, refpath="./raccoonData/", root='0'):
+    def __init__(self, data, oriData, oriClust, refpath="./raccoonData/", outpath="", root='0', debug=False):
 
         """ Initialize the the class.
 
@@ -29,8 +37,13 @@ class knn:
             oriClust (matrix or pandas dataframe): Original RACCOON output one-hot-encoded class membership in pandas dataframe-compatible format 
                 (samples as row, classes as columns).
             refpath (string): Path to the location where trained umap files (pkl) are stored (default, subdirectory racoonData of current folder).
+            outpath (string): Path to the location where outputs will be saved (default, save to the current folder).
             root (string): Name of the root node, parent of all the classes within the first clustering leve. Needed to identify the appropriate pkl file (default 0)
+            debug (boolean): Specifies whether algorithm is run in debug mode (default is False).
         """
+
+
+        self.start_time = time.time()
 
         if not isinstance(data, pd.DataFrame):
             try:
@@ -61,13 +74,31 @@ class knn:
         self.data=data[self.oriData.columns].astype(np.float)
         self.oriClust=oriClust
         self.refpath=refpath
+        self.outpath=outpath
         self.root=root
+        self.debug=debug
 
         self.children={}
         self.parents={}
         self._buildHierarchy()
 
         self.membership=[]
+
+        """ Configure log. """
+
+        logname='raccoon_knn_'+str(os.getpid())+'.log'
+        print('Log information will be saved to '+logname)
+
+        logging.basicConfig(level=logging.INFO, filename=os.path.join(outpath, logname), filemode="a+",
+                        format="%(asctime)-15s %(levelname)-8s %(message)s")
+        logging.getLogger('matplotlib.font_manager').disabled = True
+
+        if self.debug:
+            logging.getLogger().setLevel(logging.DEBUG)
+            self._umapRs=32
+        else:
+            logging.getLogger().setLevel(logging.INFO)
+            self._umapRs=None
 
 
     def _buildHierarchy(self):
@@ -121,12 +152,18 @@ class knn:
 
         """ Identifies class membership probabilities with a distance-weighted k-nearest neighbours algorith. """
 
+        logging.info("Loading parameters data")
+
         names=[]
+
+        paramdata=pd.read_csv(os.path.join(self.refpath,'paramdata.csv'))
+        paramdata['name']=paramdata['name'].str.strip('cluster ')
+        paramdata=paramdata.set_index('name',drop=True)
 
         for f in os.listdir(self.refpath): 
 
             if f.endswith('.pkl') and not f.endswith('_2d.pkl'):
-                
+
                 try:
 
                     with open(os.path.join(self.refpath,f), 'rb') as file:
@@ -135,14 +172,18 @@ class knn:
                         genecut=loader[0]
                         mapping=loader[1]
                         nnei=mapping.n_neighbors
-                        metric=mapping.metric
+                        metric=paramdata['metric_clust'].loc[names[-1]]
+                        norm=paramdata['norm'].loc[names[-1]]
                         file.close()
 
                 except:
 
                     continue
                     
-                print('Working with subclusters of '+ names[-1]+'... ', end='')
+                logging.info("Working with subclusters of "+ names[-1])
+
+                logging.debug('Nearest Neighbours #: {:d}'.format(nnei))
+                logging.debug('Clustering metric: '+metric)
 
                 if isinstance(genecut,pd.Index):
                     
@@ -156,6 +197,15 @@ class knn:
                     sparseMat=csr_matrix(self.data.values)
                     dfCut=pd.DataFrame(genecut.transform(sparseMat), index=self.data.index)
 
+
+
+                if not np.isnan(norm):
+
+                    logging.debug('Norm: '+norm)
+                
+                    """ Normalize data. """
+
+                    dfCut=pd.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
 
                 proj=pd.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)                
 
@@ -204,7 +254,6 @@ class knn:
                     valals.append((vals.sum(axis=0)/vals.sum().sum()).values)
 
                 self.membership.append(pd.DataFrame(valals, index=proj.index, columns=nextClust.columns))     
-                print('done!')
             
         if len(names)>0:
 
@@ -214,10 +263,14 @@ class knn:
 
             #TODO: currently this assumes the classes are ordered hiearchically, make general
             self._dampenChildProb()
-            
-        else:
 
-            print('ERROR: No trained map files found!')
-            raise
+            logging.info('=========== Assignment Complete ===========')        
+            logging.info('Total time of the operation: {:.3f} seconds'.format((time.time() - self.start_time)))
+            logging.info(psutil.virtual_memory())    
+        
+        else:
+            
+            logging.error("No trained map files found!")
+            print("ERROR: No trained map files found!")            
 
 

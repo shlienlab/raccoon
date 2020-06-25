@@ -187,7 +187,7 @@ def setup(outpath=None, RPD=False):
     """ Generate empty optimal paramaters table, to be written to at each iteration. """
 
     vals = ['name', 'n_samples', 'n_clusters', 'dim', 'silhouette_score',
-        'n_neighbours', 'cluster_parm', 'genes_cutoff', 'metric_map', 'metric_clust', 'reassigned']
+        'n_neighbours', 'cluster_parm', 'genes_cutoff', 'metric_map', 'metric_clust', 'norm', 'reassigned']
 
     with open(os.path.join(outpath, 'raccoonData/paramdata.csv'), 'w') as file:
         writer = csv.writer(file)
@@ -211,4 +211,5 @@ def setup(outpath=None, RPD=False):
                     format="%(asctime)-15s %(levelname)-8s %(message)s")
     logging.getLogger('matplotlib.font_manager').disabled = True
     
-
+def sigmoid(x,a=0,b=1):
+    return 1/(1+np.exp((x-a)*b))

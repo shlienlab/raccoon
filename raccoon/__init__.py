@@ -26,7 +26,6 @@ from hdbscan import HDBSCAN
 
 import logging
 import time
-start_time = time.time()
 
 #This not needed anymore
 #from concurrent import futures
@@ -65,7 +64,7 @@ class recursiveClustering:
 
     def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
         metricM='cosine', metricC='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
-        ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm='l2', 
+        ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False,
         clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', 
         name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, cores=1, _user=True):
 
@@ -114,8 +113,9 @@ class recursiveClustering:
                 if list, each value will be subsequently used at the next iteration until all values are exhausted
                 (works only with optimizer='de', default 10).
             score (string): objective function of the optimization (default 'silhouette').    
-            norm (string): normalization factor before dimensionality reduction (default 'l2'), not needed if metricM is cosine
-                if None, don't normalize.
+            norm (string): normalization factor before dimensionality reduction (default None), not needed if metricM is cosine
+                if None, don't normalize.`1
+            dynmesh (bool): If true, adapt the number of mesh points (candidates and iteration in DE) to the population, overrides neipoints, depop, deiter and ffpoints (default false)
             clusterer (string): selects which algorithm to use for clusters identification. Choose between 'DBSCAN' (default) or HDBSCAN
             cparmrange (array, list) or string: clusters identification parameter range to be explored (default 'guess'). 
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it by the elbow method);
@@ -197,6 +197,7 @@ class recursiveClustering:
         self._depth = depth
         self.score = score
         self.norm = norm
+        self.dynmesh = dynmesh
 
         self.clusterer= clusterer
         self.cparmrange = cparmrange
@@ -219,6 +220,15 @@ class recursiveClustering:
 
         """ Evaluate parameters granularity options """
 
+        if self.dynmesh:
+
+            if self.optimizer=='grid':
+                self.neipoints=round((24*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(1000),b=1)))+2
+                self.ffpoints=round((14*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(1000),b=1)))+2
+            elif self.optimizer=='de':
+                self.depop=round((49*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+4
+                self.deiter=round((29*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+4                
+
         try:
             if isinstance(self.neipoints, list):
                 self.neipoints=[int(x) for x in self.neipoints]
@@ -231,7 +241,7 @@ class recursiveClustering:
         if self.optimizer=='de':
             try:
                 if isinstance(self.depop, list):
-                    self.depops=[int(x) for x in self.depop]
+                    self.depop=[int(x) for x in self.depop]
                 else:
                     self.depop=[int(self.depop)]
             except:
@@ -296,7 +306,7 @@ class recursiveClustering:
 
         if self.filterfeat=='tSVD':
 
-            logging.debug("Applying Truncated SVD with #{:d} features".format(int(cutoff)))
+            logging.info("Applying t-SVD with {:d} features".format(int(cutoff)))
 
             #sparseMat=csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)
             decomposer=tSVD(n_components=int(cutoff))
@@ -489,7 +499,7 @@ class recursiveClustering:
 
         if self.clusterer=='DBSCAN':
             ref=self._elbow(pj)
-            logging.info('Epsilon range guess: [{:.5f},{:.5f}]'.format(ref/50,ref*1.5))
+            logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(ref/50,ref*1.5))
 
             return np.arange(ref/50,ref*1.5,(ref*1.5-ref/50)/100.0)
 
@@ -502,7 +512,7 @@ class recursiveClustering:
             step=int((maxbound-minbound)/50)
             if step<1:
                 step=1
-            logging.info('Minimum samples range guess: [{:d},{:d}] with a {:d} point(s) step'.format(minbound, maxbound, step)) 
+            logging.debug('Minimum samples range guess: [{:d},{:d}] with a {:d} point(s) step'.format(minbound, maxbound, step)) 
             
             return np.arange(minbound, maxbound, step)
 
@@ -907,6 +917,11 @@ class recursiveClustering:
    
         logging.info('Dimensionality of the target space: {:d}'.format(self.dim))
         logging.info('Samples #: {:d}'.format(dataGlobal.dataset.loc[self.dataIx].shape[0]))
+        if self.dynmesh:
+            if self.optimizer=='grid':
+                logging.info('Dynamic mesh active, number of grid points: {:d}'.format(self.neipoints[0]*self.ffpoints[0]))
+            if self.optimizer=='de':
+                logging.info('Dynamic mesh active, number of candidates: {:d} and iterations: {:d}'.format(self.depop[0], self.deiter[0]))
 
         if self.transform is not None:
             logging.info('Transform-only Samples #: {:d}'.format(len(self.transform)))
@@ -967,9 +982,10 @@ class recursiveClustering:
 
             #A bit redundant, try to clean up
             if self.filterfeat in ['variance','MAD']:
+                # why the double loc??? transdata=dataGlobal.dataset.loc[self.dataIx][keepfeat].loc[self.transform]
                 transdata=dataGlobal.dataset.loc[self.dataIx][keepfeat].loc[self.transform]
             elif self.filterfeat=='tSVD':
-                transdata=self._featuresRemoval(cutOpt).loc[self.transform]
+                transdata=decompOpt.transform(dataGlobal.dataset.loc[self.transform])
 
             pjOpt=pd.concat([pjOpt, pd.DataFrame(mapOpt.transform(transdata), 
                 index=self.transform)], axis=0)
@@ -1030,7 +1046,7 @@ class recursiveClustering:
 
         """ Save cluster best parameters to table."""
 
-        vals = ['cluster ' + self._name, dataGlobal.dataset.loc[self.dataIx].shape[0], nClu, self.dim, minimum, nNei, chosen, cut, self.metricM, self.metricC, reassigned] 
+        vals = ['cluster ' + self._name, dataGlobal.dataset.loc[self.dataIx].shape[0], nClu, self.dim, minimum, nNei, chosen, cut, self.metricM, self.metricC, self.norm, reassigned] 
                
         with open(os.path.join(self.outpath,'raccoonData/paramdata.csv'), 'a') as file:
                 writer = csv.writer(file)
@@ -1105,7 +1121,7 @@ class recursiveClustering:
             deep = recursiveClustering(selNew.index, lab=labNew, transform=to_transform, dim=self.dim, epochs=self.epochs, lr=self.lr, 
                                       neirange=self.neirange, neipoints=self.neipoints, metricM=self.metricM, metricC=self.metricC, 
                                       popcut=self.popcut, filterfeat=self.filterfeat, ffrange=self.ffrange, ffpoints=self.ffpoints, 
-                                      optimizer=self.optimizer, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, 
+                                      optimizer=self.optimizer, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, dynmesh=self.dynmesh,
                                       clusterer=self.clusterer, cparmrange=self.cparmrange, minclusize=self.minclusize, outliers=self.outliers, 
                                       name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD, 
                                       outpath=self.outpath, depth=self._depth, cores=self._cores, _user=False)
@@ -1138,6 +1154,9 @@ def run(data, **kwargs):
             clusOpt (pandas dataframe): one-hot-encoded clusters membership of data.
     """
 
+
+    start_time = time.time()
+
     if 'outpath' not in kwargs or kwargs['outpath'] is None:
         kwargs['outpath']=os.getcwd()
     if 'RPD' not in kwargs:
@@ -1154,7 +1173,7 @@ def run(data, **kwargs):
 
     """ Save the assignment to disk. """
 
-    obj.clusTmp.to_hdf(os.path.join(kwargs['outpath'],'finalOutput.h5'),key='df')
+    obj.clusOpt.to_hdf(os.path.join(kwargs['outpath'],'finalOutput.h5'),key='df')
     
     """ Log the total runtime and memory usage. """
 

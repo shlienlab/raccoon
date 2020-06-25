@@ -46,10 +46,10 @@ here we select some default values as explained in the follwing paragraphs.
 
 	import raccoon as rc 
 
-    clusterMembership = rc.run(inputDf, lab=labels, dim=2, popcut=50, 
+  clusterMembership = rc.run(inputDf, lab=labels, dim=2, popcut=50, 
 	filterfeat='tSVD', neifactor=0.5, optimizer='de', depop=25, deiter=25,  
 	metricC='euclidean', metricM='cosine', outpath='./raccoonOutputs/', 
-    savemap=True) 
+  savemap=True) 
 
 this function will automatically take care of initialising the clustering object and run it for us, it just requires the selection of which kind of tools to use.
 
@@ -271,7 +271,7 @@ The results will be stored in the :code:`membership` attribute.
 
 	from raccoon.utils.classification import knn
 
-	rcknn=knn(dfToPredict, df, clusterMembership, refpath=r'./raccoonData')
+	rcknn=knn(dfToPredict, df, clusterMembership, refpath=r'./raccoonData', outpath=r'./')
 	rcknn.assignMembership()
 
 	newMembership = rcknn.membership
