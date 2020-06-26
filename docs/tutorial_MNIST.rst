@@ -44,12 +44,12 @@ here we select some default values as explained in the follwing paragraphs.
 
 .. code-block:: python
 
-	import raccoon as rc 
+  import raccoon as rc 
 
   clusterMembership = rc.run(inputDf, lab=labels, dim=2, popcut=50, 
-	filterfeat='tSVD', neifactor=0.5, optimizer='de', depop=25, deiter=25,  
-	metricC='euclidean', metricM='cosine', outpath='./raccoonOutputs/', 
-  savemap=True) 
+                      filterfeat='tSVD', optimizer='de', depop=25, deiter=25,  
+                      neifactor=0.5, metricC='euclidean', metricM='cosine',  
+                      outpath='./raccoonOutputs/', savemap=True) 
 
 this function will automatically take care of initialising the clustering object and run it for us, it just requires the selection of which kind of tools to use.
 

@@ -421,6 +421,10 @@ class recursiveClustering:
                     file.close()
                 proj.to_hdf(os.path.join(self.outpath,'raccoonData/'+self._name+'_2d.h5'), key='proj')
 
+            #let's see if this saves us from the perpetual memory crash 
+
+            del mapping    
+
         """ Plot 2-dimensional umap of the optimal clusters. """
 
         plotting.plotMap(proj, clusOpt, 'proj_clusters_'+self._name, self.outpath)
@@ -1063,6 +1067,11 @@ class recursiveClustering:
                     pickle.dump([decompOpt,chomap], file)
                 file.close()
             pj.to_hdf(os.path.join(self.outpath,'raccoonData/'+self._name+'.h5'), key='proj')
+
+
+        #let's see if this saves us from the perpetual memory crash 
+            
+        del chomap
 
         if nClu < 2:
             logging.info('Optimal solution has only one cluster!')
