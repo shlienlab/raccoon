@@ -47,7 +47,7 @@ def _tostring(x):
         string=string+str(xx)+'_'
     return string[:-1]
 
-def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=0.6, recombination=0.7, maxiter=20, tol=1e-4):
+def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=0.6, recombination=0.7, maxiter=20, tol=1e-4, seed=None):
 
     """ Basic Differential Evolution implementation.
 
@@ -62,19 +62,22 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
         maxiter (float): maximum number of generations.
         tol (float): solution improvement tolerance, 
             if after 3 generations the best solution is not improved by at least this value, stop the iteration.
+        seed (int): seed for the random numbers generator.
 
     Returns:
         (list of floats): List of best parameters.
     
     """
     
+    if seed is not None:
+        random.seed(seed)
 
     """ Randomly initialize candidated solutions. """
 
     allscores={}
 
     #TO DO: Fix redundancy in saving the parameters
-    allparams={}
+    #allparams={}
 
     population=[]
     for i in np.arange(popsize):
@@ -143,21 +146,23 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
             #Note: keep the results for the best candidate so we don't have to recalculate them.
 
-            if _tostring(mutant) not in allscores:
-                scoreMutant, labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM = lossFun(mutant)
-                allscores[_tostring(mutant)]=scoreMutant
-                allparams[_tostring(mutant)]=[labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM]
-            else:
-                logging.debug('Candidate found in store')
-                scoreMutant=allscores[_tostring(mutant)]
-
             if _tostring(target) not in allscores:
                 scoreTarget, labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals = lossFun(target)
                 allscores[_tostring(target)]=scoreTarget
-                allparams[_tostring(target)]=[labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals]
+                #allparams[_tostring(target)]=[labs, epsOpt, pj, keepfeat, decomp, parmvals]
             else:
                 logging.debug('Candidate found in store')
                 scoreTarget=allscores[_tostring(target)]
+                labs=None
+
+            if _tostring(mutant) not in allscores:
+                scoreMutant, labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM = lossFun(mutant)
+                allscores[_tostring(mutant)]=scoreMutant
+                #allparams[_tostring(mutant)]=[labsM, epsOptM, pjM, keepfeatM, decompM, parmvalsM]
+            else:
+                logging.debug('Candidate found in store')
+                scoreMutant=allscores[_tostring(mutant)]
+                labsM=None
 
             if scoreMutant < scoreTarget:
                 population[j]=mutant
@@ -170,8 +175,15 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 logging.debug('Candidate score: {:.5f}'.format(scoreTarget))        
                 logging.debug(target)
         
+            """ A bit risky but the conditional should work as a safeguard """
+
             if allscores[_tostring(population[j])]<bestScore:
-                bestRes=allparams[_tostring(population[j])]
+                
+                if labs is None:
+                    raise ValueError("Oops, something went very wrong!")
+                
+                #bestRes=allparams[_tostring(population[j])]
+                bestRes=labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals
                 bestScore=allscores[_tostring(population[j])]
                 bestParam=population[j]     
 

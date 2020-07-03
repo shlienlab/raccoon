@@ -282,10 +282,11 @@ class recursiveClustering:
         if self.debug:
             logging.getLogger().setLevel(logging.DEBUG)
             self._umapRs=32
+            self._seed=32
         else:
             logging.getLogger().setLevel(logging.INFO)
             self._umapRs=None
-
+            self._seed=None
 
     def _featuresRemoval(self, cutoff):
 
@@ -967,7 +968,7 @@ class recursiveClustering:
             #Note: this works as monodimensional DE, but may be slightly inefficient
             bounds=[(np.min(self.ffrange),np.max(self.ffrange)),(np.min(nnrange),np.max(nnrange))]
             silOpt, labsOpt, cparmOpt, neiOpt, pjOpt, cutOpt, mapOpt, keepfeat, decompOpt, parmvals = \
-            de._differentialEvolution(self._objectiveFunction, bounds, maxiter = self.deiter[0], popsize = self.depop[0], integers=[False, True])
+            de._differentialEvolution(self._objectiveFunction, bounds, maxiter = self.deiter[0], popsize = self.depop[0], integers=[False, True], seed=self._seed)
 
             #DEPRECATED
             #bestParam = de._differentialEvolution(self._objectiveFunction, bounds, maxiter = self.deiter, popsize = self.depop, integers=[False, True])
