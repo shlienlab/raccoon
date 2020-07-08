@@ -64,7 +64,7 @@ class recursiveClustering:
 
     def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
         metricM='cosine', metricC='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
-        ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False,
+        ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=30, minmesh=4,
         clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', 
         name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, cores=1, _user=True):
 
@@ -116,6 +116,8 @@ class recursiveClustering:
             norm (string): normalization factor before dimensionality reduction (default None), not needed if metricM is cosine
                 if None, don't normalize.`1
             dynmesh (bool): If true, adapt the number of mesh points (candidates and iteration in DE) to the population, overrides neipoints, depop, deiter and ffpoints (default false)
+            maxmesh (int): maximum number of points for the dynmesh option (hit at 50 samples, default 30)
+            minmesh (int): minimum number of points for the dynmesh option (hit at 10000 samples, default 4)
             clusterer (string): selects which algorithm to use for clusters identification. Choose between 'DBSCAN' (default) or HDBSCAN
             cparmrange (array, list) or string: clusters identification parameter range to be explored (default 'guess'). 
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it by the elbow method);
@@ -198,6 +200,8 @@ class recursiveClustering:
         self.score = score
         self.norm = norm
         self.dynmesh = dynmesh
+        self.maxmesh = maxmesh
+        self.minmesh = minmesh
 
         self.clusterer= clusterer
         self.cparmrange = cparmrange
@@ -223,11 +227,11 @@ class recursiveClustering:
         if self.dynmesh:
 
             if self.optimizer=='grid':
-                self.neipoints=round((24*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(1000),b=1)))+2
-                self.ffpoints=round((14*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(1000),b=1)))+2
+                self.neipoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)
+                self.ffpoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)
             elif self.optimizer=='de':
-                self.depop=round((49*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+4
-                self.deiter=round((29*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+4                
+                self.depop=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)
+                self.deiter=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)                
 
         try:
             if isinstance(self.neipoints, list):
