@@ -39,11 +39,12 @@ import raccoon.utils.classification
 
 """ Suppress UMAP and numpy warnings. """
 import warnings
-from numba.errors import NumbaPerformanceWarning
+import numba
+#from numba.errors import NumbaPerformanceWarning #not working for numba 0.5
 
 warnings.filterwarnings("ignore", message="n_neighbors is larger than the dataset size; truncating to") 
 warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=NumbaPerformanceWarning)
+warnings.filterwarnings("ignore", category=numba.errors.NumbaPerformanceWarning)
 
 __version__ = "0.2.0"
 
