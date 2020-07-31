@@ -39,6 +39,21 @@ def de_test(data,labels=None):
                     outpath='./outTest_de', savemap=True, debug=True) 
 
 
+def auto_test(data,labels=None):
+
+    """ Clustering test, euclidean automatic selection
+
+        Args:
+            data (pandas dataframe, matrix): input test dataframe
+            lebels (pandas series, array): input test labels
+    """
+
+    clusterMembership = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1, 
+                    filterfeat='variance', optimizer='auto', metricC='euclidean', metricM='cosine', 
+                    dynmesh=True, maxmesh=3, minmesh=3, 
+                    outpath='./outTest_auto', savemap=True, debug=True) 
+
+
 def tsvd_test(data,labels=None):
 
     """ Clustering test, euclidean grid with t-SVD
@@ -48,7 +63,7 @@ def tsvd_test(data,labels=None):
             lebels (pandas series, array): input test labels
     """
 
-    clusterMembership = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=2, 
+    clusterMembership = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1, 
                     filterfeat='tSVD', optimizer='grid', metricC='euclidean', metricM='cosine', 
                     dynmesh=True, maxmesh=3, minmesh=3, 
                     outpath='./outTest_tsvd', savemap=True, debug=True) 
@@ -63,7 +78,7 @@ def high_test(data,labels=None):
             lebels (pandas series, array): input test labels
     """
 
-    clusterMembership = rc.run(data, lab=labels, dim=3, popcut=20, maxdepth=2, 
+    clusterMembership = rc.run(data, lab=labels, dim=3, popcut=20, maxdepth=1, 
                     filterfeat='variance', optimizer='grid', metricC='cosine', metricM='cosine', 
                     dynmesh=True, maxmesh=3, minmesh=3, 
                     outpath='./outTest_high', savemap=True, debug=True) 

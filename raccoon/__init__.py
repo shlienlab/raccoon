@@ -106,7 +106,8 @@ class recursiveClustering:
             ffpoins (int or list of int): Number of grid points for the feature removal cutoff search  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted, 
                 (works only with ffrange='logspace', default 25).
-            optimizer (string): Choice of parameters optimizer, can be either 'grid' for grid search or 'de' for differential evolution (default is 'grid').
+            optimizer (string): Choice of parameters optimizer, can be either 'grid' for grid search, 'de' for differential evolution, or 'auto' for automatic 
+                (default is 'grid'). Automatic will chose between grid search and DE depending on the number of grid points (de if >25), works only if dynmesh is True.
             depop (int or list of int): Size of the candidate solutions population in differential evolution  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted
                 (works only with optimizer='de', default 10).
@@ -118,7 +119,7 @@ class recursiveClustering:
                 if None, don't normalize.`1
             dynmesh (bool): If true, adapt the number of mesh points (candidates and iteration in DE) to the population, overrides neipoints, depop, deiter and ffpoints (default false)
             maxmesh (int): maximum number of points for the dynmesh option (hit at 50 samples, default 30)
-            minmesh (int): minimum number of points for the dynmesh option (hit at 10000 samples, default 4)
+            minmesh (int): minimum number of points for the dynmesh option (hit at 10000 samples, default 4, must be >3 if optimizer='de')
             clusterer (string): selects which algorithm to use for clusters identification. Choose between 'DBSCAN' (default) or HDBSCAN
             cparmrange (array, list) or string: clusters identification parameter range to be explored (default 'guess'). 
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it by the elbow method);
@@ -174,6 +175,11 @@ class recursiveClustering:
         self.dataIx = data
         self.lab = lab
         self.transform = transform
+
+
+        self.optimizer = optimizer
+        #Keep track of the original optimizer if changed
+        self.optimtrue = optimizer
         
         self.dim = dim
         self.epochs = epochs
@@ -191,7 +197,6 @@ class recursiveClustering:
         self.savemap = savemap
         self.maxdepth = maxdepth
         self.RPD = RPD
-        self.optimizer = optimizer
         self.depop = depop
         self.deiter = deiter
         self.outpath= outpath
@@ -214,8 +219,8 @@ class recursiveClustering:
 
         """ Checks on optimizer choice """        
 
-        if self.optimizer not in ['grid','de']:
-            sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search or \'de\' for Differential Evolution.')
+        if self.optimizer not in ['grid','de', 'auto']:
+            sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search, \'de\' for Differential Evolution or \'auto\' for automatic selection.')
 
         if self.optimizer=='de' and self.ffrange=='kde':
             sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is not compatible with Differential Evolution.')
@@ -223,16 +228,34 @@ class recursiveClustering:
         if self.filterfeat not in ['variance','MAD','tSVD']:
             sys.exit('ERROR: Features filter must be either \'variance\' for low-variance removal, \'MAD\' for low-MAD removal or \'tSVD\' for truncated SVD.')
 
+        if self.optimizer == 'auto' and dynmesh == False:
+            self.optimizer = 'grid'
+            warnings.warn('Warning: Optimizer \'auto\' works only if dynamic mesh is active, falling to Grid Search')
+
         """ Evaluate parameters granularity options """
 
         if self.dynmesh:
 
+            meshpoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh)
+
+            if self.optimizer == 'auto' and meshpoints**2>25:
+                self.optimizer = 'de'
+            else:
+                self.optimizer = 'grid'
+
             if self.optimizer=='grid':
-                self.neipoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)
-                self.ffpoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)
+
+                self.neipoints=meshpoints
+                self.ffpoints=meshpoints
+
             elif self.optimizer=='de':
-                self.depop=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)
-                self.deiter=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh-1)                
+
+                if self.minmesh<=3:
+                    self.minmesh=4
+                    meshpoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh)
+
+                self.depop=meshpoints
+                self.deiter=meshpoints                
 
         try:
             if isinstance(self.neipoints, list):
@@ -279,13 +302,13 @@ class recursiveClustering:
                 if self.filterfeat in ['variance','MAD']:
                     self.ffrange = sorted([float(x) for x in np.logspace(np.log10(0.3), np.log10(0.9), num=self.ffpoints[0])])
                 if self.filterfeat=='tSVD':
-                    self.ffrange = sorted([int(x) for x in np.logspace(np.log10(np.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), np.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])
-                    
+                    self.ffrange = sorted([int(x) for x in np.logspace(np.log10(np.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), np.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
 
         """ Setup logging """ 
 
         if self.debug:
             logging.getLogger().setLevel(logging.DEBUG)
+            os.environ['NUMBA_DEBUG'] = '0' #Not working
             self._umapRs=32
             self._seed=32
         else:
@@ -1136,7 +1159,8 @@ class recursiveClustering:
             deep = recursiveClustering(selNew.index, lab=labNew, transform=to_transform, dim=self.dim, epochs=self.epochs, lr=self.lr, 
                                       neirange=self.neirange, neipoints=self.neipoints, metricM=self.metricM, metricC=self.metricC, 
                                       popcut=self.popcut, filterfeat=self.filterfeat, ffrange=self.ffrange, ffpoints=self.ffpoints, 
-                                      optimizer=self.optimizer, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, dynmesh=self.dynmesh,
+                                      optimizer=self.optimtrue, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, 
+                                      dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                                       clusterer=self.clusterer, cparmrange=self.cparmrange, minclusize=self.minclusize, outliers=self.outliers, 
                                       name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD, 
                                       outpath=self.outpath, depth=self._depth, cores=self._cores, _user=False)
@@ -1188,7 +1212,8 @@ def run(data, **kwargs):
 
     """ Save the assignment to disk. """
 
-    obj.clusOpt.to_hdf(os.path.join(kwargs['outpath'],'finalOutput.h5'),key='df')
+    if obj.clusOpt is not None:
+        obj.clusOpt.to_hdf(os.path.join(kwargs['outpath'],'finalOutput.h5'),key='df')
     
     """ Log the total runtime and memory usage. """
 
