@@ -66,7 +66,7 @@ class recursiveClustering:
     def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
         metricM='cosine', metricC='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
         ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=30, minmesh=4,
-        clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', 
+        clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', fromfile=None,
         name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, cores=1, _user=True):
 
         """ Initialize the the class.
@@ -129,6 +129,7 @@ class recursiveClustering:
             outliers (string): selects how to deal with outlier points in the clusters assignment
                 if 'ignore' discard them
                 if 'reassign' try to assign them to other clusters with knn if more than 10% of the total population was flagged 
+            fromfile (string): path to parmdata.csv file to load, if active it will overwrite all other selections to follow the loaded parameters
             name (string): Name of current clustering level (should be left as default, '0', unless continuing from a previous run).
             debug (boolean): Specifies whether algorithm is run in debug mode (default is False).
             maxdepth (int): Specify the maximum number of recursion iterations, if None (default), keep going while possible. 
@@ -214,8 +215,45 @@ class recursiveClustering:
         self.minclusize = minclusize
         self.outliers = outliers
 
+        self.fromfile = fromfile
+
         #to remove
         self._cores = cores
+
+        """ Try to load parameters data """
+
+        if self.fromfile is not None:
+
+            try:     
+
+                if isinstance(self.fromfile, str):
+                    self.fromfile= pd.read_csv(self.fromfile)
+                    self.fromfile.set_index('name', inplace=True)
+                    self.fromfile.index=[x.strip('cluster ') for x in self.fromfile.index]
+
+                self.optimizer = 'grid'
+                self.dynmesh = False
+                
+                if self._name not in self.fromfile.index:
+                    self.nnei=[]
+                    self.ffrange=[]
+                    self.cparmrange=[]
+                    self.norm = np.nan
+                else:
+                    self.dim = int(self.fromfile['dim'].loc[self._name])
+                    self.neirange = [int(self.fromfile['n_neighbours'].loc[self._name])]
+                    self.ffrange = [float(self.fromfile['genes_cutoff'].loc[self._name])]
+                    self.cparmrange = [float(self.fromfile['cluster_parm'].loc[self._name])]
+                    self.metricM = self.fromfile['metric_map'].loc[self._name]
+                    self.metricC = self.fromfile['metric_clust'].loc[self._name]
+                    self.norm = self.fromfile['norm'].loc[self._name]
+
+                if np.isnan(self.norm): 
+                    self.norm = None
+
+            except:
+                sys.exit('ERROR: there was a problem loading the parameters file.')
+                raise
 
         """ Checks on optimizer choice """        
 
@@ -1160,8 +1198,8 @@ class recursiveClustering:
                                       neirange=self.neirange, neipoints=self.neipoints, metricM=self.metricM, metricC=self.metricC, 
                                       popcut=self.popcut, filterfeat=self.filterfeat, ffrange=self.ffrange, ffpoints=self.ffpoints, 
                                       optimizer=self.optimtrue, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, 
-                                      dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
-                                      clusterer=self.clusterer, cparmrange=self.cparmrange, minclusize=self.minclusize, outliers=self.outliers, 
+                                      dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh, clusterer=self.clusterer, 
+                                      cparmrange=self.cparmrange, minclusize=self.minclusize, outliers=self.outliers, fromfile=self.fromfile,
                                       name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD, 
                                       outpath=self.outpath, depth=self._depth, cores=self._cores, _user=False)
 

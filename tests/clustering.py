@@ -23,6 +23,20 @@ def grid_test(data,labels=None):
                     dynmesh=True, maxmesh=3, minmesh=3, 
                     outpath='./outTest_grid', savemap=True, debug=True) 
 
+def load_test(data,loadPath,labels=None):
+
+    """ Clustering test, euclidean grid loading parameters data from file
+
+        Args:
+            data (pandas dataframe, matrix): input test dataframe
+            loadPath (strin): path to parameters data file to load
+            lebels (pandas series, array): input test labels
+    """
+
+    clusterMembership = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=2, 
+                    filterfeat='variance', optimizer='grid', metricC='euclidean', metricM='cosine', 
+                    dynmesh=True, maxmesh=3, minmesh=3, fromfile=loadPath,
+                    outpath='./outTest_load', savemap=True, debug=True) 
 
 def de_test(data,labels=None):
 

@@ -59,21 +59,14 @@ def _createDataset():
 
 
 to_run = {'grid':       True,
+          'load':       True,
           'de':         True,
           'auto':       True,
           'tsvd':       True,
           'high':       True,
           'trans':      True,
           'knn':        True,
-          }
-
-to_run = {'grid':      False,
-          'de':        False,
-          'auto':      True,
-          'tsvd':      False,
-          'high':      False,
-          'trans':     False,
-          'knn':       False,
+          'clean':      True
           }
 
 
@@ -84,28 +77,42 @@ if __name__ == "__main__":
 
     xx,yy = _createDataset()
 
-    if to_run['grid'] == False and to_run['knn'] == True:
-        print('Warning: k-NN test can\'t be run without Grid test')
+    if to_run['grid'] == False and (to_run['knn'] == True or to_run['load'] == True):
+        print('Warning: k-NN and Load test can\'t be run without Grid test')
         to_run['knn'] = False
+        to_run['load'] = False
 
     # """ Test Grid """
 
     if to_run['grid']:
         try:
             with hidePrints():
-                grid_test(xx,labels=yy)
+                grid_test(xx, labels = yy)
             print('Grid Test:\t\t'+colored('PASSED', 'green'))
             colored('PASSED', 'green')
         except Exception as e:
             print('Grid Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
+    # """ Test Load """
+
+    if to_run['load']:
+        try:
+            with hidePrints():
+                load_test(xx, './outTest_grid/raccoonData/paramdata.csv', labels=yy)
+            print('Load Test:\t\t'+colored('PASSED', 'green'))
+            colored('PASSED', 'green')
+        except Exception as e:
+            print('Load Test:\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))
+
+
     """ Test DE """
 
     if to_run['de']:
         try:
             with hidePrints():
-                de_test(xx,labels=yy)
+                de_test(xx, labels = yy)
             print('DE Test:\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('DE Test:\t\t'+colored('FAILED', 'red'))
@@ -116,7 +123,7 @@ if __name__ == "__main__":
     if to_run['auto']:
         try:
             with hidePrints():
-                auto_test(xx,labels=yy)
+                auto_test(xx, labels = yy)
             print('Auto Test:\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('Auto Test:\t\t'+colored('FAILED', 'red'))
@@ -128,7 +135,7 @@ if __name__ == "__main__":
     if to_run['tsvd']:
         try:
             with hidePrints():
-                tsvd_test(xx,labels=yy)
+                tsvd_test(xx, labels = yy)
             print('t-SVD Test:\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('t-SVD Test:\t\t'+colored('FAILED', 'red'))
@@ -140,7 +147,7 @@ if __name__ == "__main__":
     if to_run['high']:
         try:
             with hidePrints():
-                high_test(xx,labels=yy)
+                high_test(xx, labels = yy)
             print('High-dimensionality Test:\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('High-dimensionality Test:\t\t'+colored('FAILED', 'red'))
@@ -151,7 +158,7 @@ if __name__ == "__main__":
     if to_run['trans']:
         try:
             with hidePrints():
-                trans_test(xx,labels=yy)
+                trans_test(xx, labels = yy)
             print('Transform-only Test:\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('Transform-only Test:\t\t'+colored('FAILED', 'red'))
@@ -172,13 +179,16 @@ if __name__ == "__main__":
 
     """ Clean up"""
 
-    print('Cleaning up...')
-
-    removeDir('./outTest_grid')
-    removeDir('./outTest_de')
-    removeDir('./outTest_auto')
-    removeDir('./outTest_tsvd')
-    removeDir('./outTest_high')
-    removeDir('./outTest_trans')
+    if to_run['clean']:
+        
+        print('Cleaning up...')
+        
+        removeDir('./outTest_grid')
+        removeDir('./outTest_load')
+        removeDir('./outTest_de')
+        removeDir('./outTest_auto')
+        removeDir('./outTest_tsvd')
+        removeDir('./outTest_high')
+        removeDir('./outTest_trans')
 
     print('All done!')
