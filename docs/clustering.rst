@@ -243,6 +243,28 @@ Activating this function will produce extra plots at each iteration, of projecti
 color coded according to which points were used for the training and which transformed only.
 
 
+Saving hierarchy information
+============================
+
+The resulting clustering membership will be stored as a one-hot-encoded pandas dataframe in the :code:`obj.clusOpt` variable.
+However, auxiliary functions are available to store the hierarchy information as an :code:`anytree` object as well.
+
+.. code-block:: python
+  
+  import raccoon.utils.trees as trees
+
+  tree = trees.buildTree(obj.clusOpt)
+
+:code:`buildTree` requires the membership assignment table as input and optionally a path to where to save the tree in :code:`json` format.
+By default it will be saved in the home directory of the run.
+To load a tree from the :code:`json` foile :code:`loadTree` only requires its path.
+
+Repeating a run
+===============
+
+The :code:`fromfile` flag takes the path to a :code:`paramdata.csv` as input and allows the user to repeat a run using the optimal parameters and skipping the search
+altogether. Activating this flag will override all other parameters. This can be useful to reproduce past works, save more files (e.g. trained maps) or plots. 
+
 References
 ----------
         

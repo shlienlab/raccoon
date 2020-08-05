@@ -46,7 +46,7 @@ here we select some default values as explained in the follwing paragraphs.
 
   import raccoon as rc 
 
-  clusterMembership = rc.run(inputDf, lab=labels, dim=2, popcut=50, 
+  clusterMembership, tree = rc.run(inputDf, lab=labels, dim=2, popcut=50, 
                       filterfeat='tSVD', optimizer='de', depop=25, deiter=25,  
                       neifactor=0.5, metricC='euclidean', metricM='cosine',  
                       outpath='./raccoonOutputs/', savemap=True) 
@@ -83,7 +83,7 @@ With :code:`optimizer='de'` we need to set two more parameters, the number of ca
 Here, 25 for both is reasonable choice.
 .. add citations  
 
-Finally, :code:`run` will return a dataframe with a one-hot-encoded clusters membership for the input datapoints and it will save important information to disk, in the chosen
+Finally, :code:`run` will return a dataframe, :code:`clustersMembership`, with a one-hot-encoded clusters membership for the input datapoints and it will save important information to disk, in the chosen
 output folder. Subdirectories will be automatically built to store plots and data, if the output path already contains a previous raccoon run, a prompt will ask you if you wish to delete them or interrupt the operation.
 If :code:`outputpath` is not explicitly given, the directory where the script is run will be set as home.
 We also activate :code:`savemap`, asking the algorithm to save the trained UMAP objects. These can require quite a bit of disk space, but will came in handy when we build the nearest-neighbour classifier.
@@ -93,6 +93,9 @@ We also activate :code:`savemap`, asking the algorithm to save the trained UMAP 
     obj.recurse()
 	obj.clusOpt
 
+A hierarchical tree object, :code:`tree`, will also be returned in ouptu. It is formatted 
+as a list of nodes with information on the hierarchy, the parent-child relationship
+between classes and a few extra useful properties.
 
 Keeping track of your run
 -------------------------
@@ -145,7 +148,24 @@ As for the naming convention, we assign :code:`'0'` to the full dataset and main
 In this way, the first classes identified, children of :code:`'0'` will be called :code:`'0_0', '0_1', ...`,
 while the children of :code:`'0_2'` will be :code:`'0_2_0', '0_2_1', ...`.
 
-.. insert finalOutput here
+==== ==== ==== ==== ==== ==== ==== ===== ===== ====
+ix   0_0  0_1  0_2  0_3  0_4  0_5  0_0_0 0_0_1 ...
+==== ==== ==== ==== ==== ==== ==== ===== ===== ====
+0    1    0    0    0    0    0    1     0     ... 
+1    1    0    0    0    0    0    1     0      
+2    1    0    0    0    0    0    0     1      
+3    0    1    0    0    0    0    0     0      
+...                         
+==== ==== ==== ==== ==== ==== ==== ===== ===== ====
+
+A json file containing an :code:`anytree` object is also saved in output and and can be loaded to help understand the hierarchical structure.
+
+
+.. code-block:: python
+
+  import raccoon.trees as trees
+  nodes = trees.loadTree('racccoonData/tree.json')
+
 
 In the plot folder we find two-dimensional projection of our dataset at different steps of the recursion. They are color coded by cluster or by label (if provided). 
 Depending on which parameters were selected, you may also find other plots justifying the choice of clustering or feature filtering parameters.

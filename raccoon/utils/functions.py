@@ -158,13 +158,11 @@ def setup(outpath=None, RPD=False):
         If such folders are already present in the path, delete them.
  
     Args:
-        outpath(string): Path where output files will be saved.
+        outpath (string): Path where output files will be saved.
    
     """
 
     """ Build folders and delete old data if present. """
-
-    
 
     try:
         os.makedirs(os.path.join(outpath, 'raccoonData'))
@@ -212,4 +210,17 @@ def setup(outpath=None, RPD=False):
     logging.getLogger('matplotlib.font_manager').disabled = True
     
 def sigmoid(x,a=0,b=1):
+
+    """ Sigmoid function
+ 
+    Args:
+        x (float): position at which to evaluate the function
+        a (float): center parameter
+        b (float): slope parameter
+   
+    Returns:
+        (float): sigmoid function evaluated at position x
+    """
+
     return 1/(1+np.exp((x-a)*b))
+

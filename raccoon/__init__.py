@@ -34,6 +34,7 @@ import time
 
 import raccoon.utils.plots as plotting
 import raccoon.utils.functions as functions
+import raccoon.utils.trees as trees
 import raccoon.utils.de as de
 import raccoon.utils.classification 
 
@@ -66,7 +67,7 @@ class recursiveClustering:
     def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
         metricM='cosine', metricC='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
         ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=30, minmesh=4,
-        clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', fromfile=None,
+        clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', fromfile=None, #resume=False,
         name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, cores=1, _user=True):
 
         """ Initialize the the class.
@@ -129,7 +130,8 @@ class recursiveClustering:
             outliers (string): selects how to deal with outlier points in the clusters assignment
                 if 'ignore' discard them
                 if 'reassign' try to assign them to other clusters with knn if more than 10% of the total population was flagged 
-            fromfile (string): path to parmdata.csv file to load, if active it will overwrite all other selections to follow the loaded parameters
+            fromfile (string): path to parmdata.csv file to load, if active it will overwrite all other selections to follow the loaded parameters, unless resume is active.
+            resume (bool): if True, resume the search from a previous run (works only if fromfile is provided).
             name (string): Name of current clustering level (should be left as default, '0', unless continuing from a previous run).
             debug (boolean): Specifies whether algorithm is run in debug mode (default is False).
             maxdepth (int): Specify the maximum number of recursion iterations, if None (default), keep going while possible. 
@@ -216,9 +218,14 @@ class recursiveClustering:
         self.outliers = outliers
 
         self.fromfile = fromfile
+        #self.resume = resume
 
         #to remove
         self._cores = cores
+
+
+
+
 
         """ Try to load parameters data """
 
@@ -1248,11 +1255,13 @@ def run(data, **kwargs):
     obj = recursiveClustering(data, **kwargs) 
     obj.recurse()
 
-    """ Save the assignment to disk. """
+    """ Save the assignment to disk and buil tree """
 
+    tree = None
     if obj.clusOpt is not None:
         obj.clusOpt.to_hdf(os.path.join(kwargs['outpath'],'finalOutput.h5'),key='df')
-    
+        tree = trees.buildTree(obj.clusOpt, outpath=kwargs['outpath'])
+
     """ Log the total runtime and memory usage. """
 
     logging.info('=========== Final Clustering Results ===========')
@@ -1263,7 +1272,8 @@ def run(data, **kwargs):
     logging.info('Total time of the operation: {:.3f} seconds'.format((time.time() - start_time)))
     logging.info(psutil.virtual_memory())
   
-    return obj.clusOpt
+    return obj.clusOpt, tree
+        
 
 
 if __name__ == "__main__":
