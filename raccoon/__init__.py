@@ -14,14 +14,11 @@ import csv
 import numpy as np
 import pandas as pd
 
-import umap
 from sklearn import metrics
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.neighbors import NearestNeighbors as NN
 from sklearn.preprocessing import normalize
-from sklearn.cluster import DBSCAN
-from sklearn.decomposition import TruncatedSVD as tSVD
-from scipy.sparse import csr_matrix
+#from scipy.sparse import csr_matrix
 from hdbscan import HDBSCAN
 
 import logging
@@ -37,6 +34,7 @@ import raccoon.utils.functions as functions
 import raccoon.utils.trees as trees
 import raccoon.utils.de as de
 import raccoon.utils.classification 
+import raccoon.interface as interface
 
 """ Suppress UMAP and numpy warnings. """
 import warnings
@@ -65,10 +63,10 @@ class recursiveClustering:
     """ To perform recursive clustering on a samples x features matrix. """
 
     def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
-        metricM='cosine', metricC='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
+        neicap=None, metricM='cosine', metricC='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
         ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=30, minmesh=4,
         clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', fromfile=None, #resume=False,
-        name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, cores=1, _user=True):
+        name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, gpu=False, _user=True):
 
         """ Initialize the the class.
 
@@ -89,6 +87,7 @@ class recursiveClustering:
                 if list, each value will be subsequently used at the next iteration until all values are exhausted, 
                 (works only with neirange='logspace' default 25).
             neifactor (float): Scaling factor for 'logspace' and 'sqrt' selections in neirange
+            neicap (int): Maximum number of neighbours (reccomended with low-memory systems).
             metricM (string): Metric to be used in UMAP distance calculations (default cosine).
             metricC (string): Metric to be used in clusters identification and Clustering score calculations (default euclidean)
                 Warning: cosine does not work with HDBSCAN, normalize to 'l2' and use 'euclidean' instead.
@@ -141,12 +140,12 @@ class recursiveClustering:
                 and not reccomended.
             outpath (string): Path to the location where outputs will be saved (default, save to the current folder).
             depth (integer): Current depth of recursion (should be left as default, -1, unless continuing from a previous run).
+            gpu (bool): Activate GPU version (requires RAPIDS).
             _user (bool): Active switch to separate initial user input versus recursion calls, do not change.
-            #### TO REMOVE cores (int): Specifies how many cores to use in the parallel version (this value has no affect when run in serial).
         
 
         """
-
+        
         if _user:
 
             if not isinstance(data, pd.DataFrame):
@@ -190,6 +189,7 @@ class recursiveClustering:
         self.neirange = neirange
         self.neipoints = neipoints
         self.neifactor = neifactor
+        self.neicap = neicap
         self.metricM = metricM
         self.metricC = metricC
         self.popcut = popcut 
@@ -220,11 +220,20 @@ class recursiveClustering:
         self.fromfile = fromfile
         #self.resume = resume
 
-        #to remove
-        self._cores = cores
+        self.gpu = gpu
 
 
+        """ Set up for CPU or GPU run """
 
+        if self.gpu:
+            try:
+                self.interface=interface.interfaceGPU()
+            except:
+                warnings.warn("Warning: no RAPIDS found, running on CPU instead.")
+                self.gpu=False
+                
+        if not self.gpu:
+            self.interface=interface.interfaceCPU()
 
 
         """ Try to load parameters data """
@@ -382,18 +391,24 @@ class recursiveClustering:
 
             logging.info("Applying t-SVD with {:d} features".format(int(cutoff)))
 
-            #sparseMat=csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)
-            decomposer=tSVD(n_components=int(cutoff))
+            decomposer=self.interface.decompose(n_components=int(cutoff))
 
             """ Add conditional to apply the cut only on those samples used for training the map. """
 
             #Ugly but hopefully more memory efficient
+            #csr_matrix not compatible with RAPIDS
+            #if self.transform is not None:
+            #    decomposer.fit(csr_matrix(dataGlobal.dataset.loc[self.dataIx][~dataGlobal.dataset.loc[self.dataIx].index.isin(self.transform)].values))
+            #    return pd.DataFrame(decomposer.transform(csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
+            #else:
+            #    return pd.DataFrame(decomposer.fit_transform(csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
+            
             if self.transform is not None:
-                decomposer.fit(csr_matrix(dataGlobal.dataset.loc[self.dataIx][~dataGlobal.dataset.loc[self.dataIx].index.isin(self.transform)].values))
-                return pd.DataFrame(decomposer.transform(csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
+                decomposer.fit(dataGlobal.dataset.loc[self.dataIx][~dataGlobal.dataset.loc[self.dataIx].index.isin(self.transform)].values)
+                return pd.DataFrame(decomposer.transform(dataGlobal.dataset.loc[self.dataIx].values), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
             else:
-                return pd.DataFrame(decomposer.fit_transform(csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
-            #return 
+                return pd.DataFrame(decomposer.fit_transform(dataGlobal.dataset.loc[self.dataIx].values), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
+
         
         elif self.filterfeat in ['variance','MAD']:
 
@@ -467,13 +482,15 @@ class recursiveClustering:
             plotting._plotCut(dataGlobal.dataset.loc[self.dataIx], selcut, 'cut_'+self._name, self.outpath)
 
         elif self.filterfeat=='tSVD' and decomposer is not None:
-            selcut=pd.DataFrame(decomposer.transform(csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)), index=dataGlobal.dataset.loc[self.dataIx].index)
+            #scr_matrix not compatible with RAPIDS
+            #selcut=pd.DataFrame(decomposer.transform(csr_matrix(dataGlobal.dataset.loc[self.dataIx].values)), index=dataGlobal.dataset.loc[self.dataIx].index)
+            selcut=pd.DataFrame(decomposer.transform(dataGlobal.dataset.loc[self.dataIx].values), index=dataGlobal.dataset.loc[self.dataIx].index)
             #selcut = self._featuresRemoval(int(cutOpt))
         else:
             selcut = dataGlobal.dataset.loc[self.dataIx]
 
         if proj.shape[1]!=2:
-            mapping = umap.UMAP(metric=self.metricM, n_components=2, min_dist=0.05, spread=1, n_neighbors=nNei,
+            mapping = self.interface.dimRed(metric=self.metricM, n_components=2, min_dist=0.05, spread=1, n_neighbors=nNei,
                                 n_epochs=self.epochs, learning_rate=self.lr,
                                 verbose=False)
             
@@ -631,7 +648,7 @@ class recursiveClustering:
             (list of int): list of assigned clusters """
 
         if self.clusterer=='DBSCAN':
-            return DBSCAN(eps=cparm, min_samples=self.minclusize, metric=self.metricC, n_jobs=-1, leaf_size=15).fit_predict(pj)
+            return self.interface.cluster(eps=cparm, min_samples=self.minclusize, metric=self.metricC, n_jobs=-1, leaf_size=15).fit_predict(pj)
         elif self.clusterer=='HDBSCAN':
             clusterer=HDBSCAN(algorithm=algorithm, alpha=1.0, approx_min_span_tree=True,
                     gen_min_span_tree=False, leaf_size=15, allow_single_cluster=False,
@@ -693,7 +710,7 @@ class recursiveClustering:
 
         logging.debug('Number of nearest neighbors: {:d}'.format(nn))
 
-        mapping = umap.UMAP(metric=self.metricM, n_components=self.dim, min_dist=0.0, spread=1, n_neighbors=nn,
+        mapping = self.interface.dimRed(metric=self.metricM, n_components=self.dim, min_dist=0.0, spread=1, n_neighbors=nn,
                 n_epochs=self.epochs, learning_rate=self.lr, verbose=False, random_state=self._umapRs, init=init)
         
         if self.transform is not None:
@@ -841,7 +858,7 @@ class recursiveClustering:
 
                 logging.debug('Number of nearest neighbors: {:d}'.format(nn))
 
-                mapping = umap.UMAP(metric=self.metricM, n_components=self.dim, min_dist=0.0, spread=1, n_neighbors=nn,
+                mapping = self.interface.dimRed(metric=self.metricM, n_components=self.dim, min_dist=0.0, spread=1, n_neighbors=nn,
                                     n_epochs=self.epochs, learning_rate=self.lr, verbose=False, random_state=self._umapRs,
                                     init=init)
                     
@@ -1010,16 +1027,38 @@ class recursiveClustering:
             numpoints-=len(self.transform)
 
         if self.neirange == 'logspace':
-            minbound=np.log10(np.sqrt(numpoints*self.neifactor))
-            maxbound=np.log10(numpoints*self.neifactor)
             if self.neifactor>=1:
+                minbound=np.log10(np.sqrt(numpoints-1))
                 maxbound=np.log10(numpoints-1)
+            else:
+                minbound=np.log10(np.sqrt(numpoints*self.neifactor))
+                maxbound=np.log10(numpoints*self.neifactor)
+
+            """ Neighbours cap """
+
+            if self.neicap is not None:
+                if minbound>np.log10(self.neicap):
+                    minbound=np.log10(self.neicap/10)
+                if maxbound>np.log10(self.neicap):
+                    maxbound=np.log10(self.neicap)
+
+            """ Hard limit """
+
+            if minbound < 1:
+                minbound = 1
+
             nnrange = sorted([int(x) for x in np.logspace(
                 minbound, maxbound, num=self.neipoints[0])])
+
         elif self.neirange == 'sqrt':
             nnrange = [int(np.sqrt(numpoints*self.neifactor))]
         else:
             nnrange=self.neirange
+            if not isinstance(nnrange, list):
+                nnrange=[nnrange]
+
+        if self.neirange != 'logspace' and self.neicap is not None:
+           nnrange=sorted(list(set([x if x<=self.neicap else self.neicap for x in nnrange])))
 
         """ Run Optimizer. """
 
@@ -1202,13 +1241,13 @@ class recursiveClustering:
                 '[DE iterations: {:d}'.format(int(self.deiter[0]))+']')
 
             deep = recursiveClustering(selNew.index, lab=labNew, transform=to_transform, dim=self.dim, epochs=self.epochs, lr=self.lr, 
-                                      neirange=self.neirange, neipoints=self.neipoints, metricM=self.metricM, metricC=self.metricC, 
+                                      neirange=self.neirange, neipoints=self.neipoints, neicap=self.neicap, metricM=self.metricM, metricC=self.metricC, 
                                       popcut=self.popcut, filterfeat=self.filterfeat, ffrange=self.ffrange, ffpoints=self.ffpoints, 
                                       optimizer=self.optimtrue, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, 
                                       dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh, clusterer=self.clusterer, 
                                       cparmrange=self.cparmrange, minclusize=self.minclusize, outliers=self.outliers, fromfile=self.fromfile,
                                       name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD, 
-                                      outpath=self.outpath, depth=self._depth, cores=self._cores, _user=False)
+                                      outpath=self.outpath, depth=self._depth, gpu=self.gpu, _user=False)
 
             deep.recurse() 
 
