@@ -43,6 +43,19 @@ class interface:
               if key not in keys}
 
 
+    def getValue(self, var):
+        
+        """ Returns value of given variable.
+
+        Args:
+            (any): input variable.
+        Returns:
+            (any): value of the input variable.
+        """
+
+        return var
+
+
 class interfaceCPU(interface):
 
     """ Interface for CPU functions. """
@@ -57,11 +70,15 @@ class interfaceCPU(interface):
         from umap import UMAP
         from sklearn.cluster import DBSCAN
         from sklearn.neighbors import NearestNeighbors as NN
+        
+        import numpy 
 
         self.tSVD = tSVD
         self.UMAP = UMAP
         self.DBSCAN = DBSCAN
         self.NN = NN
+
+        self.num = numpy
 
     def decompose(self, **kwargs):
         
@@ -112,7 +129,6 @@ class interfaceCPU(interface):
         return self.NN(**kwargs)
 
 
-
 class interfaceGPU(interface):
 
     """ Interface for GPU functions. """
@@ -128,12 +144,15 @@ class interfaceGPU(interface):
         from cuml import DBSCAN as DBSCAN
         from cuml.neighbors import NearestNeighbors as NN
         #import cudf
-        #import cupy
+        
+        import cupy
         
         self.tSVD = tSVD
         self.UMAP = UMAP
         self.DBSCAN = DBSCAN
         self.NN = NN
+        
+        self.num = cupy
         
     def decompose(self, **kwargs):
         
@@ -182,6 +201,21 @@ class interfaceGPU(interface):
         """
 
         return self.NN(**self.filterKey(kwargs, 'n_jobs'))
+
+
+    def getValue(self, var):
+
+        """ Returns value of given variable, 
+            transferring it from GPU to CPU.
+
+        Args:
+            (any): input variable.
+        Returns:
+            (any): value of the input variable.
+        """
+        
+        return var.item()
+
 
 if __name__ == "__main__":
 

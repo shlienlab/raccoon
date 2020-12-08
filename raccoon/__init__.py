@@ -254,7 +254,7 @@ class recursiveClustering:
                     self.nnei=[]
                     self.ffrange=[]
                     self.cparmrange=[]
-                    self.norm = np.nan
+                    self.norm = self.interface.num.nan
                 else:
                     self.dim = int(self.fromfile['dim'].loc[self._name])
                     self.neirange = [int(self.fromfile['n_neighbours'].loc[self._name])]
@@ -264,7 +264,7 @@ class recursiveClustering:
                     self.metricC = self.fromfile['metric_clust'].loc[self._name]
                     self.norm = self.fromfile['norm'].loc[self._name]
 
-                if np.isnan(self.norm): 
+                if self.interface.num.isnan(self.norm): 
                     self.norm = None
 
             except:
@@ -290,7 +290,7 @@ class recursiveClustering:
 
         if self.dynmesh:
 
-            meshpoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh)
+            meshpoints=round(((self.maxmesh-1)*functions.sigmoid(self.interface.num.log(self.dataIx.shape[0]),a=self.interface.num.log(500),b=1)))+(self.minmesh)
 
             if self.optimizer == 'auto' and meshpoints**2>25:
                 self.optimizer = 'de'
@@ -306,7 +306,7 @@ class recursiveClustering:
 
                 if self.minmesh<=3:
                     self.minmesh=4
-                    meshpoints=round(((self.maxmesh-1)*functions.sigmoid(np.log(self.dataIx.shape[0]),a=np.log(500),b=1)))+(self.minmesh)
+                    meshpoints=round(((self.maxmesh-1)*functions.sigmoid(self.interface.num.log(self.dataIx.shape[0]),a=self.interface.num.log(500),b=1)))+(self.minmesh)
 
                 self.depop=meshpoints
                 self.deiter=meshpoints                
@@ -341,7 +341,7 @@ class recursiveClustering:
                 if self.filterfeat in ['variance','MAD']:
                     self.ffrange = [0.3,0.9]
                 if self.filterfeat=='tSVD':
-                    self.ffrange = [int(np.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])),int(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9)]
+                    self.ffrange = [int(self.interface.num.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])),int(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9)]
 
         if self.optimizer=='grid':
             try:
@@ -354,9 +354,9 @@ class recursiveClustering:
                 raise
             if self.ffrange == 'logspace':
                 if self.filterfeat in ['variance','MAD']:
-                    self.ffrange = sorted([float(x) for x in np.logspace(np.log10(0.3), np.log10(0.9), num=self.ffpoints[0])])
+                    self.ffrange = sorted([float(x) for x in self.interface.num.logspace(self.interface.num.log10(0.3), self.interface.num.log10(0.9), num=self.ffpoints[0])])
                 if self.filterfeat=='tSVD':
-                    self.ffrange = sorted([int(x) for x in np.logspace(np.log10(np.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), np.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
+                    self.ffrange = sorted([int(x) for x in self.interface.num.logspace(self.interface.num.log10(self.interface.num.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), self.interface.num.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
 
         """ Setup logging """ 
 
@@ -425,7 +425,7 @@ class recursiveClustering:
 
             
             logging.debug("Dropped Features #: " +
-                      '{:1.0f}'.format(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1]))
+                      '{:1.0f}'.format(self.interface.getValue(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1])))
 
             # Extra passage needed in case the transform data cut was applied        
             return dataGlobal.dataset.loc[self.dataIx][newData.columns], None
@@ -572,8 +572,8 @@ class recursiveClustering:
             (float): elbow value.
         """
 
-        neigh=NN(n_neighbors=2, metric=self.metricC, n_jobs=-1).fit(pj)
-        neigh=np.sort(neigh.kneighbors(pj, return_distance=True)[0][:,1])
+        neigh=self.interface.nNeighbor(n_neighbors=2, metric=self.metricC, n_jobs=-1).fit(pj)
+        neigh=self.interface.num.sort(neigh.kneighbors(pj, return_distance=True)[0][:,1])
         neigh=pd.DataFrame(neigh,columns=['elbow'])
         neigh['delta']=neigh['elbow'].diff().shift(periods=-1)+-1*neigh['elbow'].diff()
         return neigh['elbow'].iloc[neigh['delta'].idxmin()]
@@ -594,22 +594,24 @@ class recursiveClustering:
 
         if self.clusterer=='DBSCAN':
             ref=self._elbow(pj)
-            logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(ref/50,ref*1.5))
+            logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(self.interface.getValue(ref/50),
+                            self.interface.getValue(ref*1.5)))
 
-            return np.arange(ref/50,ref*1.5,(ref*1.5-ref/50)/100.0)
+            return self.interface.num.arange(ref/50,ref*1.5,(ref*1.5-ref/50)/100.0)
 
         elif self.clusterer=='HDBSCAN':
-            minbound=np.max([self.minclusize,int(np.sqrt(pj.shape[0]/25))])
-            maxbound=np.min([250,int(np.sqrt(pj.shape[0]*2.5))])
+            minbound=self.interface.num.max([self.minclusize,int(self.interface.num.sqrt(pj.shape[0]/25))])
+            maxbound=self.interface.num.min([250,int(self.interface.num.sqrt(pj.shape[0]*2.5))])
             if minbound==maxbound:
                 maxbound=minbound+2
 
             step=int((maxbound-minbound)/50)
             if step<1:
                 step=1
-            logging.debug('Minimum samples range guess: [{:d},{:d}] with a {:d} point(s) step'.format(minbound, maxbound, step)) 
+            logging.debug('Minimum samples range guess: [{:d},{:d}] with a {:d} point(s) step'.format(self.interface.getValue(minbound), 
+                            self.interface.getValue(maxbound), self.interface.getValue(step))) 
             
-            return np.arange(minbound, maxbound, step)
+            return self.interface.num.arange(minbound, maxbound, step)
 
         else: 
             sys.exit('ERROR: clustering algorithm not recognized')
@@ -680,8 +682,8 @@ class recursiveClustering:
 
         silOpt=-0.0001
         labsOpt = [0]*dataGlobal.dataset.loc[self.dataIx].shape[0]
-        cparmOpt = np.nan
-        keepfeat = np.nan
+        cparmOpt = self.interface.num.nan
+        keepfeat = self.interface.num.nan
         parmvals=[]
 
         init='spectral'
@@ -729,14 +731,14 @@ class recursiveClustering:
                 cse=float(self._elbow(pj))
                 if self.metricC=='cosine':
                     hdbalgo='generic'
-                    pj=pj.astype(np.float64)
+                    pj=pj.astype(self.interface.num.float64)
             parmvals.append([])
 
             """ Set clustering parameter range at the first iteration. """
 
             #if self.cparmrange=='guess':
 
-                #self.cparmrange=self._guessEps(pj.sample(np.min([500,pj.shape[0]])))
+                #self.cparmrange=self._guessEps(pj.sample(self.interface.num.min([500,pj.shape[0]])))
             #    self.cparmrange=self._guessParm(pj)
 
             #TODO: check if better to update at every iteration
@@ -748,7 +750,7 @@ class recursiveClustering:
 
             for cparm in cparmrange: #self.cparmrange
 
-                logging.debug('Clustering parameter: {:.5f}'.format(cparm))
+                logging.debug('Clustering parameter: {:.5f}'.format(self.interface.getValue(cparm)))
 
                 labs = self._findClusters(pj, cparm, cse, hdbalgo)
 
@@ -815,10 +817,10 @@ class recursiveClustering:
         """
 
         silOpt=-0.0001
-        keepfeat = np.nan
+        keepfeat = self.interface.num.nan
         decompOpt = None
         labsOpt = [0]*dataGlobal.dataset.loc[self.dataIx].shape[0]
-        cparmOpt = np.nan
+        cparmOpt = self.interface.num.nan
         neiOpt = dataGlobal.dataset.loc[self.dataIx].shape[0]
         if self.filterfeat in ['variance','MAD']:
             cutOpt = 1.0
@@ -881,7 +883,7 @@ class recursiveClustering:
                         cse=float(self._elbow(pj))
                         if self.metricC=='cosine':
                             hdbalgo='generic'
-                            pj=pj.astype(np.float64)
+                            pj=pj.astype(self.interface.num.float64)
 
                     parmvals.append([])
 
@@ -889,7 +891,7 @@ class recursiveClustering:
 
                     #if self.cparmrange=='guess':
 
-                        #self.cparmrange=self._guessEps(pj.sample(np.min([500,pj.shape[0]])))
+                        #self.cparmrange=self._guessEps(pj.sample(self.interface.num.min([500,pj.shape[0]])))
                         #self.cparmrange=self._guessParm(pj)
 
                     cparmrange=self.cparmrange
@@ -899,7 +901,7 @@ class recursiveClustering:
 
                     for cparm in cparmrange: #self.cparmrange
 
-                        logging.debug('Clustering parameter: {:.5f}'.format(cparm))
+                        logging.debug('Clustering parameter: {:.5f}'.format(self.interface.getValue(cparm)))
                 
                         labs = self._findClusters(pj, cparm, cse, hdbalgo)
 
@@ -956,12 +958,12 @@ class recursiveClustering:
         missing=[i for i,x in enumerate(pjOpt.index) if x not in labsOpt.index]
         #print(len(missing))
 
-        neigh=NN(n_neighbors=len(missing)+neiOpt, metric=self.metricM, n_jobs=-1)
+        neigh=self.interface.nNeighbor(n_neighbors=len(missing)+neiOpt, metric=self.metricM, n_jobs=-1)
         neigh.fit(pjOpt)
 
         kn=neigh.kneighbors(pjOpt.iloc[missing], return_distance=True)
-        kn=np.array([[x,y] for x,y in zip(kn[0],kn[1])])
-        mask=~np.isin(kn[:,1],missing)
+        kn=self.interface.num.array([[x,y] for x,y in zip(kn[0],kn[1])])
+        mask=~self.interface.num.isin(kn[:,1],missing)
         #TODO: make prettier
         newk=[[kn[i,0][mask[i]][1:neiOpt+1],kn[i,1][mask[i]][1:neiOpt+1]] for i in range(len(kn))]    
 
@@ -973,7 +975,7 @@ class recursiveClustering:
         tmplab.index=labsOpt.index 
 
         valals=[]   
-        for k in np.arange(len(newk)):
+        for k in self.interface.num.arange(len(newk)):
             vals=tmplab.loc[pjOpt.iloc[newk[k][1]].index].apply(lambda x: x/newk[k][0], axis=0)[1:]
             valals.append((vals.sum(axis=0)/vals.sum().sum()).values)
 
@@ -1014,9 +1016,10 @@ class recursiveClustering:
         logging.info('Samples #: {:d}'.format(dataGlobal.dataset.loc[self.dataIx].shape[0]))
         if self.dynmesh:
             if self.optimizer=='grid':
-                logging.info('Dynamic mesh active, number of grid points: {:d}'.format(self.neipoints[0]*self.ffpoints[0]))
+                logging.info('Dynamic mesh active, number of grid points: {:d}'.format(self.interface.getValue(self.neipoints[0]*self.ffpoints[0])))
             if self.optimizer=='de':
-                logging.info('Dynamic mesh active, number of candidates: {:d} and iterations: {:d}'.format(self.depop[0], self.deiter[0]))
+                logging.info('Dynamic mesh active, number of candidates: {:d} and iterations: {:d}'.format(self.interface.getValue(self.depop[0]), 
+                                self.interface.getValue(self.deiter[0])))
 
         if self.transform is not None:
             logging.info('Transform-only Samples #: {:d}'.format(len(self.transform)))
@@ -1028,30 +1031,30 @@ class recursiveClustering:
 
         if self.neirange == 'logspace':
             if self.neifactor>=1:
-                minbound=np.log10(np.sqrt(numpoints-1))
-                maxbound=np.log10(numpoints-1)
+                minbound=self.interface.num.log10(self.interface.num.sqrt(numpoints-1))
+                maxbound=self.interface.num.log10(numpoints-1)
             else:
-                minbound=np.log10(np.sqrt(numpoints*self.neifactor))
-                maxbound=np.log10(numpoints*self.neifactor)
+                minbound=self.interface.num.log10(self.interface.num.sqrt(numpoints*self.neifactor))
+                maxbound=self.interface.num.log10(numpoints*self.neifactor)
 
             """ Neighbours cap """
 
             if self.neicap is not None:
-                if minbound>np.log10(self.neicap):
-                    minbound=np.log10(self.neicap/10)
-                if maxbound>np.log10(self.neicap):
-                    maxbound=np.log10(self.neicap)
+                if minbound>self.interface.num.log10(self.neicap):
+                    minbound=self.interface.num.log10(self.neicap/10)
+                if maxbound>self.interface.num.log10(self.neicap):
+                    maxbound=self.interface.num.log10(self.neicap)
 
             """ Hard limit """
 
             if minbound < 1:
                 minbound = 1
 
-            nnrange = sorted([int(x) for x in np.logspace(
+            nnrange = sorted([int(x) for x in self.interface.num.logspace(
                 minbound, maxbound, num=self.neipoints[0])])
 
         elif self.neirange == 'sqrt':
-            nnrange = [int(np.sqrt(numpoints*self.neifactor))]
+            nnrange = [int(self.interface.num.sqrt(numpoints*self.neifactor))]
         else:
             nnrange=self.neirange
             if not isinstance(nnrange, list):
@@ -1078,7 +1081,7 @@ class recursiveClustering:
             logging.info('Running Differential Evolution...')
             
             #Note: this works as monodimensional DE, but may be slightly inefficient
-            bounds=[(np.min(self.ffrange),np.max(self.ffrange)),(np.min(nnrange),np.max(nnrange))]
+            bounds=[(self.interface.num.min(self.ffrange),self.interface.num.max(self.ffrange)),(self.interface.num.min(nnrange),self.interface.num.max(nnrange))]
             silOpt, labsOpt, cparmOpt, neiOpt, pjOpt, cutOpt, mapOpt, keepfeat, decompOpt, parmvals = \
             de._differentialEvolution(self._objectiveFunction, bounds, maxiter = self.deiter[0], popsize = self.depop[0], integers=[False, True], seed=self._seed)
 
@@ -1138,7 +1141,7 @@ class recursiveClustering:
         logging.info('\n=========== Optimization Results '+self._name+' ===========\n'+\
             'Features # Cutoff: {:.5f}'.format(cutOpt)+'\n'+\
             'Nearest neighbors #: {:d}'.format(neiOpt)+'\n'+\
-            'Clusters identification parameter: {:.5f}'.format(cparmOpt)+'\n'+\
+            'Clusters identification parameter: {:.5f}'.format(self.interface.getValue(cparmOpt))+'\n'+\
             'Clusters #: {:d}'.format(numClusOpt)+'\n')
 
         return silOpt, labsOpt, cparmOpt, numClusOpt, neiOpt, pjOpt, cutOpt, mapOpt, keepfeat, decompOpt, reassigned, parmvals
@@ -1226,11 +1229,11 @@ class recursiveClustering:
             if self.optimizer=='grid' and len(self.ffpoints)>1:
                 self.ffpoints=self.ffpoints[1:]
                 logging.info('Parameters granilarity change ' +
-                '[features filter: {:d}'.format((self.ffpoints[0]))+']')
+                '[features filter: {:d}'.format(self.interface.getValue(self.ffpoints[0]))+']')
             if self.optimizer=='grid' and len(self.neipoints)>1:
                 self.neipoints=self.neipoints[1:]
                 logging.info('Parameters granilarity change ' +
-                '[nearest neighbours: {:d}'.format((self.neipoints[0]))+']')
+                '[nearest neighbours: {:d}'.format(self.interface.getValue(self.neipoints[0]))+']')
             if self.optimizer=='de' and len(self.depop)>1:
                 self.depop=self.depop[1:]
                 logging.info('Parameters granilarity change ' +
