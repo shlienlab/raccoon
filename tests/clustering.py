@@ -5,7 +5,7 @@ F. Comitani     @2020
 
 #tmp workarond
 import sys
-sys.path.append(r'/Users/federico comitani/GitHub/raccoon')
+sys.path.append(r'/hpf/largeprojects/adam/projects/raccoon')
 
 import raccoon as rc
 import raccoon.utils.trees as trees
@@ -39,7 +39,7 @@ def load_test(data,loadPath,labels=None):
                     dynmesh=True, maxmesh=3, minmesh=3, fromfile=loadPath,
                     outpath='./outTest_load', savemap=True, debug=True) 
   
-    tree = trees.loadTree('./outTest_load/tree.json')
+    tree = trees.loadTree('./outTest_load/raccoonData/tree.json')
     
 
 def de_test(data,labels=None):
@@ -116,6 +116,20 @@ def trans_test(data,labels=None):
                     dynmesh=True, maxmesh=3, minmesh=3, 
                     outpath='./outTest_trans', savemap=True, debug=True) 
 
+
+def gpu_test(data,labels=None):
+
+    """ Clustering test, de cosine (will fall to euclidean)  with t-SVD on RAPIDS
+
+        Args:
+            data (pandas dataframe, matrix): input test dataframe
+            lebels (pandas series, array): input test labels
+    """
+
+    clusterMembership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1,
+                    filterfeat='tSVD', optimizer='de', metricC='cosine', metricM='cosine',
+                    dynmesh=True, maxmesh=3, minmesh=3, clusterer='HDBSCAN',
+                    outpath='./outTest_gpu', savemap=True, debug=True, gpu=True)
 
 if __name__ == "__main__":
 

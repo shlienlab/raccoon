@@ -15,6 +15,7 @@ import random
 import numpy as np
 import logging
 from decimal import Decimal, ROUND_HALF_UP
+from math import nan
 
 def _clamp(x, minVal, maxVal):
 
@@ -29,7 +30,7 @@ def _clamp(x, minVal, maxVal):
         (float): Clamped value.
     """
 
-    return np.max([np.min([maxVal, x]), minVal])
+    return max([min([maxVal, x]), minVal])
 
 def _tostring(x):
 
@@ -66,7 +67,6 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
     Returns:
         (list of floats): List of best parameters.
-    
     """
     
     if seed is not None:
@@ -80,9 +80,9 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
     #allparams={}
 
     population=[]
-    for i in np.arange(popsize):
+    for i in range(popsize):
         indv=[]
-        for j in np.arange(len(bounds)):
+        for j in range(len(bounds)):
             if integers is not None and integers[j]:
                 indv.append(random.randint(bounds[j][0],bounds[j][1]))
             else:
@@ -93,11 +93,11 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
     
     """ Run epochs. """
 
-    bestRes=[np.nan]*4
+    bestRes=[nan]*7
     bestScore=1e100
     bestHistory=[]
 
-    for i in np.arange(maxiter):
+    for i in range(maxiter):
 
         logging.debug('DE generation: {:d}'.format(i+1))
 
@@ -107,11 +107,11 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
         """ Cycle through the whole population. """
 
-        for j in np.arange(popsize):
+        for j in range(popsize):
 
             """ Create hybrid. """
             
-            candidIx=list(np.arange(popsize))
+            candidIx=list(range(popsize))
             candidIx.remove(j)
             candidIx=random.sample(candidIx, 3)
 
@@ -123,12 +123,12 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
             hybrid=[x-y for x, y in zip(agents[1], agents[2])]
             hybrid=[x + mutation * y for x, y in zip(agents[0], hybrid)]
-            hybrid=[_clamp(hybrid[k],bounds[k][0],bounds[k][1]) for k in np.arange(len(hybrid))]
+            hybrid=[_clamp(hybrid[k],bounds[k][0],bounds[k][1]) for k in range(len(hybrid))]
 
 
             """ Make sure integer parameters stay as such. """
 
-            for k in np.arange(len(bounds)):
+            for k in range(len(bounds)):
                     if integers is not None and integers[k]:
                         hybrid[k]=int(Decimal(str(hybrid[k])).to_integral_value(rounding=ROUND_HALF_UP))
             
@@ -188,7 +188,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 bestParam=population[j]     
 
         logging.debug('DE Generation '+str(i+1)+' Results ')
-        logging.debug('Average score: {:.5f}'.format(np.sum(scoresGen)/popsize))
+        logging.debug('Average score: {:.5f}'.format(sum(scoresGen)/popsize))
         logging.debug('Best score: {:.5f}'.format(bestScore))
         logging.debug('Best solution: ')
         logging.debug(bestParam)

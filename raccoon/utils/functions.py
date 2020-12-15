@@ -42,12 +42,13 @@ def _nearZeroVarDropAuto(data, thresh=0.99, type='variance'):
     return data.drop(data.columns[remove], axis=1)
 
 
-def _dropMinKDE(data, type='variance'):
+def _dropMinKDE(data, interface, type='variance'):
 
     """ Use kernel density estimation to guess the optimal cutoff for low-variance removal. 
 
     Args:
         data (pandas dataframe): Input pandas dataframe (samples as row, features as columns).
+        interface (obj): CPU/GPU numeric functions interface.
         type (string): measure of variability, to be chosen between
             variance ('variance') or median absolute deviation ('MAD').
 
@@ -58,21 +59,21 @@ def _dropMinKDE(data, type='variance'):
     elif type=='MAD':
         vVal = data.apply(mad,axis=0).values
 
-    x = np.arange(np.min(vVal), np.max(vVal),
-                  (np.max(vVal)-np.min(vVal))/100)
+    x = interface.num.arange(interface.num.amin(vVal), interface.num.amax(vVal),
+                  (interface.num.amax(vVal)-interface.num.amin(vVal))/100)
     kde = gaussian_kde(vVal, bw_method=None)
     y = kde.evaluate(x)
 
-    imax = argrelextrema(y, np.greater)[0]
-    imin = argrelextrema(y, np.less)[0]
+    imax = argrelextrema(y, interface.num.greater)[0]
+    imin = argrelextrema(y, interface.num.less)[0]
     cutoff = None
 
     """ Take the last min before abs max. """
 
-    absmax = np.argmax(y[imax])
+    absmax = interface.num.argmax(y[imax])
 
     if absmax > 0:
-        cutoff = x[np.max([xx for xx in imin if xx < imax[absmax]])]
+        cutoff = x[interface.num.amax([xx for xx in imin if xx < imax[absmax]])]
 
     if cutoff != None:
         cs = pd.Series(vVal, index=data.columns)
@@ -82,7 +83,7 @@ def _dropMinKDE(data, type='variance'):
     return data
 
 
-def _calcRPD(mh, labs, plot=True, name='rpd', path=""):
+def _calcRPD(mh, labs, interface, plot=True, name='rpd', path=""):
 
     """ Calculate and plot the relative pairwise distance (RPD) distribution for each cluster.
         See XXX for the definition.
@@ -91,6 +92,7 @@ def _calcRPD(mh, labs, plot=True, name='rpd', path=""):
     Args:
         mh (pandas dataframe): Dataframe containing reduced dimensionality data.
         labs (pandas series): Clusters memebership for each sample.
+        interface (obj): CPU/GPU numeric functions interface.
         plot (boolean): True to generate plot, saves the RPD values only otherwise.
         name (string): Name of output violin plot .png file.
 
@@ -110,13 +112,13 @@ def _calcRPD(mh, labs, plot=True, name='rpd', path=""):
 
     centroids=[]
     for i in set(labs.values):
-        centroids.append(mh.iloc[np.where(labs==i)].mean())
+        centroids.append(mh.iloc[interface.num.where(labs==i)].mean())
 
     centroids=pd.DataFrame(centroids, index=set(labs.values), columns=mh.columns)
     coscen=cosine_similarity(centroids)
     coscen=pd.DataFrame(coscen, index=set(labs.values), columns=set(labs.values))
     coscen=coscen.apply(lambda x: 1-x)
-    #np.fill_diagonal(coscen.values, 9999)
+    #interface.num.fill_diagonal(coscen.values, 9999)
 
     vals=[]
     for i in set(labs.values):
@@ -131,7 +133,7 @@ def _calcRPD(mh, labs, plot=True, name='rpd', path=""):
             """ take only the upper triangle (excluding the diagonal) of the matrix to avoid duplicates. """
 
             vals.append([x*1.0/coscen[i].loc[list(siblings)].min() for x in
-                matrix[np.triu_indices(matrix.shape[0],k=1)]])
+                matrix[interface.num.triu_indices(matrix.shape[0],k=1)]])
 
 
     with open(os.path.join(path,'raccoonData/rpd.pkl'), 'rb') as f:
@@ -148,7 +150,7 @@ def _calcRPD(mh, labs, plot=True, name='rpd', path=""):
         pickle.dump(cur_maps, f)
 
     if plot:
-        plotViolin(vals, name, path)
+        plotViolin(vals, interface, name, path)
 
     return vals
 
@@ -209,12 +211,13 @@ def setup(outpath=None, RPD=False):
                     format="%(asctime)-15s %(levelname)-8s %(message)s")
     logging.getLogger('matplotlib.font_manager').disabled = True
     
-def sigmoid(x,a=0,b=1):
+def sigmoid(x,interface,a=0,b=1):
 
     """ Sigmoid function
  
     Args:
         x (float): position at which to evaluate the function
+        interface (obj): CPU/GPU numeric functions interface.
         a (float): center parameter
         b (float): slope parameter
    
@@ -222,5 +225,5 @@ def sigmoid(x,a=0,b=1):
         (float): sigmoid function evaluated at position x
     """
 
-    return 1/(1+np.exp((x-a)*b))
+    return 1/(1+interface.num.exp((x-a)*b))
 

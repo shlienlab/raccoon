@@ -3,8 +3,9 @@ Set of standardized tests for RACCOON
 F. Comitani     @2020
 """
 from pathlib import Path
-import shutil
+import os, shutil
 from termcolor import colored
+import json
 
 import numpy as np
 import pandas as pd
@@ -23,9 +24,8 @@ def removeDir(path):
 
     dirpath=Path(path)
     if dirpath.exists() and dirpath.is_dir():
-        shutil.rmtree(dirpath)
-
-
+        shutil.rmtree(dirpath, ignore_errors=True)
+    
 class hidePrints:
 
     """ Temporarily hides standard outputs. """
@@ -57,21 +57,11 @@ def _createDataset():
 
     return pd.DataFrame(np.concatenate([x,x2])), pd.Series(np.concatenate([y,np.where(y2==0, 3, y2)]))
 
-
-to_run = {'grid':       True,
-          'load':       True,
-          'de':         True,
-          'auto':       True,
-          'tsvd':       True,
-          'high':       True,
-          'trans':      True,
-          'knn':        True,
-          'clean':      True
-          }
-
-
 if __name__ == "__main__":
 
+    jsonpath=os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(jsonpath,'testlist.json')) as testlist:
+        to_run=json.load(testlist)
 
     print('Running Tests...')
 
@@ -81,6 +71,10 @@ if __name__ == "__main__":
         print('Warning: k-NN and Load test can\'t be run without Grid test')
         to_run['knn'] = False
         to_run['load'] = False
+    
+    if to_run['gpu'] == False and (to_run['knn_gpu'] == True):
+        print('Warning: k-NN GPU can\'t be run without GPU test')
+        to_run['knn_gpu'] = False
 
     # """ Test Grid """
 
@@ -130,7 +124,7 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
 
 
-    # """ t-SVD Dimensions """
+    """ t-SVD Dimensions """
 
     if to_run['tsvd']:
         try:
@@ -142,7 +136,7 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
 
 
-    # """ Test High Dimensions """
+    """ Test High Dimensions """
 
     if to_run['high']:
         try:
@@ -153,7 +147,7 @@ if __name__ == "__main__":
             print('High-dimensionality Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
-    # """ Test Transform-only """
+    """ Test Transform-only """
 
     if to_run['trans']:
         try:
@@ -164,6 +158,19 @@ if __name__ == "__main__":
             print('Transform-only Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
+    """ Test GPU """
+
+    if to_run['gpu']:
+        try:
+            with hidePrints():
+                #Test the import
+                #to make sure rc doesn't just fall back to CPU in absence of RAPIDS
+                from cuml import UMAP
+                gpu_test(xx, labels = yy)
+            print('GPU Test:\t\t'+colored('PASSED', 'green'))
+        except Exception as e:
+            print('GPU Test:\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))
 
     """ Test k-NN """
 
@@ -176,6 +183,19 @@ if __name__ == "__main__":
             print('k-NN Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))        
 
+    """ Test k-NN with GPU """
+
+    if to_run['knn_gpu']:
+        try:
+            with hidePrints():
+                #Test the import
+                #to make sure rc doesn't just fall back to CPU in absence of RAPIDS
+                from cuml import UMAP
+                knn_gpu_test(xx, './outTest_gpu')
+            print('k-NN GPU Test:\t\t'+colored('PASSED', 'green'))
+        except Exception as e:
+            print('k-NN GPU Test:\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))        
 
     """ Clean up"""
 
@@ -190,5 +210,6 @@ if __name__ == "__main__":
         removeDir('./outTest_tsvd')
         removeDir('./outTest_high')
         removeDir('./outTest_trans')
+        removeDir('./outTest_gpu')
 
     print('All done!')

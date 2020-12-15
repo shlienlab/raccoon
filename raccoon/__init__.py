@@ -8,8 +8,8 @@ import os
 import sys
 import psutil
 
-import pickle
 import csv
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -222,7 +222,6 @@ class recursiveClustering:
 
         self.gpu = gpu
 
-
         """ Set up for CPU or GPU run """
 
         if self.gpu:
@@ -235,6 +234,19 @@ class recursiveClustering:
         if not self.gpu:
             self.interface=interface.interfaceCPU()
 
+        if self.gpu:
+            if self.clusterer != 'DBSCAN':
+                warnings.warn("Warning: only DBSCAN is available with RAPIDS, setting clusterer as DBSCAN!")
+                self.clusterer = 'DBSCAN'
+                if self.fromfile:
+                    warnings.warn("Warning: clusterer changed while loading paramiter file detected, results may be inconsistent!")
+
+            if self.metricM != 'euclidean' or self.metricC != 'euclidean':
+                warnings.warn("Warning: only euclidean is available with RAPIDS, setting metrics as euclidean!")
+                self.metricM = 'euclidean'
+                self.metricC = 'euclidean'
+                if self.fromfile:
+                    warnings.warn("Warning: metrics changed while loading paramiter file detected, results may be inconsistent!")
 
         """ Try to load parameters data """
 
@@ -249,6 +261,7 @@ class recursiveClustering:
 
                 self.optimizer = 'grid'
                 self.dynmesh = False
+                print('here weird')
                 
                 if self._name not in self.fromfile.index:
                     self.nnei=[]
@@ -290,12 +303,13 @@ class recursiveClustering:
 
         if self.dynmesh:
 
-            meshpoints=round(((self.maxmesh-1)*functions.sigmoid(self.interface.num.log(self.dataIx.shape[0]),a=self.interface.num.log(500),b=1)))+(self.minmesh)
+            meshpoints=self.interface.num.rint(((self.maxmesh-1)*functions.sigmoid(self.interface.num.log(self.dataIx.shape[0]),self.interface,a=self.interface.num.log(500),b=1)))+(self.minmesh)
 
-            if self.optimizer == 'auto' and meshpoints**2>25:
-                self.optimizer = 'de'
-            else:
-                self.optimizer = 'grid'
+            if self.optimizer == 'auto':
+                if meshpoints**2>25:
+                    self.optimizer = 'de'
+                else:
+                    self.optimizer = 'grid'
 
             if self.optimizer=='grid':
 
@@ -306,7 +320,7 @@ class recursiveClustering:
 
                 if self.minmesh<=3:
                     self.minmesh=4
-                    meshpoints=round(((self.maxmesh-1)*functions.sigmoid(self.interface.num.log(self.dataIx.shape[0]),a=self.interface.num.log(500),b=1)))+(self.minmesh)
+                    meshpoints=self.interface.num.rint(((self.maxmesh-1)*functions.sigmoid(self.interface.num.log(self.dataIx.shape[0]),self.interface,a=self.interface.num.log(500),b=1)))+(self.minmesh)
 
                 self.depop=meshpoints
                 self.deiter=meshpoints                
@@ -341,7 +355,7 @@ class recursiveClustering:
                 if self.filterfeat in ['variance','MAD']:
                     self.ffrange = [0.3,0.9]
                 if self.filterfeat=='tSVD':
-                    self.ffrange = [int(self.interface.num.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])),int(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9)]
+                    self.ffrange = [int(min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])),int(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9)]
 
         if self.optimizer=='grid':
             try:
@@ -356,7 +370,7 @@ class recursiveClustering:
                 if self.filterfeat in ['variance','MAD']:
                     self.ffrange = sorted([float(x) for x in self.interface.num.logspace(self.interface.num.log10(0.3), self.interface.num.log10(0.9), num=self.ffpoints[0])])
                 if self.filterfeat=='tSVD':
-                    self.ffrange = sorted([int(x) for x in self.interface.num.logspace(self.interface.num.log10(self.interface.num.min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), self.interface.num.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
+                    self.ffrange = sorted([int(x) for x in self.interface.num.logspace(self.interface.num.log10(min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), self.interface.num.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
 
         """ Setup logging """ 
 
@@ -369,6 +383,7 @@ class recursiveClustering:
             logging.getLogger().setLevel(logging.INFO)
             self._umapRs=None
             self._seed=None
+
 
     def _featuresRemoval(self, cutoff):
 
@@ -419,13 +434,13 @@ class recursiveClustering:
                 newData = dataGlobal.dataset.loc[self.dataIx] 
 
             if cutoff == 'kde':
-                newData=functions._dropMinKDE(newData, type=self.filterfeat)
+                newData=functions._dropMinKDE(newData, self.interface, type=self.filterfeat)
             else:
                 newData=functions._nearZeroVarDropAuto(newData,cutoff, type=self.filterfeat)
 
             
             logging.debug("Dropped Features #: " +
-                      '{:1.0f}'.format(self.interface.getValue(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1])))
+                      '{:1.0f}'.format(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1]))
 
             # Extra passage needed in case the transform data cut was applied        
             return dataGlobal.dataset.loc[self.dataIx][newData.columns], None
@@ -460,7 +475,7 @@ class recursiveClustering:
 
         """ Plot the score values obtained during the search """
         try:
-            plotting._plotScore(parmvals, self.cparmrange, 'scores_'+self._name, self.outpath)
+            plotting._plotScore(parmvals, self.cparmrange, self.interface, 'scores_'+self._name, self.outpath)
         except:
             logging.warning('Failed to plot clustering scores')
 
@@ -470,7 +485,7 @@ class recursiveClustering:
         if self.RPD:
             #WARNING: unstable
             try:
-                functions._calcRPD(proj, clusOpt, True, self._name, self.outpath) 
+                functions._calcRPD(proj, clusOpt, self.interface, True, self._name, self.outpath) 
             except:
                 logging.warning('RPD failed at step: '+self._name)
 
@@ -518,12 +533,12 @@ class recursiveClustering:
 
         """ Plot 2-dimensional umap of the optimal clusters. """
 
-        plotting.plotMap(proj, clusOpt, 'proj_clusters_'+self._name, self.outpath)
+        plotting.plotMap(proj, clusOpt, self.interface, 'proj_clusters_'+self._name, self.outpath)
 
         """ Plot the same 2-dimensional umap with labels if provided. """
 
         if self.lab is not None:
-            plotting.plotMap(proj, self.lab, 'proj_labels_'+self._name, self.outpath)
+            plotting.plotMap(proj, self.lab, self.interface, 'proj_labels_'+self._name, self.outpath)
 
         """ Plot the same 2-dimensional umap with transform only data if provided. """
 
@@ -531,7 +546,7 @@ class recursiveClustering:
             transflab=pd.Series('fit-transform',index=proj.index)
             transflab.loc[self.transform]='transform'
             #transflab.loc[set(self.transform).intersection(proj.index.values)]='transform'
-            plotting.plotMap(proj, transflab, 'proj_trans_'+self._name, self.outpath)
+            plotting.plotMap(proj, transflab, self.interface, 'proj_trans_'+self._name, self.outpath)
         
 
     def _binarize(self, labsOpt, minpop=10):
@@ -594,14 +609,15 @@ class recursiveClustering:
 
         if self.clusterer=='DBSCAN':
             ref=self._elbow(pj)
-            logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(self.interface.getValue(ref/50),
-                            self.interface.getValue(ref*1.5)))
+            logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(ref/50,ref*1.5))
+            #logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(self.interface.getValue(ref/50),
+            #                self.interface.getValue(ref*1.5)))
 
             return self.interface.num.arange(ref/50,ref*1.5,(ref*1.5-ref/50)/100.0)
 
         elif self.clusterer=='HDBSCAN':
-            minbound=self.interface.num.max([self.minclusize,int(self.interface.num.sqrt(pj.shape[0]/25))])
-            maxbound=self.interface.num.min([250,int(self.interface.num.sqrt(pj.shape[0]*2.5))])
+            minbound=self.interface.num.amax([self.minclusize,int(self.interface.num.sqrt(pj.shape[0]/25))])
+            maxbound=self.interface.num.amin([250,int(self.interface.num.sqrt(pj.shape[0]*2.5))])
             if minbound==maxbound:
                 maxbound=minbound+2
 
@@ -738,7 +754,7 @@ class recursiveClustering:
 
             #if self.cparmrange=='guess':
 
-                #self.cparmrange=self._guessEps(pj.sample(self.interface.num.min([500,pj.shape[0]])))
+                #self.cparmrange=self._guessEps(pj.sample(self.interface.num.amin([500,pj.shape[0]])))
             #    self.cparmrange=self._guessParm(pj)
 
             #TODO: check if better to update at every iteration
@@ -891,7 +907,7 @@ class recursiveClustering:
 
                     #if self.cparmrange=='guess':
 
-                        #self.cparmrange=self._guessEps(pj.sample(self.interface.num.min([500,pj.shape[0]])))
+                        #self.cparmrange=self._guessEps(pj.sample(self.interface.num.amin([500,pj.shape[0]])))
                         #self.cparmrange=self._guessParm(pj)
 
                     cparmrange=self.cparmrange
@@ -1016,10 +1032,9 @@ class recursiveClustering:
         logging.info('Samples #: {:d}'.format(dataGlobal.dataset.loc[self.dataIx].shape[0]))
         if self.dynmesh:
             if self.optimizer=='grid':
-                logging.info('Dynamic mesh active, number of grid points: {:d}'.format(self.interface.getValue(self.neipoints[0]*self.ffpoints[0])))
+                logging.info('Dynamic mesh active, number of grid points: {:d}'.format(self.neipoints[0]*self.ffpoints[0]))
             if self.optimizer=='de':
-                logging.info('Dynamic mesh active, number of candidates: {:d} and iterations: {:d}'.format(self.interface.getValue(self.depop[0]), 
-                                self.interface.getValue(self.deiter[0])))
+                logging.info('Dynamic mesh active, number of candidates: {:d} and iterations: {:d}'.format(self.depop[0], self.deiter[0]))
 
         if self.transform is not None:
             logging.info('Transform-only Samples #: {:d}'.format(len(self.transform)))
@@ -1081,9 +1096,10 @@ class recursiveClustering:
             logging.info('Running Differential Evolution...')
             
             #Note: this works as monodimensional DE, but may be slightly inefficient
-            bounds=[(self.interface.num.min(self.ffrange),self.interface.num.max(self.ffrange)),(self.interface.num.min(nnrange),self.interface.num.max(nnrange))]
+            bounds=[(min(self.ffrange),max(self.ffrange)),(min(nnrange),max(nnrange))]
+            #bounds=[(self.interface.num.amin(self.ffrange),self.interface.num.amax(self.ffrange)),(self.interface.num.amin(nnrange),self.interface.num.amax(nnrange))]
             silOpt, labsOpt, cparmOpt, neiOpt, pjOpt, cutOpt, mapOpt, keepfeat, decompOpt, parmvals = \
-            de._differentialEvolution(self._objectiveFunction, bounds, maxiter = self.deiter[0], popsize = self.depop[0], integers=[False, True], seed=self._seed)
+            de._differentialEvolution(self._objectiveFunction, bounds,  maxiter = self.deiter[0], popsize = self.depop[0], integers=[False, True], seed=self._seed)
 
             #DEPRECATED
             #bestParam = de._differentialEvolution(self._objectiveFunction, bounds, maxiter = self.deiter, popsize = self.depop, integers=[False, True])
@@ -1301,8 +1317,8 @@ def run(data, **kwargs):
 
     tree = None
     if obj.clusOpt is not None:
-        obj.clusOpt.to_hdf(os.path.join(kwargs['outpath'],'finalOutput.h5'),key='df')
-        tree = trees.buildTree(obj.clusOpt, outpath=kwargs['outpath'])
+        obj.clusOpt.to_hdf(os.path.join(kwargs['outpath'],'raccoonData/finalOutput.h5'),key='df')
+        tree = trees.buildTree(obj.clusOpt, outpath=os.path.join(kwargs['outpath'],'raccoonData/'))
 
     """ Log the total runtime and memory usage. """
 

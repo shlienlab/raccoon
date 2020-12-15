@@ -4,7 +4,6 @@ F. Comitani     @2020
 """
 
 import os
-import numpy as np
 from anytree import Node, LevelOrderGroupIter, Walker
 from anytree.importer import JsonImporter, DictImporter
 from anytree.exporter import JsonExporter

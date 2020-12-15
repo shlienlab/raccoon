@@ -214,8 +214,8 @@ class interfaceGPU(interface):
             (any): value of the input variable.
         """
         
-        return var.item()
-
+        #return var.item()
+        return var.get()
 
 if __name__ == "__main__":
 
