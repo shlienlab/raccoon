@@ -21,7 +21,6 @@ def buildTree(table, outpath=None):
     nodes=[]
     
     def findParent(name, lista=nodes):
-        #print(lista)
         parents = [l for l in lista if l.name == name[:-2]]
         parents.append(None)
         return parents[0]

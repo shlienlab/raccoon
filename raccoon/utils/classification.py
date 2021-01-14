@@ -7,7 +7,7 @@ import os
 import pickle
 import psutil
 
-import pandas as pd
+#import pandas as pd
 #from scipy.sparse import csr_matrix
 
 import logging
@@ -54,32 +54,32 @@ class knn:
             try:
                 self.interface=interface.interfaceGPU()
             except:
-                warnings.warn("Warning: no RAPIDS found, running on CPU instead.")
+                warnings.warn("No RAPIDS found, running on CPU instead.")
                 self.gpu=False
 
         if not self.gpu:
             self.interface=interface.interfaceCPU()
 
 
-        if not isinstance(data, pd.DataFrame):
+        if not isinstance(data, self.interface.df.DataFrame):
             try:
-                data=pd.DataFrame(data)
+                data=self.interface.df.DataFrame(data)
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data should be in a format that can be translated to pandas dataframe!')
                 raise
 
-        if not isinstance(oriData, pd.DataFrame):
+        if not isinstance(oriData, self.interface.df.DataFrame):
             try:
-                data=pd.DataFrame(oriData)
+                data=self.interface.df.DataFrame(oriData)
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data (original) should be in a format that can be translated to pandas dataframe!')
                 raise
 
-        if not isinstance(oriClust, pd.DataFrame):
+        if not isinstance(oriClust, self.interface.df.DataFrame):
             try:
-                data=pd.DataFrame(oriClust)
+                data=self.interface.df.DataFrame(oriClust)
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data (clusters) should be in a format that can be translated to pandas dataframe!')
@@ -172,7 +172,7 @@ class knn:
 
         names=[]
 
-        paramdata=pd.read_csv(os.path.join(self.refpath,'paramdata.csv'))
+        paramdata=self.interface.df.read_csv(os.path.join(self.refpath,'paramdata.csv'))
         paramdata['name']=paramdata['name'].str.strip('cluster ')
         paramdata=paramdata.set_index('name',drop=True)
 
@@ -201,7 +201,7 @@ class knn:
                 logging.debug('Nearest Neighbours #: {:d}'.format(nnei))
                 logging.debug('Clustering metric: '+metric)
 
-                if isinstance(genecut,pd.Index):
+                if isinstance(genecut,self.interface.df.Index):
                     
                     """ low variance filter """
 
@@ -211,8 +211,8 @@ class knn:
                 
                     """ tSVD """
                     #sparseMat=csr_matrix(self.data.values)
-                    #dfCut=pd.DataFrame(genecut.transform(sparseMat), index=self.data.index)
-                    dfCut=pd.DataFrame(genecut.transform(self.data.values), index=self.data.index)
+                    #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=self.data.index)
+                    dfCut=self.interface.df.DataFrame(genecut.transform(self.data.values), index=self.data.index)
 
 
 
@@ -222,9 +222,9 @@ class knn:
                 
                     """ Normalize data. """
 
-                    dfCut=pd.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
+                    dfCut=self.interface.df.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
 
-                proj=pd.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)                
+                proj=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)                
 
                 if names[-1]==self.root:
                     refDf=self.oriData
@@ -233,7 +233,7 @@ class knn:
                     refDf=self.oriData[self.oriClust[names[-1]]==1]
                     nextClust=self.oriClust[self.oriClust[names[-1]]==1][self.children[names[-1]]]
 
-                if isinstance(genecut,pd.Index):
+                if isinstance(genecut,self.interface.df.Index):
                     
                     """ low variance filter """
 
@@ -243,12 +243,12 @@ class knn:
                 
                     """ tSVD """
                     #sparseMat=csr_matrix(refDf.values)
-                    #dfCut=pd.DataFrame(genecut.transform(sparseMat), index=refDf.index)
-                    dfCut=pd.DataFrame(genecut.transform(refDf.values), index=refDf.index)
+                    #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=refDf.index)
+                    dfCut=self.interface.df.DataFrame(genecut.transform(refDf.values), index=refDf.index)
 
-                projRef=pd.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
+                projRef=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
 
-                projAll=pd.concat([proj,projRef],axis=0)
+                projAll=self.interface.df.concat([proj,projRef],axis=0)
                
                 neigh=self.interface.nNeighbor(n_neighbors=nnei, metric=metric, n_jobs=-1).fit(projAll)
                 kn=neigh.kneighbors(projAll, n_neighbors=len(projAll), return_distance=True)
@@ -269,11 +269,11 @@ class knn:
                     vals=nextClust.loc[projAll.iloc[newk[k][1]].index].apply(lambda x: x/newk[k][0], axis=0)[1:]
                     valals.append((vals.sum(axis=0)/vals.sum().sum()).values)
 
-                self.membership.append(pd.DataFrame(valals, index=proj.index, columns=nextClust.columns))     
+                self.membership.append(self.interface.df.DataFrame(valals, index=proj.index, columns=nextClust.columns))     
             
         if len(names)>0:
 
-            self.membership=pd.concat(self.membership,axis=1)
+            self.membership=self.interface.df.concat(self.membership,axis=1)
             self.membership=self.membership.reindex(columns=self.oriClust.columns)
             self.membership.fillna(0,inplace=True)
 

@@ -12,7 +12,6 @@ for global optimization over continuous spaces". Journal of Global Optimization.
 """
 
 import random
-import numpy as np
 import logging
 from decimal import Decimal, ROUND_HALF_UP
 from math import nan
@@ -147,7 +146,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
             #Note: keep the results for the best candidate so we don't have to recalculate them.
 
             if _tostring(target) not in allscores:
-                scoreTarget, labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals = lossFun(target)
+                scoreTarget, labs, epsOpt, pj, mapping, keepfeat, decomp = lossFun(target)
                 allscores[_tostring(target)]=scoreTarget
                 #allparams[_tostring(target)]=[labs, epsOpt, pj, keepfeat, decomp, parmvals]
             else:
@@ -156,7 +155,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 labs=None
 
             if _tostring(mutant) not in allscores:
-                scoreMutant, labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM = lossFun(mutant)
+                scoreMutant, labsM, epsOptM, pjM, mappingM, keepfeatM, decompM = lossFun(mutant)
                 allscores[_tostring(mutant)]=scoreMutant
                 #allparams[_tostring(mutant)]=[labsM, epsOptM, pjM, keepfeatM, decompM, parmvalsM]
             else:
@@ -166,7 +165,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
             if scoreMutant < scoreTarget:
                 population[j]=mutant
-                labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals = labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM
+                labs, epsOpt, pj, mapping, keepfeat, decomp = labsM, epsOptM, pjM, mappingM, keepfeatM, decompM
                 scoresGen.append(scoreMutant)
                 logging.debug('Candidate score: {:.5f}'.format(scoreMutant))  
                 logging.debug(mutant)
@@ -175,15 +174,14 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 logging.debug('Candidate score: {:.5f}'.format(scoreTarget))        
                 logging.debug(target)
         
-            """ A bit risky but the conditional should work as a safeguard """
-
+            # A bit risky but the conditional should work as a safeguard 
             if allscores[_tostring(population[j])]<bestScore:
                 
                 if labs is None:
                     raise ValueError("Oops, something went very wrong!")
                 
                 #bestRes=allparams[_tostring(population[j])]
-                bestRes=labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals
+                bestRes=labs, epsOpt, pj, mapping, keepfeat, decomp
                 bestScore=allscores[_tostring(population[j])]
                 bestParam=population[j]     
 
@@ -198,4 +196,13 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 logging.info('Tolerance reached < {:2e}'.format(tol))
                 break
 
-    return 1-bestScore, bestRes[0], bestRes[1], bestParam[1], bestRes[2], bestParam[0], bestRes[3], bestRes[4], bestRes[5], bestRes[6]
+    """ Reformat for optimization surface plitting. """
+    
+    #dumb format to improve
+    allscoresList = [[],[],[]]
+    for key,value in allscores.items():
+        allscoresList[2].append(1-value)
+        allscoresList[0].append(float(key.split('_')[0]))
+        allscoresList[1].append(int(key.split('_')[1]))
+    
+    return 1-bestScore, bestRes[0], bestRes[1], bestParam[1], bestRes[2], bestParam[0], bestRes[3], bestRes[4], bestRes[5], allscoresList
