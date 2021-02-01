@@ -12,34 +12,34 @@ for global optimization over continuous spaces". Journal of Global Optimization.
 """
 
 import random
-import numpy as np
 import logging
 from decimal import Decimal, ROUND_HALF_UP
+from math import nan
 
 def _clamp(x, minVal, maxVal):
 
     """ Force a number between bounds.
 
     Args:
-        x (float): Input value to be clamped.
-        minVal (float): Lower bound.
-        maxVal (float): Upper bound.
+        x (float): input value to be clamped.
+        minVal (float): lower bound.
+        maxVal (float): upper bound.
 
     Returns:
-        (float): Clamped value.
+        (float): clamped value.
     """
 
-    return np.max([np.min([maxVal, x]), minVal])
+    return max([min([maxVal, x]), minVal])
 
 def _tostring(x):
 
     """ Conbine a list of numbers into a single string with underscore as separator.
 
     Args:
-        x (list of floats): List of numbers to combine.
+        x (list of floats): list of numbers to combine.
 
     Returns:
-        (str): Combined string.
+        (str): combined string.
     """
 
     string=''
@@ -52,21 +52,20 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
     """ Basic Differential Evolution implementation.
 
     Args:
-        lossFun (function): Objective function; takes a set of parameters to be optimized and returns a single float value.
-        bounds (tuple): Minimum and maximum boundaries for the parameters to optimize.
-        integers (list of booleans or None): List with information on which parameters are integers,
+        lossFun (function): objective function; takes a set of parameters to be optimized and returns a single float value.
+        bounds (tuple): minimum and maximum boundaries for the parameters to optimize.
+        integers (list of booleans or None): list with information on which parameters are integers,
             if None (default) treat every parameter as float. 
-        popsize (int): Size of the candidate solutions population.
-        mutation (float): Scaling factor for the mutation step.
-        recombination (float): Recombination (crossover) rate.
+        popsize (int): size of the candidate solutions population.
+        mutation (float): scaling factor for the mutation step.
+        recombination (float): recombination (crossover) rate.
         maxiter (float): maximum number of generations.
         tol (float): solution improvement tolerance, 
             if after 3 generations the best solution is not improved by at least this value, stop the iteration.
         seed (int): seed for the random numbers generator.
 
     Returns:
-        (list of floats): List of best parameters.
-    
+        (list of floats): list of best parameters.
     """
     
     if seed is not None:
@@ -80,9 +79,9 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
     #allparams={}
 
     population=[]
-    for i in np.arange(popsize):
+    for i in range(popsize):
         indv=[]
-        for j in np.arange(len(bounds)):
+        for j in range(len(bounds)):
             if integers is not None and integers[j]:
                 indv.append(random.randint(bounds[j][0],bounds[j][1]))
             else:
@@ -93,11 +92,11 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
     
     """ Run epochs. """
 
-    bestRes=[np.nan]*4
+    bestRes=[nan]*7
     bestScore=1e100
     bestHistory=[]
 
-    for i in np.arange(maxiter):
+    for i in range(maxiter):
 
         logging.debug('DE generation: {:d}'.format(i+1))
 
@@ -107,11 +106,11 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
         """ Cycle through the whole population. """
 
-        for j in np.arange(popsize):
+        for j in range(popsize):
 
             """ Create hybrid. """
             
-            candidIx=list(np.arange(popsize))
+            candidIx=list(range(popsize))
             candidIx.remove(j)
             candidIx=random.sample(candidIx, 3)
 
@@ -123,12 +122,12 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
             hybrid=[x-y for x, y in zip(agents[1], agents[2])]
             hybrid=[x + mutation * y for x, y in zip(agents[0], hybrid)]
-            hybrid=[_clamp(hybrid[k],bounds[k][0],bounds[k][1]) for k in np.arange(len(hybrid))]
+            hybrid=[_clamp(hybrid[k],bounds[k][0],bounds[k][1]) for k in range(len(hybrid))]
 
 
             """ Make sure integer parameters stay as such. """
 
-            for k in np.arange(len(bounds)):
+            for k in range(len(bounds)):
                     if integers is not None and integers[k]:
                         hybrid[k]=int(Decimal(str(hybrid[k])).to_integral_value(rounding=ROUND_HALF_UP))
             
@@ -147,7 +146,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
             #Note: keep the results for the best candidate so we don't have to recalculate them.
 
             if _tostring(target) not in allscores:
-                scoreTarget, labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals = lossFun(target)
+                scoreTarget, labs, epsOpt, pj, mapping, keepfeat, decomp = lossFun(target)
                 allscores[_tostring(target)]=scoreTarget
                 #allparams[_tostring(target)]=[labs, epsOpt, pj, keepfeat, decomp, parmvals]
             else:
@@ -156,7 +155,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 labs=None
 
             if _tostring(mutant) not in allscores:
-                scoreMutant, labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM = lossFun(mutant)
+                scoreMutant, labsM, epsOptM, pjM, mappingM, keepfeatM, decompM = lossFun(mutant)
                 allscores[_tostring(mutant)]=scoreMutant
                 #allparams[_tostring(mutant)]=[labsM, epsOptM, pjM, keepfeatM, decompM, parmvalsM]
             else:
@@ -166,7 +165,7 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
 
             if scoreMutant < scoreTarget:
                 population[j]=mutant
-                labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals = labsM, epsOptM, pjM, mappingM, keepfeatM, decompM, parmvalsM
+                labs, epsOpt, pj, mapping, keepfeat, decomp = labsM, epsOptM, pjM, mappingM, keepfeatM, decompM
                 scoresGen.append(scoreMutant)
                 logging.debug('Candidate score: {:.5f}'.format(scoreMutant))  
                 logging.debug(mutant)
@@ -175,20 +174,19 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 logging.debug('Candidate score: {:.5f}'.format(scoreTarget))        
                 logging.debug(target)
         
-            """ A bit risky but the conditional should work as a safeguard """
-
+            # A bit risky but the conditional should work as a safeguard 
             if allscores[_tostring(population[j])]<bestScore:
                 
                 if labs is None:
                     raise ValueError("Oops, something went very wrong!")
                 
                 #bestRes=allparams[_tostring(population[j])]
-                bestRes=labs, epsOpt, pj, mapping, keepfeat, decomp, parmvals
+                bestRes=labs, epsOpt, pj, mapping, keepfeat, decomp
                 bestScore=allscores[_tostring(population[j])]
                 bestParam=population[j]     
 
         logging.debug('DE Generation '+str(i+1)+' Results ')
-        logging.debug('Average score: {:.5f}'.format(np.sum(scoresGen)/popsize))
+        logging.debug('Average score: {:.5f}'.format(sum(scoresGen)/popsize))
         logging.debug('Best score: {:.5f}'.format(bestScore))
         logging.debug('Best solution: ')
         logging.debug(bestParam)
@@ -198,4 +196,13 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
                 logging.info('Tolerance reached < {:2e}'.format(tol))
                 break
 
-    return 1-bestScore, bestRes[0], bestRes[1], bestParam[1], bestRes[2], bestParam[0], bestRes[3], bestRes[4], bestRes[5], bestRes[6]
+    """ Reformat for optimization surface plitting. """
+    
+    #dumb format to improve
+    allscoresList = [[],[],[]]
+    for key,value in allscores.items():
+        allscoresList[2].append(1-value)
+        allscoresList[0].append(float(key.split('_')[0]))
+        allscoresList[1].append(int(key.split('_')[1]))
+    
+    return 1-bestScore, bestRes[0], bestRes[1], bestParam[1], bestRes[2], bestParam[0], bestRes[3], bestRes[4], bestRes[5], allscoresList

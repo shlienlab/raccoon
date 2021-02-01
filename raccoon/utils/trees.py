@@ -4,25 +4,23 @@ F. Comitani     @2020
 """
 
 import os
-import numpy as np
 from anytree import Node, LevelOrderGroupIter, Walker
 from anytree.importer import JsonImporter, DictImporter
 from anytree.exporter import JsonExporter
 
 def buildTree(table, outpath=None):
    
-    """ Set up a anytree object with useful information on the hierarchy of identified classes
+    """ Set up a anytree object with useful information on the hierarchy of identified classes.
 
     Args:
         table (pandas dataframe): on-hot-encoded table of class membership
-        outpath (string): Path where output files will be saved.
+        outpath (string): path where output files will be saved.
    
     """
     
     nodes=[]
     
     def findParent(name, lista=nodes):
-        #print(lista)
         parents = [l for l in lista if l.name == name[:-2]]
         parents.append(None)
         return parents[0]
@@ -45,10 +43,10 @@ def buildTree(table, outpath=None):
                      
 def loadTree(file):
     
-    """ Load an anytree object saved as json
+    """ Load an anytree object saved as json.
 
     Args:
-        file (string): Path to input json file
+        file (string): path to input json file.
    
     """
 

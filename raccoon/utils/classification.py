@@ -7,18 +7,18 @@ import os
 import pickle
 import psutil
 
-import umap
-import pandas as pd
-import numpy as np
-from sklearn.neighbors import NearestNeighbors as NN
-from sklearn.decomposition import TruncatedSVD as tSVD
-from scipy.sparse import csr_matrix
+#import pandas as pd
+#from scipy.sparse import csr_matrix
 
 import logging
 import time
 
+import raccoon.interface as interface
+
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+
 
 class knn:
 
@@ -27,51 +27,67 @@ class knn:
 
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
 
-    def __init__(self, data, oriData, oriClust, refpath="./raccoonData/", outpath="", root='0', debug=False):
+    def __init__(self, data, oriData, oriClust, refpath="./raccoonData/", outpath="", root='0', debug=False, gpu=False):
 
         """ Initialize the the class.
 
         Args:
-            data (matrix or pandas dataframe): Input data in pandas dataframe-compatible format (samples as row, features as columns).
-            oriData (matrix or pandas dataframe): Original data clustered with RACCOON in pandas dataframe-compatible format (samples as row, features as columns).
-            oriClust (matrix or pandas dataframe): Original RACCOON output one-hot-encoded class membership in pandas dataframe-compatible format 
+            data (matrix or pandas dataframe): input data in pandas dataframe-compatible format (samples as row, features as columns).
+            oriData (matrix or pandas dataframe): original data clustered with RACCOON in pandas dataframe-compatible format (samples as row, features as columns).
+            oriClust (matrix or pandas dataframe): original RACCOON output one-hot-encoded class membership in pandas dataframe-compatible format 
                 (samples as row, classes as columns).
-            refpath (string): Path to the location where trained umap files (pkl) are stored (default, subdirectory racoonData of current folder).
-            outpath (string): Path to the location where outputs will be saved (default, save to the current folder).
-            root (string): Name of the root node, parent of all the classes within the first clustering leve. Needed to identify the appropriate pkl file (default 0)
-            debug (boolean): Specifies whether algorithm is run in debug mode (default is False).
+            refpath (string): path to the location where trained umap files (pkl) are stored (default, subdirectory racoonData of current folder).
+            outpath (string): path to the location where outputs will be saved (default, save to the current folder).
+            root (string): name of the root node, parent of all the classes within the first clustering leve. Needed to identify the appropriate pkl file (default 0).
+            debug (boolean): specifies whether algorithm is run in debug mode (default is False).
+            gpu (bool): activate GPU version (requires RAPIDS).
         """
 
 
         self.start_time = time.time()
 
-        if not isinstance(data, pd.DataFrame):
+        self.gpu = gpu
+
+        """ Set up for CPU or GPU run. """
+
+        if self.gpu:
             try:
-                data=pd.DataFrame(data)
+                self.interface=interface.interfaceGPU()
+            except:
+                warnings.warn("No RAPIDS found, running on CPU instead.")
+                self.gpu=False
+
+        if not self.gpu:
+            self.interface=interface.interfaceCPU()
+
+
+        if not isinstance(data, self.interface.df.DataFrame):
+            try:
+                data=self.interface.df.DataFrame(data)
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data should be in a format that can be translated to pandas dataframe!')
                 raise
 
-        if not isinstance(oriData, pd.DataFrame):
+        if not isinstance(oriData, self.interface.df.DataFrame):
             try:
-                data=pd.DataFrame(oriData)
+                data=self.interface.df.DataFrame(oriData)
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data (original) should be in a format that can be translated to pandas dataframe!')
                 raise
 
-        if not isinstance(oriClust, pd.DataFrame):
+        if not isinstance(oriClust, self.interface.df.DataFrame):
             try:
-                data=pd.DataFrame(oriClust)
+                data=self.interface.df.DataFrame(oriClust)
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data (clusters) should be in a format that can be translated to pandas dataframe!')
                 raise
 
 
-        self.oriData=oriData.astype(np.float)
-        self.data=data[self.oriData.columns].astype(np.float)
+        self.oriData=oriData.astype(self.interface.num.float)
+        self.data=data[self.oriData.columns].astype(self.interface.num.float)
         self.oriClust=oriClust
         self.refpath=refpath
         self.outpath=outpath
@@ -109,11 +125,11 @@ class knn:
         # and are not already ordered hierarchically
         # TODO: clean up
 
-        for i in np.arange(len(self.oriClust.columns)):
+        for i in range(len(self.oriClust.columns)):
             parent=self.oriClust.columns[i]
             parentIx=self.oriClust[self.oriClust[parent]==1].index
             self.children[parent]=[]
-            for j in np.arange(len(self.oriClust.columns)):
+            for j in range(len(self.oriClust.columns)):
                 if i!=j:
                     child=self.oriClust.columns[j]
                     childIx=self.oriClust[self.oriClust[child]==1].index
@@ -134,7 +150,7 @@ class knn:
         for child,parents in self.parents.items():
             if parents!=[]:
                 lengths=[self.oriClust[x].sum() for x in parents]
-                self.parents[child]=parents[lengths.index(np.min(lengths))]
+                self.parents[child]=parents[lengths.index(min(lengths))]
             else:
                 self.parents[child]=None
 
@@ -156,7 +172,7 @@ class knn:
 
         names=[]
 
-        paramdata=pd.read_csv(os.path.join(self.refpath,'paramdata.csv'))
+        paramdata=self.interface.df.read_csv(os.path.join(self.refpath,'paramdata.csv'))
         paramdata['name']=paramdata['name'].str.strip('cluster ')
         paramdata=paramdata.set_index('name',drop=True)
 
@@ -185,29 +201,30 @@ class knn:
                 logging.debug('Nearest Neighbours #: {:d}'.format(nnei))
                 logging.debug('Clustering metric: '+metric)
 
-                if isinstance(genecut,pd.Index):
+                if isinstance(genecut,self.interface.df.Index):
                     
-                    """ low variance filter """
+                    """ low information filter. """
 
                     dfCut=self.data[genecut]
                 
                 else:
                 
-                    """ tSVD """
-                    sparseMat=csr_matrix(self.data.values)
-                    dfCut=pd.DataFrame(genecut.transform(sparseMat), index=self.data.index)
+                    """ tSVD. """
+                    #sparseMat=csr_matrix(self.data.values)
+                    #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=self.data.index)
+                    dfCut=self.interface.df.DataFrame(genecut.transform(self.data.values), index=self.data.index)
 
 
 
-                if not np.isnan(norm):
+                if not self.interface.num.isnan(norm):
 
                     logging.debug('Norm: '+norm)
                 
                     """ Normalize data. """
 
-                    dfCut=pd.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
+                    dfCut=self.interface.df.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
 
-                proj=pd.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)                
+                proj=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)                
 
                 if names[-1]==self.root:
                     refDf=self.oriData
@@ -216,31 +233,30 @@ class knn:
                     refDf=self.oriData[self.oriClust[names[-1]]==1]
                     nextClust=self.oriClust[self.oriClust[names[-1]]==1][self.children[names[-1]]]
 
-                if isinstance(genecut,pd.Index):
+                if isinstance(genecut,self.interface.df.Index):
                     
-                    """ low variance filter """
+                    """ low information filter. """
 
                     dfCut=refDf[genecut]
                 
                 else:
                 
-                    """ tSVD """
-                    sparseMat=csr_matrix(refDf.values)
-                    dfCut=pd.DataFrame(genecut.transform(sparseMat), index=refDf.index)
+                    """ tSVD. """
+                    #sparseMat=csr_matrix(refDf.values)
+                    #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=refDf.index)
+                    dfCut=self.interface.df.DataFrame(genecut.transform(refDf.values), index=refDf.index)
 
-                projRef=pd.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
+                projRef=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
 
-                projAll=pd.concat([proj,projRef],axis=0)
-                
-                neigh=NN(nnei, metric=metric, n_jobs=-1)
-                neigh.fit(projAll)
-
-                kn=neigh.kneighbors(projAll, len(projAll), return_distance=True)
+                projAll=self.interface.df.concat([proj,projRef],axis=0)
+               
+                neigh=self.interface.nNeighbor(n_neighbors=nnei, metric=metric, n_jobs=-1).fit(projAll)
+                kn=neigh.kneighbors(projAll, n_neighbors=len(projAll), return_distance=True)
 
                 newk=[]
-                for i in np.arange(len(proj)):
+                for i in range(len(proj)):
                     newk.append([[],[]])
-                    tupl=[(x,y) for x,y in zip(kn[0][i],kn[1][i]) if y in np.arange(len(proj),len(projRef)+len(proj))]
+                    tupl=[(x,y) for x,y in zip(kn[0][i],kn[1][i]) if y in range(len(proj),len(projRef)+len(proj))]
                     for t in tupl:
                         newk[-1][0].append(t[0])
                         newk[-1][1].append(t[1])
@@ -249,15 +265,15 @@ class knn:
                     newk[k]=[newk[k][0][:nnei],newk[k][1][:nnei]]
                     
                 valals=[]   
-                for k in np.arange(len(newk)):
+                for k in range(len(newk)):
                     vals=nextClust.loc[projAll.iloc[newk[k][1]].index].apply(lambda x: x/newk[k][0], axis=0)[1:]
                     valals.append((vals.sum(axis=0)/vals.sum().sum()).values)
 
-                self.membership.append(pd.DataFrame(valals, index=proj.index, columns=nextClust.columns))     
+                self.membership.append(self.interface.df.DataFrame(valals, index=proj.index, columns=nextClust.columns))     
             
         if len(names)>0:
 
-            self.membership=pd.concat(self.membership,axis=1)
+            self.membership=self.interface.df.concat(self.membership,axis=1)
             self.membership=self.membership.reindex(columns=self.oriClust.columns)
             self.membership.fillna(0,inplace=True)
 

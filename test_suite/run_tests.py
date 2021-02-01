@@ -41,11 +41,11 @@ class hidePrints:
 
 def _createDataset():
 
-    """ Creates a dummy dataset for testing purposes 
+    """ Creates a dummy dataset for testing purposes. 
 
         Returns:
-            (matrix) cohordinates of dummy population
-            (array) cluster membership labels of dummy population
+            (matrix) cohordinates of dummy population.
+            (array) cluster membership labels of dummy population.
     
     """
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         print('Warning: k-NN GPU can\'t be run without GPU test')
         to_run['knn_gpu'] = False
 
-    # """ Test Grid """
+     """ Test Grid. """
 
     if to_run['grid']:
         try:
@@ -88,7 +88,7 @@ if __name__ == "__main__":
             print('Grid Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
-    # """ Test Load """
+    """ Test Load. """
 
     if to_run['load']:
         try:
@@ -101,7 +101,7 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
 
 
-    """ Test DE """
+    """ Test DE. """
 
     if to_run['de']:
         try:
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             print('DE Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
-    """ Test Auto """
+    """ Test Auto. """
 
     if to_run['auto']:
         try:
@@ -124,7 +124,7 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
 
 
-    """ t-SVD Dimensions """
+    """ Test t-SVD. """
 
     if to_run['tsvd']:
         try:
@@ -136,7 +136,7 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
 
 
-    """ Test High Dimensions """
+    """ Test High Dimensions. """
 
     if to_run['high']:
         try:
@@ -147,7 +147,7 @@ if __name__ == "__main__":
             print('High-dimensionality Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
-    """ Test Transform-only """
+    """ Test Transform-only. """
 
     if to_run['trans']:
         try:
@@ -158,7 +158,7 @@ if __name__ == "__main__":
             print('Transform-only Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
-    """ Test GPU """
+    """ Test GPU. """
 
     if to_run['gpu']:
         try:
@@ -172,7 +172,7 @@ if __name__ == "__main__":
             print('GPU Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
 
-    """ Test k-NN """
+    """ Test k-NN. """
 
     if to_run['knn']:
         try:
@@ -183,7 +183,7 @@ if __name__ == "__main__":
             print('k-NN Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))        
 
-    """ Test k-NN with GPU """
+    """ Test k-NN with GPU. """
 
     if to_run['knn_gpu']:
         try:
@@ -197,7 +197,7 @@ if __name__ == "__main__":
             print('k-NN GPU Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))        
 
-    """ Clean up"""
+    """ Clean up. """
 
     if to_run['clean']:
         
