@@ -21,12 +21,12 @@ def _clamp(x, minVal, maxVal):
     """ Force a number between bounds.
 
     Args:
-        x (float): Input value to be clamped.
-        minVal (float): Lower bound.
-        maxVal (float): Upper bound.
+        x (float): input value to be clamped.
+        minVal (float): lower bound.
+        maxVal (float): upper bound.
 
     Returns:
-        (float): Clamped value.
+        (float): clamped value.
     """
 
     return max([min([maxVal, x]), minVal])
@@ -36,10 +36,10 @@ def _tostring(x):
     """ Conbine a list of numbers into a single string with underscore as separator.
 
     Args:
-        x (list of floats): List of numbers to combine.
+        x (list of floats): list of numbers to combine.
 
     Returns:
-        (str): Combined string.
+        (str): combined string.
     """
 
     string=''
@@ -52,20 +52,20 @@ def _differentialEvolution(lossFun, bounds, integers=None, popsize=10, mutation=
     """ Basic Differential Evolution implementation.
 
     Args:
-        lossFun (function): Objective function; takes a set of parameters to be optimized and returns a single float value.
-        bounds (tuple): Minimum and maximum boundaries for the parameters to optimize.
-        integers (list of booleans or None): List with information on which parameters are integers,
+        lossFun (function): objective function; takes a set of parameters to be optimized and returns a single float value.
+        bounds (tuple): minimum and maximum boundaries for the parameters to optimize.
+        integers (list of booleans or None): list with information on which parameters are integers,
             if None (default) treat every parameter as float. 
-        popsize (int): Size of the candidate solutions population.
-        mutation (float): Scaling factor for the mutation step.
-        recombination (float): Recombination (crossover) rate.
+        popsize (int): size of the candidate solutions population.
+        mutation (float): scaling factor for the mutation step.
+        recombination (float): recombination (crossover) rate.
         maxiter (float): maximum number of generations.
         tol (float): solution improvement tolerance, 
             if after 3 generations the best solution is not improved by at least this value, stop the iteration.
         seed (int): seed for the random numbers generator.
 
     Returns:
-        (list of floats): List of best parameters.
+        (list of floats): list of best parameters.
     """
     
     if seed is not None:

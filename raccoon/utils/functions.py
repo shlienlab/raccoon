@@ -23,9 +23,9 @@ def _nearZeroVarDropAuto(data, interface, thresh=0.99, type='variance'):
 
     Args:
         
-        data (pandas dataframe): Input pandas dataframe (samples as row, features as columns).
+        data (pandas dataframe): input pandas dataframe (samples as row, features as columns).
         interface (obj): CPU/GPU numeric functions interface.
-        thresh (float): Percentage threshold for the cumulative variance/MAD.
+        thresh (float): percentage threshold for the cumulative variance/MAD.
         type (string): measure of variability, to be chosen between
             variance ('variance') or median absolute deviation ('MAD').
     """
@@ -51,7 +51,7 @@ def _dropMinKDE(data, interface, type='variance'):
     """ Use kernel density estimation to guess the optimal cutoff for low-variance removal. 
 
     Args:
-        data (pandas dataframe): Input pandas dataframe (samples as row, features as columns).
+        data (pandas dataframe): input pandas dataframe (samples as row, features as columns).
         interface (obj): CPU/GPU numeric functions interface.
         type (string): measure of variability, to be chosen between
             variance ('variance') or median absolute deviation ('MAD').
@@ -63,8 +63,10 @@ def _dropMinKDE(data, interface, type='variance'):
     elif type=='MAD':
         vVal = data.apply(mad,axis=0).values
 
-    x = interface.num.arange(interface.num.amin(vVal), interface.num.amax(vVal),
-                  (interface.num.amax(vVal)-interface.num.amin(vVal))/100)
+    #x = interface.num.arange(interface.num.amin(vVal), interface.num.amax(vVal),
+    #              (interface.num.amax(vVal)-interface.num.amin(vVal))/100)
+    x = interface.num.linspace(interface.num.amin(vVal), interface.num.amax(vVal),
+                  100)
     kde = gaussian_kde(vVal, bw_method=None)
     y = kde.evaluate(x)
 
@@ -94,14 +96,14 @@ def _calcRPD(mh, labs, interface, plot=True, name='rpd', path=""):
         DEPRECATED: UNSTABLE, only works with cosine.
 
     Args:
-        mh (pandas dataframe): Dataframe containing reduced dimensionality data.
-        labs (pandas series): Clusters memebership for each sample.
+        mh (pandas dataframe): dataframe containing reduced dimensionality data.
+        labs (pandas series): clusters memebership for each sample.
         interface (obj): CPU/GPU numeric functions interface.
         plot (boolean): True to generate plot, saves the RPD values only otherwise.
-        name (string): Name of output violin plot .png file.
+        name (string): name of output violin plot .png file.
 
     Returns:
-        vals (array of arrays of floats): Each internal array represents the RPD values of the corresponding cluster #
+        vals (array of arrays of floats): each internal array represents the RPD values of the corresponding cluster #.
 
     """
 
@@ -168,7 +170,7 @@ def setup(outpath=None, RPD=False):
         If such folders are already present in the path, delete them.
  
     Args:
-        outpath (string): Path where output files will be saved.
+        outpath (string): path where output files will be saved.
    
     """
 

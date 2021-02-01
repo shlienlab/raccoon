@@ -11,7 +11,6 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-#TODO: make seaborn optional
 import seaborn as sns
 sns.set_style("darkgrid")
 
@@ -19,17 +18,20 @@ class Palettes:
 
     nupal=['#247ba0','#70c1b3','#b2dbbf','#f3ffbd','#ff7149']
     nupalmap=LinearSegmentedColormap.from_list('my_list', nupal, N=1000)
+    
+    midpal=['#F8B195','#F67280','#C06C84','#6C5B7B','#355C7D'][::-1]
+    midpalmap=LinearSegmentedColormap.from_list('my_list', midpal, N=1000)
 
 def _plotScore(scores, parmOpt, xlab, name='./scores.png', path=""):
 
-    """ Plot optimization score through iterations and hilights the optimal choice..
+    """ Plot optimization score through iterations and hilights the optimal choice.
 
     Args:
         scores (list of float): list of scores through the clustering parameter iterations.
         parmOpt (float): optimal parameter.
         xname (string): x axis label.
-        name (string): Name of resulting .png file.
-        path (string): Path where output pictures should be saved.
+        name (string): name of resulting .png file.
+        path (string): path where output pictures should be saved.
     """
 
     fig=plt.figure(figsize=(8,4))
@@ -40,7 +42,7 @@ def _plotScore(scores, parmOpt, xlab, name='./scores.png', path=""):
 
     plt.tick_params(labelsize=15)
     plt.ylim([-1.1,1.1])
-    plt.yticks(np.arange(-1,1.1,.25),np.arange(-1,1.1,.25))
+    plt.yticks(np.linspace(-1,1,9),np.linspace(-1,1,9))
     plt.xlabel(xlab, fontsize=20)
     plt.ylabel('Silhouette score', fontsize=20)
     plt.tight_layout()
@@ -64,16 +66,12 @@ def _plotScoreSurf(scores, parmOpt, name='./scores_surf.png', path=""):
     fig=plt.figure(figsize=(9,8))
     ax=plt.gca()
 
-    print(scores[0])
-    print(scores[1])
-    print(scores[2])
-
-    plt.tricontourf(scores[0], scores[1], scores[2], zorder=0, cmap=Palettes.nupalmap, levels=np.arange(0,1.1,.1), vmin=0, vmax=1., extend='min')
+    plt.tricontourf(scores[0], scores[1], scores[2], zorder=0, cmap=Palettes.midpalmap, levels=np.linspace(0,1,11), vmin=0, vmax=1., extend='min')
     cbar = plt.colorbar()
     cbar.set_label(r'Silhouette score', fontsize=20)
     cbar.ax.tick_params(size=0)
-    cbar.set_ticks(np.arange(0,1.1,.1))
-    cbar.ax.set_yticklabels(['{:.1f}'.format(x) for x in np.arange(0,1.1,.1)], fontsize=15)
+    cbar.set_ticks(np.linspace(0,1,11))
+    cbar.ax.set_yticklabels(['{:.1f}'.format(x) for x in np.linspace(0,1,11)], fontsize=15)
 
     for i in range(len(scores[0])):
         if scores[0]!=parmOpt:
@@ -103,9 +101,9 @@ def _plotCut(df, df_cut, name='./geneCut.png', path=""):
     """ Plot variance distributions before and after of the low-variance removal step.
 
     Args:
-        df (pandas dataframe): Original data before cutting low variance columns.
-        df_cut (pandas dataframe): Data after cutting low variance columns.
-        name (string): Name of resulting .png file.
+        df (pandas dataframe): original data before cutting low variance columns.
+        df_cut (pandas dataframe): data after cutting low variance columns.
+        name (string): name of resulting .png file.
 
     """
 
@@ -141,9 +139,9 @@ def plotViolin(vals,  name='./rpdd.png', path=""):
     """ Generate a set of separate violin plot from given values.
 
     Args:
-       vals (array of arrays of floats): Each internal array contains the values of a single violin plot.
-       name (string): Name of output plot .png file.
-       path (string): Path where output pictures should be saved.
+       vals (array of arrays of floats): each internal array contains the values of a single violin plot.
+       name (string): name of output plot .png file.
+       path (string): path where output pictures should be saved.
     """
 
     fig, ax = plt.subplots(1, len(vals), figsize=((len(vals)*2+1),5), sharey=False)
@@ -177,9 +175,9 @@ def plotMap(df, labels, name='./projection.png', path=""):
 
     Args:
         df (pandas dataframe): 2d input data. 
-        labels (series): Label for each sample.
-        name (string): Name of output plot .png file.
-        path (string): Path where output pictures should be saved.
+        labels (series): label for each sample.
+        name (string): name of output plot .png file.
+        path (string): path where output pictures should be saved.
     """
     
 

@@ -35,8 +35,6 @@ packages and their inherited dependencies:
 
    - scikit-learn
    - umap-learn
-   - hdbscan
-
 
 For a full list see :code:`requirements.txt`
 

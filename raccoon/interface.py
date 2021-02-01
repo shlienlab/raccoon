@@ -194,7 +194,7 @@ class interfaceCPU(interface):
             (int): silhouette score on given points.
         """
 
-        return sis(points, labels, **kwargs)
+        return self.sis(points, labels, **kwargs)
     
     def getValue(self, var, pandas=False):
 
@@ -333,7 +333,7 @@ class interfaceGPU(interface):
             (obj): encoder object.
         """
 
-        return self.ohe(sparse=False, **kwargs)
+        return self.ohe(**kwargs)
 
     def silhouette(self, points, labels, **kwargs): 
         

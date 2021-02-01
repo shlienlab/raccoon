@@ -11,9 +11,6 @@ import psutil
 import csv
 import pickle
 
-#TODO: make it optional
-from hdbscan import HDBSCAN
-
 import logging
 import time
 
@@ -22,9 +19,19 @@ import raccoon.utils.functions as functions
 import raccoon.utils.trees as trees
 import raccoon.utils.de as de
 import raccoon.utils.classification 
+from raccoon.utils.option import optionalImports
 import raccoon.interface as interface
 
+""" Search for optional libraries.  """
+
+try:
+    import hdbscan as HDBSCAN
+    optionalImports.hdbscan = True
+except:
+    pass
+
 """ Suppress UMAP and numpy warnings. """
+
 import warnings
 import numba
 
@@ -33,6 +40,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=numba.errors.NumbaPerformanceWarning)
 
 __version__ = "0.3.0"
+
 
 class dataGlobal:
 
@@ -49,36 +57,36 @@ class recursiveClustering:
     """ To perform recursive clustering on a samples x features matrix. """
 
     def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
-        neicap=None, metricMap='cosine', metricClu='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
-        ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=30, minmesh=4,
+        neicap=250, metricMap='cosine', metricClu='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
+        ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=20, minmesh=4,
         clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', fromfile=None, #resume=False,
         name='0', debug=False, maxdepth=None, savemap=False, RPD=False, outpath="", depth=-1, gpu=False, _user=True):
 
         """ Initialize the the class.
 
         Args:
-            data (matrix, pandas dataframe or pandas index): If first call (_user==True), input data in pandas dataframe-compatible format (samples as row, features as columns),
+            data (matrix, pandas dataframe or pandas index): if first call (_user==True), input data in pandas dataframe-compatible format (samples as row, features as columns),
                 otherwise index of samples to carry downstream during the recursion calls.
-            lab (list, array or pandas series): List of labels corresponding to each sample (for plotting only).
-            transform (list of Pandas DataFrame indices): List of indices of the samples in the initial matrix that should be transformed-only 
+            lab (list, array or pandas series): list of labels corresponding to each sample (for plotting only).
+            transform (list of Pandas DataFrame indices): list of indices of the samples in the initial matrix that should be transformed-only 
                 and not used for training the dimensionality reduction map.
-            dim (integer): Number of dimensions of the target projection (default 2).
-            epochs (integer): Number of UMAP epochs.
+            dim (integer): number of dimensions of the target projection (default 2).
+            epochs (integer): number of UMAP epochs.
             lr (float): UMAP learning rate.
-            neirange (array, list of integers or string): List of nearest neighbors values to be used in the search;
+            neirange (array, list of integers or string): list of nearest neighbors values to be used in the search;
                 if 'logspace' take an adaptive range based on the dataset size at each iteration with logarithmic spacing (reccomended),
                 if 'sqrt' always take the sqare root of the number of samples.
                 if 'quartsqrt' always take the sqare root of half the number of samples (ideal for extremely large datasets).
-            neipoints (int or list of int): Number of grid points for the neighbors search,  
+            neipoints (int or list of int): number of grid points for the neighbors search,  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted, 
                 (works only with neirange='logspace' default 25).
-            neifactor (float): Scaling factor for 'logspace' and 'sqrt' selections in neirange
-            neicap (int): Maximum number of neighbours (reccomended with low-memory systems).
-            metricMap (string): Metric to be used in UMAP distance calculations (default cosine).
-            metricClu (string): Metric to be used in clusters identification and Clustering score calculations (default euclidean)
+            neifactor (float): scaling factor for 'logspace' and 'sqrt' selections in neirange
+            neicap (int): maximum number of neighbours (reccomended with low-memory systems, default=250).
+            metricMap (string): metric to be used in UMAP distance calculations (default cosine).
+            metricClu (string): metric to be used in clusters identification and Clustering score calculations (default euclidean)
                 Warning: cosine does not work with HDBSCAN, normalize to 'l2' and use 'euclidean' instead.
-            popcut (integer): Minimum number of samples for a cluster to be considered valid (default 50).
-            filterfeat (string): Set the method to filter features in preprocessing;
+            popcut (integer): minimum number of samples for a cluster to be considered valid (default 50).
+            filterfeat (string): set the method to filter features in preprocessing;
                 if 'variance' remove low variance genes
                 if 'MAD' remove low median absolute deviation genes
                 if 'tSVD' use truncated single value decomposition (LSA)
@@ -89,24 +97,26 @@ class recursiveClustering:
                 if filterfeat=='tSVD', values for the number of output compontents search;
                 if 'logspace' (default) take a range between number of features times .3 and .9 with logarithmic spacing 
                     (reccomended, will take the extremes if optimizer=='de')
-            ffpoins (int or list of int): Number of grid points for the feature removal cutoff search  
+            ffpoins (int or list of int): number of grid points for the feature removal cutoff search  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted, 
                 (works only with ffrange='logspace', default 25).
-            optimizer (string): Choice of parameters optimizer, can be either 'grid' for grid search, 'de' for differential evolution, or 'auto' for automatic 
+            optimizer (string): choice of parameters optimizer, can be either 'grid' for grid search, 'de' for differential evolution, or 'auto' for automatic 
                 (default is 'grid'). Automatic will chose between grid search and DE depending on the number of grid points (de if >25), works only if dynmesh is True.
-            depop (int or list of int): Size of the candidate solutions population in differential evolution  
+            depop (int or list of int): size of the candidate solutions population in differential evolution  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted
                 (works only with optimizer='de', default 10).
-            deiter (int or list of int): Maximum number of iterations of differential evolution  
+            deiter (int or list of int): maximum number of iterations of differential evolution  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted
                 (works only with optimizer='de', default 10).
             score (string): objective function of the optimization (default 'silhouette').    
             norm (string): normalization factor before dimensionality reduction (default None), not needed if metricMap is cosine
-                if None, don't normalize.`1
-            dynmesh (bool): If true, adapt the number of mesh points (candidates and iteration in DE) to the population, overrides neipoints, depop, deiter and ffpoints (default false)
-            maxmesh (int): maximum number of points for the dynmesh option (hit at 50 samples, default 30)
-            minmesh (int): minimum number of points for the dynmesh option (hit at 10000 samples, default 4, must be >3 if optimizer='de')
-            clusterer (string): selects which algorithm to use for clusters identification. Choose between 'DBSCAN' (default) or HDBSCAN
+                if None, don't normalize.
+            dynmesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE) to the population, overrides neipoints, depop, deiter and ffpoints (default false).
+            maxmesh (int): maximum number of points for the dynmesh option (hit at 10000 samples, default 20),
+                this is a single dimension, the actuall mesh will contain n*n points.
+            minmesh (int): minimum number of points for the dynmesh option (hit at 50 samples, default 4, must be >3 if optimizer='de'),
+                this is a single dimension, the actuall mesh will contain n*n points.
+            clusterer (string): selects which algorithm to use for clusters identification. Choose between 'DBSCAN' (default) or HDBSCAN.
             cparmrange (array, list) or string: clusters identification parameter range to be explored (default 'guess'). 
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it by the elbow method);
                 When 'HDBSCAN' this corresponds to the minimum number of samples required by the clusters (if 'guess' adapts it on the 
@@ -114,24 +124,25 @@ class recursiveClustering:
             minclusize (int): minimum number of samples in a cluster used in DBSCAN and HDBSCAN (default is 10).  
             outliers (string): selects how to deal with outlier points in the clusters assignment
                 if 'ignore' discard them
-                if 'reassign' try to assign them to other clusters with knn if more than 10% of the total population was flagged 
+                if 'reassign' try to assign them to other clusters with knn if more than 10% of the total population was flagged. 
             fromfile (string): path to parmdata.csv file to load, if active it will overwrite all other selections to follow the loaded parameters, unless resume is active.
             resume (bool): if True, resume the search from a previous run (works only if fromfile is provided).
-            name (string): Name of current clustering level (should be left as default, '0', unless continuing from a previous run).
-            debug (boolean): Specifies whether algorithm is run in debug mode (default is False).
+            name (string): name of current clustering level (should be left as default, '0', unless continuing from a previous run).
+            debug (boolean): specifies whether algorithm is run in debug mode (default is False).
             maxdepth (int): Specify the maximum number of recursion iterations, if None (default), keep going while possible. 
                 0 stops the algorithm immediately, 1 stops it after the first level.
-            savemap (boolean): If active, saves the trained maps to disk (default is False). Needed to run the k-NN classifier.
-            RPD (boolean): Specifies whether to save RPD distributions for each cluster (default is False). Warning: this option is unstable
+            savemap (boolean): if active, saves the trained maps to disk (default is False). Needed to run the k-NN classifier.
+            RPD (boolean): specifies whether to save RPD distributions for each cluster (default is False). Warning: this option is unstable
                 and not reccomended.
-            outpath (string): Path to the location where outputs will be saved (default, save to the current folder).
-            depth (integer): Current depth of recursion (should be left as default, -1, unless continuing from a previous run).
+            outpath (string): path to the location where outputs will be saved (default, save to the current folder).
+            depth (integer): current depth of recursion (should be left as default, -1, unless continuing from a previous run).
             gpu (bool): Activate GPU version (requires RAPIDS).
-            _user (bool): Active switch to separate initial user input versus recursion calls, do not change.
+            _user (bool): active switch to separate initial user input versus recursion calls, do not change.
         """
 
-        """ Set up for CPU or GPU run """
+        """ Set up for CPU or GPU run. """
 
+        
         self.gpu = gpu
 
         if self.gpu:
@@ -224,7 +235,7 @@ class recursiveClustering:
         self.fromfile = fromfile
         #self.resume = resume
 
-        """ CPU vs GPU methods check """
+        """ CPU vs GPU methods check. """
 
         if self.gpu:
             if self.clusterer != 'DBSCAN':
@@ -240,7 +251,7 @@ class recursiveClustering:
                 if self.fromfile:
                     warnings.warn("Metrics changed while loading paramiter file detected, results may be inconsistent!")
 
-        """ Try to load parameters data """
+        """ Try to load parameters data. """
 
         if self.fromfile is not None:
 
@@ -275,7 +286,7 @@ class recursiveClustering:
                 sys.exit('ERROR: there was a problem loading the parameters file.')
                 raise
 
-        """ Checks on optimizer choice """        
+        """ Checks on optimizer choice. """        
 
         if self.optimizer not in ['grid','de', 'auto']:
             sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search, \'de\' for Differential Evolution or \'auto\' for automatic selection.')
@@ -290,7 +301,17 @@ class recursiveClustering:
             self.optimizer = 'grid'
             warnings.warn('Optimizer \'auto\' works only if dynamic mesh is active, falling to Grid Search')
 
-        """ Evaluate parameters granularity options """
+
+        """ Checks optional modules. """
+
+        if self.clusterer == 'HDBSCAN' and not optionalImports.hdbscan:
+
+            warnings.warn("HDBSCAN not found, setting clusterer as DBSCAN!")
+            self.clusterer = 'DBSCAN'
+            if self.fromfile:
+                warnings.warn("Clusterer changed while loading paramiter file detected, results may be inconsistent!")
+
+        """ Evaluate parameters granularity options. """
 
         if self.dynmesh:
 
@@ -363,7 +384,7 @@ class recursiveClustering:
                 if self.filterfeat=='tSVD':
                     self.ffrange = sorted([int(x) for x in self.interface.num.logspace(self.interface.num.log10(min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), self.interface.num.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
 
-        """ Setup logging """ 
+        """ Setup logging. """ 
 
         if self.debug:
             logging.getLogger().setLevel(logging.DEBUG)
@@ -454,13 +475,13 @@ class recursiveClustering:
         """ Produce a number of plots to visualize the clustering outcome at each stage of the recursion.
 
         Args:
-            nNei (integer): Optimal number of nearest neighbors (used in UMAP) that was found through grid search.
-            proj (pandas dataframe of floats): Optimal reduced dimensionality data matrix. 
-            cutOpt (int or float): Optimal features removal cutoff.
-            keepfeat (pandas index): Set of genes kept after low /MAD removal, nan if tSVD.
+            nNei (integer): optimal number of nearest neighbors (used in UMAP) that was found through grid search.
+            proj (pandas dataframe of floats): optimal reduced dimensionality data matrix. 
+            cutOpt (int or float): optimal features removal cutoff.
+            keepfeat (pandas index): set of genes kept after low /MAD removal, nan if tSVD.
             decomposer (tsvd object): trained tsvd instance.
-            clusOpt (pandas series): Cluster membership series.
-            scoreslist (list of float): List of all scores evaluated and their parameters. 
+            clusOpt (pandas series): cluster membership series.
+            scoreslist (list of float): list of all scores evaluated and their parameters. 
 
         """
 
@@ -554,7 +575,8 @@ class recursiveClustering:
         if not isinstance(labsOpt,self.interface.df.DataFrame):
             labsOpt=self.interface.df.DataFrame(labsOpt)
 
-        ohe = self.interface.oneHot()
+        #cuml no sparse yet, bug inherited by cupy
+        ohe = self.interface.oneHot(sparse=False)
         ohe.fit(labsOpt)
        
         tmplab = self.interface.df.DataFrame(ohe.transform(labsOpt), columns=self.interface.getValue(ohe.categories_[0])).astype(int)
@@ -576,7 +598,7 @@ class recursiveClustering:
         """ Estimates the point of flex of a pairwise distances plot.
 
         Args:
-            pj (pandas dataframe): Projection of saxmples in the low-dimensionality space obtained with UMAP.
+            pj (pandas dataframe): projection of saxmples in the low-dimensionality space obtained with UMAP.
 
         Returns:
             (float): elbow value.
@@ -604,14 +626,14 @@ class recursiveClustering:
         """ Estimate a range for the clustering identification parameter.
 
         Args:
-            pj (pandas dataframe): Projection of saxmples in the low-dimensionality space obtained with UMAP.
+            pj (pandas dataframe): projection of saxmples in the low-dimensionality space obtained with UMAP.
 
         Returns:
             (numpy range): estimated range.
         """
 
-        """ Use pariwise knn distances elbow method for DBSCAN;
-            Take the square root of the total population for HDBSCAN"""
+        """ Use pairwise knn distances elbow method for DBSCAN;
+            Take the square root of the total population for HDBSCAN."""
 
         if self.clusterer=='DBSCAN':
             ref=self._elbow(pj)
@@ -619,7 +641,7 @@ class recursiveClustering:
             #logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(self.interface.getValue(ref/50),
             #                self.interface.getValue(ref*1.5)))
 
-            return self.interface.num.arange(ref/50,ref*1.5,(ref*1.5-ref/50)/100.0)
+            return self.interface.num.linspace(ref/50,ref*1.5,100)
 
         elif self.clusterer=='HDBSCAN':
             minbound=self.interface.num.amax([self.minclusize,int(self.interface.num.sqrt(pj.shape[0]/25))])
@@ -628,12 +650,11 @@ class recursiveClustering:
                 maxbound=minbound+2
 
             step=int((maxbound-minbound)/50)
-            if step<1:
-                step=1
+            if step<1: step=1
             logging.debug('Minimum samples range guess: [{:d},{:d}] with a {:d} point(s) step'.format(self.interface.getValue(minbound), 
                             self.interface.getValue(maxbound), self.interface.getValue(step))) 
             
-            return self.interface.num.arange(minbound, maxbound, step)
+            return self.interface.num.linspace(minbound, maxbound, (maxbound-minbound)/step, endpoint=False)
 
         else: 
             sys.exit('ERROR: clustering algorithm not recognized')
@@ -644,11 +665,11 @@ class recursiveClustering:
         """ Select and calculate scoring function for optimization.
 
         Args:
-            points (dataframe or matrix): points coordinates
-            labels (series or matrix): clusters assignment
+            points (dataframe or matrix): points coordinates.
+            labels (series or matrix): clusters assignment.
 
         Returns:
-            (float): clustering score
+            (float): clustering score.
 
         """
 
@@ -663,13 +684,13 @@ class recursiveClustering:
         """ Runs the selected density-based clusters identification algorithm.
 
         Args:
-            pj (dataframe or matrics): points coordinates
-            cparm (float): clustering parameter
-            cse (int): value of clustering_selection_epsilon for HDBSCAN
-            algorithm (string): value of algorithm for HDBSCAN
+            pj (dataframe or matrics): points coordinates.
+            cparm (float): clustering parameter.
+            cse (int): value of clustering_selection_epsilon for HDBSCAN.
+            algorithm (string): value of algorithm for HDBSCAN.
 
         Returns:
-            (list of int): list of assigned clusters """
+            (list of int): list of assigned clusters. """
 
         if self.clusterer=='DBSCAN':
             return self.interface.cluster(eps=cparm, min_samples=self.minclusize, metric=self.metricClu, n_jobs=-1, leaf_size=15).fit_predict(pj)
@@ -693,7 +714,7 @@ class recursiveClustering:
 
         Returns:
             silOpt (float): silhoutte score corresponding to the best set of parameters.
-            labs (pandas series): Series with the cluster membership identified for each sample.
+            labs (pandas series): series with the cluster membership identified for each sample.
             cparmOpt (float): optimal clustering parameter value found.
             pj (pandas dataframe): low dimensionality data projection from UMAP.
             keepfeat (pandas index): set of genes kept after low /MAD removal, nan if 'tSVD'.
@@ -743,7 +764,7 @@ class recursiveClustering:
 
         if not pj.isnull().values.any():
 
-            """ Set cluster_selection_epsilon for HDBSCAN """
+            """ Set cluster_selection_epsilon for HDBSCAN. """
 
             cse=None        
             hdbalgo='best'    
@@ -790,13 +811,13 @@ class recursiveClustering:
         """ Objective function for Differential Evolution.
 
         Args:
-            params (list): A list containing a single feature cutoff and a UMAP nearest neighbors parameter.
+            params (list): a list containing a single feature cutoff and a UMAP nearest neighbors parameter.
         Returns:
-            (float): Loss value for the given set of parameters.
-            labs (pandas series): Series with the cluster membership identified for each sample.
-            cparmOpt (float): Optimal clustering parameter value found.
-            pj (pandas dataframe): Low dimensionality data projection from UMAP.
-            keepfeat (pandas index): Set of genes kept after low variance/MAD removal, nan if tSVD.
+            (float): loss value for the given set of parameters.
+            labs (pandas series): series with the cluster membership identified for each sample.
+            cparmOpt (float): optimal clustering parameter value found.
+            pj (pandas dataframe): low dimensionality data projection from UMAP.
+            keepfeat (pandas index): set of genes kept after low variance/MAD removal, nan if tSVD.
             decomposer (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
 
         """
@@ -815,15 +836,15 @@ class recursiveClustering:
 
         Returns:
             silOpt (float): Silhoutte score corresponding to the best set of parameters.
-            labsOpt (pandas series): Series with the cluster membership identified for each sample.
-            cparmOpt (float): Optimal clustering parameter value found.
-            numClusOpt (int):  Total number of clusters determined by the search.
-            neiOpt (int): Optimal number of nearest neighbors used with UMAP.
-            pjOpt (pandas dataframe): Low dimensionality data projection from UMAP.
-            cutOpt (float): Optimal cutoff value used for the feature removal step
-            keepfeat (pandas index): Set of genes kept after low variance/MAD removal, nan if tSVD.
+            labsOpt (pandas series): series with the cluster membership identified for each sample.
+            cparmOpt (float): optimal clustering parameter value found.
+            numClusOpt (int):  total number of clusters determined by the search.
+            neiOpt (int): optimal number of nearest neighbors used with UMAP.
+            pjOpt (pandas dataframe): low dimensionality data projection from UMAP.
+            cutOpt (float): optimal cutoff value used for the feature removal step
+            keepfeat (pandas index): set of genes kept after low variance/MAD removal, nan if tSVD.
             decompOpt (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
-            scoreslist (list of float): List of all scores evaluated and their parameters. 
+            scoreslist (list of float): list of all scores evaluated and their parameters. 
 
         """
 
@@ -867,7 +888,7 @@ class recursiveClustering:
 
             for nn in nnrange:
 
-                """ Project data with UMAP """    
+                """ Project data with UMAP. """    
 
                 logging.debug('Number of nearest neighbors: {:d}'.format(nn))
 
@@ -886,7 +907,7 @@ class recursiveClustering:
 
                 if not pj.isnull().values.any():
 
-                    """ Set cluster_selection_epsilon for HDBSCAN """
+                    """ Set cluster_selection_epsilon for HDBSCAN. """
 
                     cse=None        
                     hdbalgo='best'    
@@ -957,9 +978,9 @@ class recursiveClustering:
             updates membership assignment for transform-only data.
 
         Args:
-            labsOpt (pandas series): Series with the cluster membership identified for each sample.
-            neiOpt (int): Optimal number of nearest neighbors used with UMAP.
-            pjOpt (pandas dataframe): Low dimensionality data projection from UMAP.
+            labsOpt (pandas series): series with the cluster membership identified for each sample.
+            neiOpt (int): optimal number of nearest neighbors used with UMAP.
+            pjOpt (pandas dataframe): low dimensionality data projection from UMAP.
             
         Returns:
             (pandas series): Series with the updated cluster membership identified for each sample.
@@ -1001,17 +1022,17 @@ class recursiveClustering:
 
         Returns:
             silOpt (float): Silhoutte score corresponding to the best set of parameters.
-            labsOpt (pandas series): Series with the cluster membership identified for each sample.
-            cparmOpt (float): Optimal clusters identification parameter value found.
-            numClusOpt (int):  Total number of clusters determined by the search.
-            neiOpt (int): Optimal number of nearest neighbors used with UMAP.
-            pjOpt (pandas dataframe): Low dimensionality data projection from UMAP.
-            cutOpt (float): Optimal cutoff value used for the features removal step.
-            keepfeat (pandas index): Set of genes kept after low variance/MAD removal, nan if tSVD.
+            labsOpt (pandas series): series with the cluster membership identified for each sample.
+            cparmOpt (float): optimal clusters identification parameter value found.
+            numClusOpt (int):  total number of clusters determined by the search.
+            neiOpt (int): optimal number of nearest neighbors used with UMAP.
+            pjOpt (pandas dataframe): low dimensionality data projection from UMAP.
+            cutOpt (float): optimal cutoff value used for the features removal step.
+            keepfeat (pandas index): set of genes kept after low variance/MAD removal, nan if tSVD.
             decompOpt (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
             reassigned (float): list of features filtering values explored.Percentage of points forecefully assigned to a class 
                 if outliers='reassign'.
-            scoreslist (list of float): List of all scores evaluated and their parameters. 
+            scoreslist (list of float): list of all scores evaluated and their parameters. 
 
         """
    
@@ -1039,7 +1060,7 @@ class recursiveClustering:
                 minbound=self.interface.num.log10(self.interface.num.sqrt(numpoints*self.neifactor))
                 maxbound=self.interface.num.log10(numpoints*self.neifactor)
 
-            """ Neighbours cap """
+            """ Neighbours cap. """
 
             if self.neicap is not None:
                 if minbound>self.interface.num.log10(self.neicap):
@@ -1047,7 +1068,7 @@ class recursiveClustering:
                 if maxbound>self.interface.num.log10(self.neicap):
                     maxbound=self.interface.num.log10(self.neicap)
 
-            """ Hard limit """
+            """ Hard limit. """
 
             if minbound < 1:
                 minbound = 1
@@ -1069,7 +1090,7 @@ class recursiveClustering:
 
         if self.optimizer=='grid':
 
-            """ Grid Search """
+            """ Grid Search. """
             logging.info('Running Grid Search...')
 
             silOpt, labsOpt, cparmOpt, neiOpt, pjOpt, cutOpt, mapOpt, keepfeat, decompOpt, scoreslist = self._runGridInstances(nnrange)
@@ -1078,7 +1099,7 @@ class recursiveClustering:
 
         elif self.optimizer=='de':
 
-            """ Differential Evolution """
+            """ Differential Evolution. """
 
             logging.info('Running Differential Evolution...')
             
@@ -1154,7 +1175,7 @@ class recursiveClustering:
 
         minimum, clusTmp, chosen, nClu, nNei, pj, cut, chomap, keepfeat, decompOpt, reassigned, scoreslist = self._optimizeParams()
 
-        """ Save cluster best parameters to table."""
+        """ Save cluster best parameters to table. """
 
         vals = ['cluster ' + self._name, dataGlobal.dataset.loc[self.dataIx].shape[0], nClu, self.dim, minimum, nNei, chosen, cut, self.metricMap, self.metricClu, self.norm, reassigned] 
                
@@ -1213,7 +1234,7 @@ class recursiveClustering:
             else:
                 to_transform = None
 
-            """ Move along the list of parameters to change granularity """
+            """ Move along the list of parameters to change granularity. """
             if self.optimizer=='grid' and len(self.ffpoints)>1:
                 self.ffpoints=self.ffpoints[1:]
                 logging.info('Parameters granilarity change ' +
@@ -1244,10 +1265,16 @@ class recursiveClustering:
 
 
             if deep.clusOpt is not None:
-      
-                clusTmp = self.interface.df.concat([clusTmp, deep.clusOpt], axis=1, join='outer')
+     
+                
+                #for now join not available in cudf
+                #clusTmp = self.interface.df.concat([clusTmp, deep.clusOpt], axis=1, join='outer')
+                deep.clusOpt=deep.clusOpt.reindex(clusTmp.index)
+                clusTmp = self.interface.df.concat([clusTmp, deep.clusOpt], axis=1)
+                
                 clusTmp = clusTmp.fillna(0)
 
+                
                 cols = list(clusTmp.columns.values)
                 for col in cols:
                     clusTmp[col] = clusTmp[col].astype(int)
@@ -1276,7 +1303,7 @@ def run(data, **kwargs):
     if 'RPD' not in kwargs:
         kwargs['RPD']=False
 
-    """ Setup folders and files, remove old data if present.  """
+    """ Setup folders and files, remove old data if present. """
 
     functions.setup(kwargs['outpath'], kwargs['RPD'])
 
@@ -1285,7 +1312,7 @@ def run(data, **kwargs):
     obj = recursiveClustering(data, **kwargs) 
     obj.recurse()
 
-    """ Save the assignment to disk and buil tree """
+    """ Save the assignment to disk and buil tree. """
 
     tree = None
     if obj.clusOpt is not None:

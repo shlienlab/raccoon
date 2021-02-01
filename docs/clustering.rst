@@ -59,7 +59,8 @@ to the features removal step.
 Optimizers
 ==========
 
-There are currently two available optimizers, to be set with the :code:`optimizer` flag
+There are currently two available optimizers, to be set with the :code:`optimizer` flag,
+and the option to let the algorithm decide which to use on its own.
 
 ===============  ============================================================  
 :code:`'grid'`   **Grid Search**: given a set of parameters ranges and steps, 
@@ -68,6 +69,10 @@ There are currently two available optimizers, to be set with the :code:`optimize
 :code:`'de'`     **Differential Evolution**: a simple evolutionary algorithm,
                  it requires to set a number of candidates for the parametric 
                  space search and a number of maximum iterations [Storn1997]_
+:code:`'auto'`   **Automatic**: dynamically adapt the optimizer choice 
+                 to the dataset size. Grid Search will be used for larger
+                 coarse searches, DE will be saved for smaller datasets and 
+                 more detailed runs.
 ===============  ============================================================
 
 While Grid Search requires to define the exact set of points to explore, either directly
@@ -264,6 +269,13 @@ Repeating a run
 
 The :code:`fromfile` flag takes the path to a :code:`paramdata.csv` as input and allows the user to repeat a run using the optimal parameters and skipping the search
 altogether. Activating this flag will override all other parameters. This can be useful to reproduce past works, save more files (e.g. trained maps) or plots. 
+
+GPU
+===
+
+If a GPU is available on your system you can speed up your calculations by activating the `gpu` boolean flag when initializing the run.
+You will need `CuPy <https://cupy.dev/>`_ and `RAPIDS <https://rapids.ai/>`_ to be installed.
+See :code:`requirements.txt` for details on modules and versions. 
 
 References
 ----------

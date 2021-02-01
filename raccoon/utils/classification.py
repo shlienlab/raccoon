@@ -32,15 +32,15 @@ class knn:
         """ Initialize the the class.
 
         Args:
-            data (matrix or pandas dataframe): Input data in pandas dataframe-compatible format (samples as row, features as columns).
-            oriData (matrix or pandas dataframe): Original data clustered with RACCOON in pandas dataframe-compatible format (samples as row, features as columns).
-            oriClust (matrix or pandas dataframe): Original RACCOON output one-hot-encoded class membership in pandas dataframe-compatible format 
+            data (matrix or pandas dataframe): input data in pandas dataframe-compatible format (samples as row, features as columns).
+            oriData (matrix or pandas dataframe): original data clustered with RACCOON in pandas dataframe-compatible format (samples as row, features as columns).
+            oriClust (matrix or pandas dataframe): original RACCOON output one-hot-encoded class membership in pandas dataframe-compatible format 
                 (samples as row, classes as columns).
-            refpath (string): Path to the location where trained umap files (pkl) are stored (default, subdirectory racoonData of current folder).
-            outpath (string): Path to the location where outputs will be saved (default, save to the current folder).
-            root (string): Name of the root node, parent of all the classes within the first clustering leve. Needed to identify the appropriate pkl file (default 0)
-            debug (boolean): Specifies whether algorithm is run in debug mode (default is False).
-            gpu (bool): Activate GPU version (requires RAPIDS).
+            refpath (string): path to the location where trained umap files (pkl) are stored (default, subdirectory racoonData of current folder).
+            outpath (string): path to the location where outputs will be saved (default, save to the current folder).
+            root (string): name of the root node, parent of all the classes within the first clustering leve. Needed to identify the appropriate pkl file (default 0).
+            debug (boolean): specifies whether algorithm is run in debug mode (default is False).
+            gpu (bool): activate GPU version (requires RAPIDS).
         """
 
 
@@ -48,7 +48,7 @@ class knn:
 
         self.gpu = gpu
 
-        """ Set up for CPU or GPU run """
+        """ Set up for CPU or GPU run. """
 
         if self.gpu:
             try:
@@ -203,13 +203,13 @@ class knn:
 
                 if isinstance(genecut,self.interface.df.Index):
                     
-                    """ low variance filter """
+                    """ low information filter. """
 
                     dfCut=self.data[genecut]
                 
                 else:
                 
-                    """ tSVD """
+                    """ tSVD. """
                     #sparseMat=csr_matrix(self.data.values)
                     #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=self.data.index)
                     dfCut=self.interface.df.DataFrame(genecut.transform(self.data.values), index=self.data.index)
@@ -235,13 +235,13 @@ class knn:
 
                 if isinstance(genecut,self.interface.df.Index):
                     
-                    """ low variance filter """
+                    """ low information filter. """
 
                     dfCut=refDf[genecut]
                 
                 else:
                 
-                    """ tSVD """
+                    """ tSVD. """
                     #sparseMat=csr_matrix(refDf.values)
                     #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=refDf.index)
                     dfCut=self.interface.df.DataFrame(genecut.transform(refDf.values), index=refDf.index)

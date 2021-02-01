@@ -24,13 +24,13 @@ Beside basic scientific and plotting libraries, the current version requires
 ```
 - scikit-learn
 - umap-learn
-- hdbscan
 - seaborn
 ```
 
 Optional dependencies include
 
 ```
+- hdbscan
 - rapids (see below)
 ```
 
@@ -43,6 +43,9 @@ raccoon can be run on GPU by leveraging RAPIDS libraries. Since these libraries 
 - cuml v0.17
 - cudf v0.17
 ```
+
+Currently there are some major (hopefully temporary) limitation in this implementation. UMAP can only run with euclidean distance, DBSCAN is the only clusters identification algorithm available.
+If these do not affect your analysis, we strongly suggest to activate the GPU option, especially for larger dataset that could lead to exceptionally cumbersome runs.
 
 ### Installation
 

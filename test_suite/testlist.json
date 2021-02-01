@@ -1,0 +1,13 @@
+{
+    "grid":     true,
+    "load":     true,
+    "de":       true,
+    "auto":     true,
+    "tsvd":     true,
+    "high":     true,
+    "trans":    true,
+    "knn":      true,
+    "gpu":      true,
+    "knn_gpu":  true,
+    "clean":    true
+}
