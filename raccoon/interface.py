@@ -20,6 +20,7 @@ class interface:
         self.lb = None
         self.ohe = None
         self.sis = None
+        self.pwd = None
 
         self.num = None
         self.df = None
@@ -43,6 +44,9 @@ class interface:
         pass
     
     def silhouette():
+        pass
+
+    def dunn():
         pass
 
     def filterKey(self, dct, keys):
@@ -96,6 +100,7 @@ class interfaceCPU(interface):
         from sklearn.preprocessing import LabelBinarizer
         from sklearn.preprocessing import OneHotEncoder
         from sklearn.metrics import silhouette_score
+        from sklearn.metrics import pairwise_distances as pwd
 
         self.num = numpy
         self.df = pd
@@ -108,6 +113,7 @@ class interfaceCPU(interface):
         self.lb = LabelBinarizer
         self.ohe = OneHotEncoder
         self.sis = silhouette_score
+        self.pwd = pwd
 
     def decompose(self, **kwargs):
         
@@ -195,7 +201,30 @@ class interfaceCPU(interface):
         """
 
         return self.sis(points, labels, **kwargs)
-    
+
+
+    def dunn(self, points, labels, **kwargs):
+        
+        """ Calculates the dunn index score for a set of points
+            and clusters labels.
+
+        Args:
+            points (self.df.DataFrame): points coordinates.
+            labels (self.df.Series): clusters membership labels.
+            (dict): keyword arguments for pairwise distances (e.g. metric).
+        Returns:
+            (int): dunn index on given points.
+        """
+
+        inter = self.pwd([points[labels==l].mean() for l in self.num.unique(labels)], **kwargs)
+        self.num.fill_diagonal(inter,inter.max()+1)
+
+        inter = self.num.amin(inter)
+        intra = self.num.amax([self.pwd(points[labels==l], **kwargs).max() for l in self.num.unique(labels)]) 
+        
+        return inter/intra
+
+
     def getValue(self, var, pandas=False):
 
         """ Returns value of given variable,
@@ -246,7 +275,8 @@ class interfaceGPU(interface):
         from cuml.experimental.preprocessing import normalize
         from cuml.preprocessing import LabelBinarizer
         from cuml.preprocessing import OneHotEncoder
-        
+        from cuml.metrics.pairwise_distances import pairwise_distances as pwd        
+
         #silhouette score GPU not availablei in cuml 0.17a (memory issues)
         #from cuml.metrics.cluster import silhouette_score
         from sklearn.metrics import silhouette_score
@@ -262,6 +292,7 @@ class interfaceGPU(interface):
         self.lb = LabelBinarizer
         self.ohe = OneHotEncoder
         self.sis = silhouette_score
+        self.pwd = pwd
 
     def decompose(self, **kwargs):
         
@@ -351,6 +382,31 @@ class interfaceGPU(interface):
         #temporary workaround until GPU implementation is fixed
         return self.sis(self.getValue(self.getValue(points)), self.getValue(labels), **kwargs)
 
+    def dunn(self, points, labels, **kwargs):
+
+        """ Calculates the dunn index score for a set of points
+            and clusters labels.
+
+        Args:
+            points (self.df.DataFrame): points coordinates.
+            labels (self.df.Series): clusters membership labels.
+            (dict): keyword arguments for pairwise distances (e.g. metric).
+        Returns:
+            (int): dunn index on given points.
+        """
+
+        #TODO: clean up all this back and forth between gpu and cpu
+
+        inter = self.pwd(self.num.array([self.getValue(points[labels==l].mean()) 
+                for l in self.num.unique(labels).get()]), **kwargs)
+        self.num.fill_diagonal(inter,inter.max()+1)
+
+        inter = self.num.amin(inter)
+
+        intra = self.num.amax(self.num.array([self.pwd(points[labels==l], **kwargs).max().max() 
+                for l in self.num.unique(labels).get()]))
+
+        return self.getValue(inter/intra)
 
     def getValue(self, var, pandas=False):
 

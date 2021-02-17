@@ -37,14 +37,16 @@ def _plotScore(scores, parmOpt, xlab, name='./scores.png', path=""):
     fig=plt.figure(figsize=(8,4))
     ax=plt.gca()
 
+    cieling=max([max(scores[1]),1.])
+    
     ax.plot(sorted(scores[0]),[y for _,y in sorted(zip(scores[0],scores[1]), key=lambda pair: pair[0])], lw=1.5, color=Palettes.nupal[0], zorder=100)
     ax.scatter([parmOpt],[max(scores[1])], s=150, lw=1.5,  facecolor='none', edgecolor=Palettes.nupal[1], zorder=101)
 
     plt.tick_params(labelsize=15)
-    plt.ylim([-1.1,1.1])
-    plt.yticks(np.linspace(-1,1,9),np.linspace(-1,1,9))
+    plt.ylim([0,cieling+.1])
+    plt.yticks(np.linspace(0,cieling,9),np.linspace(0,cieling,9))
     plt.xlabel(xlab, fontsize=20)
-    plt.ylabel('Silhouette score', fontsize=20)
+    plt.ylabel('Objective function', fontsize=20)
     plt.tight_layout()
 
     if not name.endswith('.png'):
@@ -66,12 +68,14 @@ def _plotScoreSurf(scores, parmOpt, name='./scores_surf.png', path=""):
     fig=plt.figure(figsize=(9,8))
     ax=plt.gca()
 
-    plt.tricontourf(scores[0], scores[1], scores[2], zorder=0, cmap=Palettes.midpalmap, levels=np.linspace(0,1,11), vmin=0, vmax=1., extend='min')
+    cieling=max([max(scores[2]),1.])
+    
+    plt.tricontourf(scores[0], scores[1], scores[2], zorder=0, cmap=Palettes.midpalmap, levels=np.linspace(0,cieling,11), vmin=0, vmax=cieling, extend='min')
     cbar = plt.colorbar()
-    cbar.set_label(r'Silhouette score', fontsize=20)
+    cbar.set_label(r'Objective function', fontsize=20)
     cbar.ax.tick_params(size=0)
-    cbar.set_ticks(np.linspace(0,1,11))
-    cbar.ax.set_yticklabels(['{:.1f}'.format(x) for x in np.linspace(0,1,11)], fontsize=15)
+    cbar.set_ticks(np.linspace(0,cieling,11))
+    cbar.ax.set_yticklabels(['{:.1f}'.format(x) for x in np.linspace(0,cieling,11)], fontsize=15)
 
     for i in range(len(scores[0])):
         if scores[0]!=parmOpt:
@@ -104,7 +108,6 @@ def _plotCut(df, df_cut, name='./geneCut.png', path=""):
         df (pandas dataframe): original data before cutting low variance columns.
         df_cut (pandas dataframe): data after cutting low variance columns.
         name (string): name of resulting .png file.
-
     """
 
     stdevs=df.std()
@@ -186,7 +189,11 @@ def plotMap(df, labels, name='./projection.png', path=""):
     cmap = plt.get_cmap('tab20')
     colors = cmap(np.linspace(0, 1, len(lbvals)))
 
-    labels=labels.loc[df.index]
+    #ugly, find a better way
+    try:
+        labels=labels.loc[df.index]
+    except:
+        labels=labels.reset_index(drop=True)
 
     plt.figure(figsize=(10,10))
     ax=plt.gca()
@@ -199,7 +206,6 @@ def plotMap(df, labels, name='./projection.png', path=""):
     frame1 = plt.gca()
     frame1.axes.xaxis.set_ticklabels([])
     frame1.axes.yaxis.set_ticklabels([])
-    plt.tight_layout()
 
     if not name.endswith('.png'):
         name = name+'.png'

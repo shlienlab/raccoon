@@ -108,7 +108,7 @@ class recursiveClustering:
             deiter (int or list of int): maximum number of iterations of differential evolution  
                 if list, each value will be subsequently used at the next iteration until all values are exhausted
                 (works only with optimizer='de', default 10).
-            score (string): objective function of the optimization (default 'silhouette').    
+            score (string): objective function of the optimization (currently only 'dunn' and 'silhouette' are available, default 'silhouette').    
             norm (string): normalization factor before dimensionality reduction (default None), not needed if metricMap is cosine
                 if None, don't normalize.
             dynmesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE) to the population, overrides neipoints, depop, deiter and ffpoints (default false).
@@ -182,7 +182,7 @@ class recursiveClustering:
                 print('Labels data should be in a format that can be translated to pandas series!')
                 raise
             try:
-                lab.index=data.index
+                lab.index=data
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Shape of labels data should be consistent with the shape of data!')
@@ -675,6 +675,8 @@ class recursiveClustering:
 
         if self.score=='silhouette':
             return self.interface.silhouette(points, labels, metric=self.metricClu)
+        elif self.score=='dunn':
+            return self.interface.dunn(points, labels, metric=self.metricClu)
         else: 
             sys.exit('ERROR: score not recognized')
 
