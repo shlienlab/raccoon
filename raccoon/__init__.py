@@ -604,7 +604,15 @@ class recursiveClustering:
             (float): elbow value.
         """
 
-        neigh=self.interface.nNeighbor(n_neighbors=2, metric=self.metricClu, n_jobs=-1).fit(pj)
+        mparams={}
+        if self.metricClu=='mahalanobis':
+            #mparams={'V': self.interface.num.cov(pj.T)}
+            try:
+                mparams={'VI': self.interface.num.linalg.inv(self.interface.num.cov(pj.T))}
+            except:
+                mparams={'VI': self.interface.num.linalg.pinv(self.interface.num.cov(pj.T))}
+
+        neigh=self.interface.nNeighbor(n_neighbors=2, metric=self.metricClu, metric_params=mparams, n_jobs=-1).fit(pj)
         
         neigh=neigh.kneighbors(pj, return_distance=True)[0]
         if not isinstance(neigh, self.interface.df.DataFrame):
@@ -675,7 +683,17 @@ class recursiveClustering:
 
         if self.score=='silhouette':
             return self.interface.silhouette(points, labels, metric=self.metricClu)
+
         elif self.score=='dunn':
+
+            #actMetric=self.metricClu
+            #if self.metricClu=='mahalanobis':
+            #    #since mahalanobis is only available on CPU, this workaround is ok for now
+            #    try:
+            #        actMetric=self.interface.dmet.get_metric(self.metricClu, VI=self.interface.num.linalg.inv(self.interface.num.cov(points.T))
+            #    except:
+            #        actMetric=self.interface.dmet.get_metric(self.metricClu, VI=self.interface.num.linalg.pinv(self.interface.num.cov(points.T))
+            
             return self.interface.dunn(points, labels, metric=self.metricClu)
         else: 
             sys.exit('ERROR: score not recognized')
@@ -694,13 +712,21 @@ class recursiveClustering:
         Returns:
             (list of int): list of assigned clusters. """
 
+        mparams={}
+        if self.metricClu=='mahalanobis':
+            #mparams={'V': self.interface.num.cov(pj.T)}
+            try:
+                mparams={'VI': self.interface.num.linalg.inv(self.interface.num.cov(pj.T))}
+            except:
+                mparams={'VI': self.interface.num.linalg.pinv(self.interface.num.cov(pj.T))}
+
         if self.clusterer=='DBSCAN':
-            return self.interface.cluster(eps=cparm, min_samples=self.minclusize, metric=self.metricClu, n_jobs=-1, leaf_size=15).fit_predict(pj)
+            return self.interface.cluster(eps=cparm, min_samples=self.minclusize, metric=self.metricClu, metric_params=mparams, n_jobs=-1, leaf_size=15).fit_predict(pj)
         elif self.clusterer=='HDBSCAN':
             clusterer=HDBSCAN(algorithm=algorithm, alpha=1.0, approx_min_span_tree=True,
                     gen_min_span_tree=False, leaf_size=15, allow_single_cluster=False,
-                    metric=self.metricClu, min_cluster_size=self.minclusize, min_samples=int(cparm), 
-                    cluster_selection_epsilon=cse, p=None).fit(pj)
+                    metric=self.metricClu, metric_params=mparams, min_cluster_size=self.minclusize, 
+                    min_samples=int(cparm), cluster_selection_epsilon=cse, p=None).fit(pj)
             return clusterer.labels_
         else:
             sys.exit('ERROR: clustering algorithm not recognized')
@@ -991,7 +1017,15 @@ class recursiveClustering:
 
         missing=[i for i,x in enumerate(pjOpt.index) if x not in labsOpt.index]
 
-        neigh=self.interface.nNeighbor(n_neighbors=len(missing)+neiOpt, metric=self.metricMap, n_jobs=-1)
+        mparams={}
+        if self.metricClu=='mahalanobis':
+            #mparams={'V': self.interface.num.cov(pjOpt.T)}
+            try:
+                mparams={'VI': self.interface.num.linalg.inv(self.interface.num.cov(pjOpt.T))}
+            except:
+                mparams={'VI': self.interface.num.linalg.pinv(self.interface.num.cov(pjOpt.T))}
+
+        neigh=self.interface.nNeighbor(n_neighbors=len(missing)+neiOpt, metric=self.metricMap, metric_params=mparams, n_jobs=-1)
         neigh.fit(pjOpt)
 
         kn=neigh.kneighbors(pjOpt.iloc[missing], return_distance=True)

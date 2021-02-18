@@ -202,6 +202,23 @@ class interfaceCPU(interface):
 
         return self.sis(points, labels, **kwargs)
 
+    def invCov(self, data):
+
+        """ Attempts to find the inverse of the covariance matrix
+            if the matrix is singular use the Moore-Penrose pseudoinverse.
+
+        Args:
+            data (self.df.Dataframe or ndarray): matrix containing the datapoints.
+        Returns:
+            (ndarray): the (pseudo)inverted covariance matrix. 
+        """
+
+        try:
+            return self.num.linalg.inv(self.num.cov(data.T))
+        except:
+            return self.num.linalg.pinv(self.num.cov(data.T))
+
+
 
     def dunn(self, points, labels, **kwargs):
         
@@ -216,12 +233,20 @@ class interfaceCPU(interface):
             (int): dunn index on given points.
         """
 
-        inter = self.pwd([points[labels==l].mean() for l in self.num.unique(labels)], **kwargs)
-        self.num.fill_diagonal(inter,inter.max()+1)
+        centroids=self.num.array([self.getValue(points[labels==l].mean())
+                for l in self.num.unique(labels)])
 
+        if kwargs['metric'] == 'mahalanobis':
+            invcov = self.invCov(centroids)
+            samples = [self.pwd(points[labels==l], **kwargs, VI=self.invCov(points[labels==l])).max() for l in self.num.unique(labels)]
+        else:
+            samples = [self.pwd(points[labels==l], **kwargs).max() for l in self.num.unique(labels)]
+
+        inter = self.pwd(centroids, **kwargs, VI=invcov)
+        self.num.fill_diagonal(inter,inter.max()+1)
         inter = self.num.amin(inter)
-        intra = self.num.amax([self.pwd(points[labels==l], **kwargs).max() for l in self.num.unique(labels)]) 
-        
+        intra = self.num.amax(samples)
+
         return inter/intra
 
 
@@ -328,7 +353,7 @@ class interfaceGPU(interface):
             (obj): clusters identification object.
         """
 
-        return self.DBSCAN(**self.filterKey(kwargs, ['metric','leaf_size','n_jobs']))
+        return self.DBSCAN(**self.filterKey(kwargs, ['metric','leaf_size','n_jobs','metric_params']))
 
     def nNeighbor(self, **kwargs):
 
@@ -340,7 +365,7 @@ class interfaceGPU(interface):
             (obj): features nearest neighbors.
         """
 
-        return self.NN(**self.filterKey(kwargs, 'n_jobs'))
+        return self.NN(**self.filterKey(kwargs, ['n_jobs','metric_params']))
 
     def labelBin(self, **kwargs):
 
@@ -381,6 +406,22 @@ class interfaceGPU(interface):
         
         #temporary workaround until GPU implementation is fixed
         return self.sis(self.getValue(self.getValue(points)), self.getValue(labels), **kwargs)
+
+    def invCov(self, data):
+
+        """ Attempts to find the inverse of the covariance matrix
+            if the matrix is singular use the Moore-Penrose pseudoinverse.
+
+        Args:
+            data (self.df.Dataframe or ndarray): matrix containing the datapoints.
+        Returns:
+            (ndarray): the (pseudo)inverted covariance matrix. 
+        """
+
+        try:
+            return self.num.linalg.inv(self.num.cov(data.T))
+        except:
+            return self.num.linalg.pinv(self.num.cov(data.T))
 
     def dunn(self, points, labels, **kwargs):
 
