@@ -190,10 +190,10 @@ def plotMap(df, labels, name='./projection.png', path=""):
     colors = cmap(np.linspace(0, 1, len(lbvals)))
 
     #ugly, find a better way
-    try:
-        labels=labels.loc[df.index]
-    except:
-        labels=labels.reset_index(drop=True)
+    #try:
+    labels=labels.loc[df.index]
+    #except:
+    #    labels=labels.reset_index(drop=True)
 
     plt.figure(figsize=(10,10))
     ax=plt.gca()

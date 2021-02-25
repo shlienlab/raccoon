@@ -1,6 +1,6 @@
 """
 Utility functions for RACCOON (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
-F. Comitani     @2018-2020
+F. Comitani     @2018-2021
 A. Maheshwari   @2019
 """
 
@@ -45,6 +45,39 @@ def _nearZeroVarDropAuto(data, interface, thresh=0.99, type='variance'):
     #temorary workaround to cuDF bug 
     #where we cannot slice with index (not iterable error)
     return data.iloc[:,interface.getValue(keep)]
+
+
+def _dropCollinear(data, interface, thresh=0.75):
+
+    """ Drop collinear features above the 'thresh' % of correlation.
+        WARNING: very slow! Use tSVD instead!
+        
+    Args:
+
+        data (pandas dataframe): input pandas dataframe (samples as row, features as columns).
+        interface (obj): CPU/GPU numeric functions interface.
+        thresh (float): percentage threshold for the correlation.
+    """
+
+    crmat=interface.df.DataFrame(interface.num.corrcoef(data.astype(float).T), columns=data.columns, index=data.columns)
+    crmat.index.name = None
+    crmat2=crmat.where(interface.num.triu(interface.num.ones(crmat.shape), k=1).astype(interface.num.bool)).stack()
+    crmat2=crmat2.reset_index().sort_values(0, ascending=False)
+    crmat2=crmat2[crmat2[crmat2.columns[2]]>thresh]
+
+    toremove=[]
+    while len(crmat2[crmat2.columns[2]])>0:
+        a=crmat2[crmat2.columns[0]].iloc[0]
+        b=crmat2[crmat2.columns[1]].iloc[0]
+        meana=crmat.loc[a,crmat.columns.difference([a,b])].mean()
+        meanb=crmat.loc[b,crmat.columns.difference([a,b])].mean()
+
+        toremove.append([a,b][interface.num.argmax([meana,meanb])])
+
+        crmat2=crmat2[(crmat2[crmat2.columns[0]] != toremove[-1]) & (crmat2[crmat2.columns[1]] != toremove[-1])]
+        
+    return data.drop(toremove, axis=1)
+
 
 def _dropMinKDE(data, interface, type='variance'):
 

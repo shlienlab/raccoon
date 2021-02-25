@@ -224,7 +224,9 @@ class knn:
 
                     dfCut=self.interface.df.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
 
-                proj=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)                
+                proj=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
+                #cudf workaround
+                proj.index=dfCut.index
 
                 if names[-1]==self.root:
                     refDf=self.oriData
@@ -247,6 +249,8 @@ class knn:
                     dfCut=self.interface.df.DataFrame(genecut.transform(refDf.values), index=refDf.index)
 
                 projRef=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
+                #cudf workaround
+                projRef.index=dfCut.index
 
                 projAll=self.interface.df.concat([proj,projRef],axis=0)
                

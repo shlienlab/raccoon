@@ -50,13 +50,34 @@ class dataGlobal:
     #Hopefully this saves a bit of memory
 
     dataset=None
+    labels=None
+
+    def locCat(labels, indices, supervised):
+
+        """ Auxiliary function to select labels in
+            supervised UMAP and transform them to categories.
+
+        Args:
+            indices (array-like): list of indices.
+            supervised (bool): True if running superived UMAP.
+        Returns:
+            (Series): sliced labels series as categories if it exists.
+        """
+
+        if labels is not None and supervised:
+            try:
+                return labels.loc[indices].astype('category').cat.codes
+            except:
+                warnings.warn("Failed to subset labels.") 
+        return None
+
 
 
 class recursiveClustering:
 
     """ To perform recursive clustering on a samples x features matrix. """
 
-    def __init__(self, data, lab=None, transform=None, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
+    def __init__(self, data, lab=None, transform=None, supervised=False, dim=2, epochs=5000, lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0, 
         neicap=250, metricMap='cosine', metricClu='euclidean', popcut=50, filterfeat='variance', ffrange='logspace', 
         ffpoints=25, optimizer='grid', depop=10, deiter=10, score='silhouette', norm=None, dynmesh=False, maxmesh=20, minmesh=4,
         clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore', fromfile=None, #resume=False,
@@ -70,6 +91,7 @@ class recursiveClustering:
             lab (list, array or pandas series): list of labels corresponding to each sample (for plotting only).
             transform (list of Pandas DataFrame indices): list of indices of the samples in the initial matrix that should be transformed-only 
                 and not used for training the dimensionality reduction map.
+            supervised (bool): if true, use labels for supervised dimensionality reduction with UMAP (default False, works only if lab !=None).
             dim (integer): number of dimensions of the target projection (default 2).
             epochs (integer): number of UMAP epochs.
             lr (float): UMAP learning rate.
@@ -89,8 +111,9 @@ class recursiveClustering:
             filterfeat (string): set the method to filter features in preprocessing;
                 if 'variance' remove low variance genes
                 if 'MAD' remove low median absolute deviation genes
+                if 'correlation' remove correlated genes
                 if 'tSVD' use truncated single value decomposition (LSA)
-            ffrange (array, list or string): if filterfeat=='variance', percentage values for the low-variance removal cufoff search;
+            ffrange (array, list or string): if filterfeat=='variance'/'MAD'/'correlation', percentage values for the low-variance/correlation removal cufoff search;
                 if 'logspace' (default) take a range between .3 and .9 with logarithmic spacing 
                     (reccomended, will take the extremes if optimizer=='de');
                 if 'kde' kernel density estimation will be used to find a single optimal low-variance cutoff (not compatible with optimizer=='de')
@@ -137,7 +160,7 @@ class recursiveClustering:
             outpath (string): path to the location where outputs will be saved (default, save to the current folder).
             depth (integer): current depth of recursion (should be left as default, -1, unless continuing from a previous run).
             gpu (bool): Activate GPU version (requires RAPIDS).
-            _user (bool): active switch to separate initial user input versus recursion calls, do not change.
+            _user (bool): Boolean switch to distinguish initial user input versus recursion calls, do not change.
         """
 
         """ Set up for CPU or GPU run. """
@@ -174,25 +197,29 @@ class recursiveClustering:
             dataGlobal.dataset=data
             data=data.index
 
-        if lab is not None and not isinstance(lab, self.interface.df.Series):
-            try:
-                lab=self.interface.df.Series(lab)
-            except:
-                print('Unexpected error: ', sys.exc_info()[0])
-                print('Labels data should be in a format that can be translated to pandas series!')
-                raise
+            if lab is not None and not isinstance(lab, self.interface.df.Series):
+                try:
+                    lab=self.interface.df.Series(lab)
+                except:
+                    print('Unexpected error: ', sys.exc_info()[0])
+                    print('Labels data should be in a format that can be translated to pandas series!')
+                    raise
             try:
                 lab.index=data
             except:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Shape of labels data should be consistent with the shape of data!')
                 raise
-
+            
+            dataGlobal.labels=lab
 
         self.dataIx = data
-        self.lab = lab
         self.transform = transform
 
+        self.supervised = supervised
+        if self.supervised and dataGlobal.labels is None:
+            warnings.warn("Labels need to be provided for supervised dimensionality reduction, setting supervised to False.")
+            self.supervised  = False
 
         self.optimizer = optimizer
         #Keep track of the original optimizer if changed
@@ -294,8 +321,8 @@ class recursiveClustering:
         if self.optimizer=='de' and self.ffrange=='kde':
             sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is not compatible with Differential Evolution.')
 
-        if self.filterfeat not in ['variance','MAD','tSVD']:
-            sys.exit('ERROR: Features filter must be either \'variance\' for low-variance removal, \'MAD\' for low-MAD removal or \'tSVD\' for truncated SVD.')
+        if self.filterfeat not in ['variance','MAD','correlation','tSVD']:
+            sys.exit('ERROR: Features filter must be either \'variance\' for low-variance removal, \'MAD\' for low-MAD removal, \'correlation\' for correlation removal, or \'tSVD\' for truncated SVD.')
 
         if self.optimizer == 'auto' and dynmesh == False:
             self.optimizer = 'grid'
@@ -364,7 +391,7 @@ class recursiveClustering:
                 sys.exit('ERROR: deiter must be an integer or a list of integers')
                 raise
             if self.ffrange == 'logspace':
-                if self.filterfeat in ['variance','MAD']:
+                if self.filterfeat in ['variance','MAD','correlation']:
                     self.ffrange = [0.3,0.9]
                 if self.filterfeat=='tSVD':
                     self.ffrange = [int(min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])),int(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9)]
@@ -379,7 +406,7 @@ class recursiveClustering:
                 sys.exit('ERROR: ffpoints must be an integer or a list of integers')
                 raise
             if self.ffrange == 'logspace':
-                if self.filterfeat in ['variance','MAD']:
+                if self.filterfeat in ['variance','MAD','correlation']:
                     self.ffrange = sorted([float(x) for x in self.interface.num.logspace(self.interface.num.log10(0.3), self.interface.num.log10(0.9), num=self.ffpoints[0])])
                 if self.filterfeat=='tSVD':
                     self.ffrange = sorted([int(x) for x in self.interface.num.logspace(self.interface.num.log10(min([50,dataGlobal.dataset.loc[self.dataIx].shape[1]*0.3])), self.interface.num.log10(dataGlobal.dataset.loc[self.dataIx].shape[1]*0.9), num=self.ffpoints[0])])   
@@ -400,17 +427,17 @@ class recursiveClustering:
     def _featuresRemoval(self, cutoff):
 
 
-        """ Either remove features with low variance/MAD from dataset according to a specified threshold (cutoff) 
+        """ Either remove features with low variance/MAD, or high correlation from dataset according to a specified threshold (cutoff) 
             or apply truncated SVD to reduce features to a certain number (cutoff).
 
         Args:
-             cutoff (string or float): if filterfeat=='variance' or 'MAD', percentage value for the low-variance/MAD removal cufoff,
-                if 'kde' kernel density estimation will be used to find a single optimal low-variance/MAD cutoff;
+             cutoff (string or float): if filterfeat=='variance'/'MAD'/'correlation', percentage value for the low-variance/MAD/high-correlation removal cufoff,
+                if 'kde' kernel density estimation will be used to find a single optimal low-variance/MAD/high-correlation cutoff;
                 if filterfeat=='tSVD', dimensionality of the output data. 
 
         Returns:
             (pandas dataframe): reduced-dimensionality input data.
-            (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
+            (tsvd object): trained tsvd instance, None if 'variance'/'MAD'/'correlation'.
 
         """
 
@@ -436,26 +463,38 @@ class recursiveClustering:
             else:
                 return self.interface.df.DataFrame(decomposer.fit_transform(dataGlobal.dataset.loc[self.dataIx].values), index=dataGlobal.dataset.loc[self.dataIx].index), decomposer
 
-        
-        elif self.filterfeat in ['variance','MAD']:
-
+        else:
+            
             """ Add conditional to apply the cut only on those samples used for training the map. """
             if self.transform is not None:
                 newData = dataGlobal.dataset.loc[self.dataIx][~dataGlobal.dataset.loc[self.dataIx].index.isin(self.transform)]
             else: 
                 newData = dataGlobal.dataset.loc[self.dataIx] 
 
-            if cutoff == 'kde':
-                newData=functions._dropMinKDE(newData, self.interface, type=self.filterfeat)
-            else:
-                newData=functions._nearZeroVarDropAuto(newData, self.interface, thresh=cutoff, type=self.filterfeat)
+        
+            if self.filterfeat in ['variance','MAD']:
 
-            
-            logging.debug("Dropped Features #: " +
-                      '{:1.0f}'.format(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1]))
+                if cutoff == 'kde':
+                    newData=functions._dropMinKDE(newData, self.interface, type=self.filterfeat)
+                else:
+                    newData=functions._nearZeroVarDropAuto(newData, self.interface, thresh=cutoff, type=self.filterfeat)
+                
+                logging.debug("Dropped Features #: " +
+                          '{:1.0f}'.format(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1]))
 
-            # Extra passage needed in case the transform data cut was applied        
-            return dataGlobal.dataset.loc[self.dataIx][newData.columns], None
+                # Extra passage needed in case the transform data cut was applied        
+                return dataGlobal.dataset.loc[self.dataIx][newData.columns], None
+
+            elif self.filterfeat=='correlation':
+
+                newData=functions._dropCollinear(newData, self.interface, thresh=cutoff)
+
+                logging.debug("Dropped Features #: " +
+                          '{:1.0f}'.format(dataGlobal.dataset.loc[self.dataIx].shape[1]-newData.shape[1]))
+
+                # Extra passage needed in case the transform data cut was applied
+                return dataGlobal.dataset.loc[self.dataIx][newData.columns], None 
+
 
     def _levelCheck(self):
 
@@ -524,15 +563,26 @@ class recursiveClustering:
                                 verbose=False)
             
             if self.transform is not None:
-                scft=selcut[~selcut.index.isin(self.transform)]
-                sct=selcut[selcut.index.isin(self.transform)]
-                mapping.fit(scft)
-                proj = self.interface.df.concat([self.interface.df.DataFrame(mapping.transform(scft), index=scft.index), 
-                                  self.interface.df.DataFrame(mapping.transform(sct),index=sct.index)], axis=0)
-                proj = proj.loc[selcut.index]
-            else: 
-                proj = self.interface.df.DataFrame(mapping.fit_transform(selcut), index=selcut.index) 
+                scft = selcut[~selcut.index.isin(self.transform)]
+                sct = selcut[selcut.index.isin(self.transform)]
+                
+                mapping.fit(scft, y=dataGlobal.locCat(dataGlobal.labels,scft.index,self.supervised))
 
+                pj1=self.interface.df.DataFrame(mapping.transform(scft), index=scft.index)
+                #cudf workaround
+                pj1.index=scft.index
+                
+                pj2=self.interface.df.DataFrame(mapping.transform(sct),index=sct.index)
+                #cudf workaround
+                pj2.index=sct.index
+
+                proj = self.interface.df.concat([pj1,pj2], axis=0)
+                proj = proj.loc[selcut.index]
+            else:
+           
+                proj = self.interface.df.DataFrame(mapping.fit_transform(selcut, y=dataGlobal.locCat(dataGlobal.labels,selcut.index,self.supervised)), index=selcut.index) 
+                #for some reason it seems cudf doesn't assign the index here...
+                proj.index=selcut.index
 
             if (self.savemap == True):
                 with open(os.path.join(self.outpath,'raccoonData/'+self._name+'_2d.pkl'), 'wb') as file:
@@ -549,8 +599,9 @@ class recursiveClustering:
 
         """ Plot the same 2-dimensional umap with labels if provided. """
 
-        if self.lab is not None:
-            plotting.plotMap(self.interface.getValue(proj, pandas=True), self.interface.getValue(self.lab, pandas=True), 'proj_labels_'+self._name, self.outpath)
+        if dataGlobal.labels is not None:
+
+            plotting.plotMap(self.interface.getValue(proj, pandas=True), self.interface.getValue(dataGlobal.labels.loc[proj.index], pandas=True), 'proj_labels_'+self._name, self.outpath)
 
         """ Plot the same 2-dimensional umap with transform only data if provided. """
 
@@ -606,7 +657,6 @@ class recursiveClustering:
 
         mparams={}
         if self.metricClu=='mahalanobis':
-            #mparams={'V': self.interface.num.cov(pj.T)}
             try:
                 mparams={'VI': self.interface.num.linalg.inv(self.interface.num.cov(pj.T))}
             except:
@@ -646,8 +696,6 @@ class recursiveClustering:
         if self.clusterer=='DBSCAN':
             ref=self._elbow(pj)
             logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(ref/50,ref*1.5))
-            #logging.debug('Epsilon range guess: [{:.5f},{:.5f}]'.format(self.interface.getValue(ref/50),
-            #                self.interface.getValue(ref*1.5)))
 
             return self.interface.num.linspace(ref/50,ref*1.5,100)
 
@@ -683,17 +731,7 @@ class recursiveClustering:
 
         if self.score=='silhouette':
             return self.interface.silhouette(points, labels, metric=self.metricClu)
-
         elif self.score=='dunn':
-
-            #actMetric=self.metricClu
-            #if self.metricClu=='mahalanobis':
-            #    #since mahalanobis is only available on CPU, this workaround is ok for now
-            #    try:
-            #        actMetric=self.interface.dmet.get_metric(self.metricClu, VI=self.interface.num.linalg.inv(self.interface.num.cov(points.T))
-            #    except:
-            #        actMetric=self.interface.dmet.get_metric(self.metricClu, VI=self.interface.num.linalg.pinv(self.interface.num.cov(points.T))
-            
             return self.interface.dunn(points, labels, metric=self.metricClu)
         else: 
             sys.exit('ERROR: score not recognized')
@@ -714,7 +752,6 @@ class recursiveClustering:
 
         mparams={}
         if self.metricClu=='mahalanobis':
-            #mparams={'V': self.interface.num.cov(pj.T)}
             try:
                 mparams={'VI': self.interface.num.linalg.inv(self.interface.num.cov(pj.T))}
             except:
@@ -756,8 +793,9 @@ class recursiveClustering:
         keepfeat = self.interface.num.nan
 
         init='spectral'
-        if dataGlobal.dataset.loc[self.dataIx].shape[0]<=self.dim:
+        if dataGlobal.dataset.loc[self.dataIx].shape[0]<=self.dim+1:
             init='random'
+        logging.debug('Initialization: '+init)
 
         """ Remove columns with low information from data matrix. """
 
@@ -785,10 +823,18 @@ class recursiveClustering:
                 n_epochs=self.epochs, learning_rate=self.lr, verbose=False, random_state=self._umapRs, init=init)
         
         if self.transform is not None:
-            pj = self.interface.df.DataFrame(mapping.fit_transform(dataCut[~dataCut.index.isin(self.transform)]), 
-                index=dataCut[~dataCut.index.isin(self.transform)].index)
+
+            untransf=dataCut[~dataCut.index.isin(self.transform)]
+
+            pj = self.interface.df.DataFrame(mapping.fit_transform(untransf, y=dataGlobal.locCat(dataGlobal.labels,untransf.index,self.supervised)), index=untransf.index)
+            #cudf workaround
+            pj.index=untransf.index
+        
         else: 
-            pj = self.interface.df.DataFrame(mapping.fit_transform(dataCut), index=dataCut.index) 
+            
+            pj = self.interface.df.DataFrame(mapping.fit_transform(dataCut, y=dataGlobal.locCat(dataGlobal.labels,dataCut.index,self.supervised)), index=dataCut.index) 
+            #cudf workaround
+            pj.index=dataCut.index
 
         if not pj.isnull().values.any():
 
@@ -890,8 +936,9 @@ class recursiveClustering:
 
 
         init='spectral'
-        if dataGlobal.dataset.loc[self.dataIx].shape[0]<=self.dim:
+        if dataGlobal.dataset.loc[self.dataIx].shape[0]<=self.dim+1:
             init='random'
+        logging.debug('Initialization: '+init)
 
         if self.ffrange == 'kde':
             self.ffrange = ['kde']
@@ -903,8 +950,7 @@ class recursiveClustering:
             logging.debug('Features cutoff: {:.3f}'.format(cutoff))
 
             dataCut, decomposer =self._featuresRemoval(cutoff)
-
-
+                
             if self.norm is not None:
 
                 """ Normalize data. """
@@ -926,13 +972,23 @@ class recursiveClustering:
                     
                 """if data to be projected only is provided, calculate optimality only on the fit data. """
           
+                #labs=None
+                
                 if self.transform is not None:
-                    pj = self.interface.df.DataFrame(mapping.fit_transform(dataCut[~dataCut.index.isin(self.transform)]), 
-                        index=dataCut[~dataCut.index.isin(self.transform)].index)
+                    
+                    untransf=dataCut[~dataCut.index.isin(self.transform)]
+                    
+                    pj = self.interface.df.DataFrame(mapping.fit_transform(untransf, y=dataGlobal.locCat(dataGlobal.labels,untransf.index,self.supervised)), 
+                        index=untransf.index)
+                    #cudf workaround
+                    pj.index=untransf.index
+
                 else: 
-                    pj = self.interface.df.DataFrame(mapping.fit_transform(dataCut), index=dataCut.index) 
 
-
+                    pj = self.interface.df.DataFrame(mapping.fit_transform(dataCut, y=dataGlobal.locCat(dataGlobal.labels,dataCut.index,self.supervised)), index=dataCut.index) 
+                    #cudf workaround
+                    pj.index=dataCut.index
+                
                 if not pj.isnull().values.any():
 
                     """ Set cluster_selection_epsilon for HDBSCAN. """
@@ -985,7 +1041,7 @@ class recursiveClustering:
                             pjOpt = pj
                             cutOpt = cutoff
                             mapOpt = mapping 
-                            if self.filterfeat in ['variance','MAD']:
+                            if self.filterfeat in ['variance','MAD','correlation']:
                                 keepfeat= dataCut.columns
                             if self.filterfeat=='tSVD':
                                 decompOpt = decomposer
@@ -1019,7 +1075,6 @@ class recursiveClustering:
 
         mparams={}
         if self.metricClu=='mahalanobis':
-            #mparams={'V': self.interface.num.cov(pjOpt.T)}
             try:
                 mparams={'VI': self.interface.num.linalg.inv(self.interface.num.cov(pjOpt.T))}
             except:
@@ -1148,13 +1203,13 @@ class recursiveClustering:
 
         else:
             sys.exit('ERROR: optimizer not recognized')
-
+        
         """ If data to be projected only is provided, apply projection. """
 
         if (self.transform is not None):
 
             #A bit redundant, try to clean up
-            if self.filterfeat in ['variance','MAD']:
+            if self.filterfeat in ['variance','MAD','correlation']:
                 transdata=dataGlobal.dataset.loc[self.dataIx][keepfeat].loc[self.transform]
             elif self.filterfeat=='tSVD':
                 transdata=decompOpt.transform(dataGlobal.dataset.loc[self.transform])
@@ -1224,7 +1279,7 @@ class recursiveClustering:
 
         if (self.savemap == True):
             with open(os.path.join(self.outpath,'raccoonData/'+self._name+'.pkl'), 'wb') as file:
-                if self.filterfeat in ['variance','MAD']:
+                if self.filterfeat in ['variance','MAD','correlation']:
                     pickle.dump([keepfeat,chomap], file)
                 elif self.filterfeat=='tSVD':
                     pickle.dump([decompOpt,chomap], file)
@@ -1240,7 +1295,7 @@ class recursiveClustering:
             return
 
         """ Plotting. """        
-
+        
         self._plot(nNei, pj, cut, keepfeat, decompOpt, clusTmp, scoreslist)
 
 
@@ -1254,11 +1309,6 @@ class recursiveClustering:
 
             selNew = dataGlobal.dataset.loc[self.dataIx].loc[clusTmp[clusTmp[l]==1].index]
  
-            if (self.lab is not None):
-                labNew = self.lab.loc[clusTmp[clusTmp[l]==1].index]
-            else:
-                labNew = None
-
             logging.info('Going deeper within Cluster # ' +
                   str(l)+' [depth: {:d}'.format(self._depth)+']')
 
@@ -1269,6 +1319,7 @@ class recursiveClustering:
                     to_transform = None
             else:
                 to_transform = None
+
 
             """ Move along the list of parameters to change granularity. """
             if self.optimizer=='grid' and len(self.ffpoints)>1:
@@ -1288,7 +1339,7 @@ class recursiveClustering:
                 logging.info('Parameters granilarity change ' +
                 '[DE iterations: {:d}'.format(int(self.deiter[0]))+']')
 
-            deep = recursiveClustering(selNew.index, lab=labNew, transform=to_transform, dim=self.dim, epochs=self.epochs, lr=self.lr, 
+            deep = recursiveClustering(selNew.index, lab=None, transform=to_transform, dim=self.dim, epochs=self.epochs, lr=self.lr, 
                                       neirange=self.neirange, neipoints=self.neipoints, neicap=self.neicap, metricMap=self.metricMap, metricClu=self.metricClu, 
                                       popcut=self.popcut, filterfeat=self.filterfeat, ffrange=self.ffrange, ffpoints=self.ffpoints, 
                                       optimizer=self.optimtrue, depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm, 
@@ -1302,7 +1353,6 @@ class recursiveClustering:
 
             if deep.clusOpt is not None:
      
-                
                 #for now join not available in cudf
                 #clusTmp = self.interface.df.concat([clusTmp, deep.clusOpt], axis=1, join='outer')
                 deep.clusOpt=deep.clusOpt.reindex(clusTmp.index)

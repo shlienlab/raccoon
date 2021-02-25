@@ -224,7 +224,8 @@ class interfaceCPU(interface):
         
         """ Calculates the dunn index score for a set of points
             and clusters labels.
-
+            WARNING: slow!
+    
         Args:
             points (self.df.DataFrame): points coordinates.
             labels (self.df.Series): clusters membership labels.
@@ -239,10 +240,11 @@ class interfaceCPU(interface):
         if kwargs['metric'] == 'mahalanobis':
             invcov = self.invCov(centroids)
             samples = [self.pwd(points[labels==l], **kwargs, VI=self.invCov(points[labels==l])).max() for l in self.num.unique(labels)]
+            kwargs['VI']=invcov
         else:
             samples = [self.pwd(points[labels==l], **kwargs).max() for l in self.num.unique(labels)]
 
-        inter = self.pwd(centroids, **kwargs, VI=invcov)
+        inter = self.pwd(centroids, **kwargs)
         self.num.fill_diagonal(inter,inter.max()+1)
         inter = self.num.amin(inter)
         intra = self.num.amax(samples)
@@ -427,6 +429,7 @@ class interfaceGPU(interface):
 
         """ Calculates the dunn index score for a set of points
             and clusters labels.
+            WARNING: slow!
 
         Args:
             points (self.df.DataFrame): points coordinates.
