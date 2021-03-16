@@ -1,48 +1,51 @@
+
 """
-Basic k-nearest neighbours classifier for RACCOON (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+Basic k-nearest neighbours classifier for RACCOON
+(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2020
 """
 
 import os
+import sys
 import pickle
-import psutil
-
-#import pandas as pd
-#from scipy.sparse import csr_matrix
 
 import logging
 import time
-
-import raccoon.interface as interface
+import psutil
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+import raccoon.interface as interface
 
+class KNN:
 
-class knn:
-
-
-    #TODO: add logging!
+    # TODO: add logging!
 
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
 
-    def __init__(self, data, oriData, oriClust, refpath="./raccoonData/", outpath="", root='0', debug=False, gpu=False):
-
+    def __init__(self, data, ori_data, ori_clust,
+            refpath="./raccoon_data/", outpath="",
+            root='0', debug=False, gpu=False):
         """ Initialize the the class.
 
         Args:
-            data (matrix or pandas dataframe): input data in pandas dataframe-compatible format (samples as row, features as columns).
-            oriData (matrix or pandas dataframe): original data clustered with RACCOON in pandas dataframe-compatible format (samples as row, features as columns).
-            oriClust (matrix or pandas dataframe): original RACCOON output one-hot-encoded class membership in pandas dataframe-compatible format 
+            data (matrix or pandas dataframe): input data in pandas dataframe-compatible format
+                (samples as row, features as columns).
+            ori_data (matrix or pandas dataframe): original data clustered with RACCOON in pandas
+                dataframe-compatible format (samples as row, features as columns).
+            ori_clust (matrix or pandas dataframe): original RACCOON output one-hot-encoded class
+                membership in pandas dataframe-compatible format
                 (samples as row, classes as columns).
-            refpath (string): path to the location where trained umap files (pkl) are stored (default, subdirectory racoonData of current folder).
-            outpath (string): path to the location where outputs will be saved (default, save to the current folder).
-            root (string): name of the root node, parent of all the classes within the first clustering leve. Needed to identify the appropriate pkl file (default 0).
+            refpath (string): path to the location where trained umap files (pkl) are stored
+                (default subdirectory racoon_data of current folder).
+            outpath (string): path to the location where outputs will be saved
+                (default save to the current folder).
+            root (string): name of the root node, parent of all the classes within the first
+                clustering leve. Needed to identify the appropriate pkl file (default 0).
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
             gpu (bool): activate GPU version (requires RAPIDS).
         """
-
 
         self.start_time = time.time()
 
@@ -52,245 +55,264 @@ class knn:
 
         if self.gpu:
             try:
-                self.interface=interface.interfaceGPU()
-            except:
+                self.interface = interface.InterfaceGPU()
+            except BaseException:
                 warnings.warn("No RAPIDS found, running on CPU instead.")
-                self.gpu=False
+                self.gpu = False
 
         if not self.gpu:
-            self.interface=interface.interfaceCPU()
-
+            self.interface = interface.InterfaceCPU()
 
         if not isinstance(data, self.interface.df.DataFrame):
             try:
-                data=self.interface.df.DataFrame(data)
-            except:
+                data = self.interface.df.DataFrame(data)
+            except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
-                print('Input data should be in a format that can be translated to pandas dataframe!')
+                print('Input data should be in a format that can be translated \
+                       to pandas dataframe!')
                 raise
 
-        if not isinstance(oriData, self.interface.df.DataFrame):
+        if not isinstance(ori_data, self.interface.df.DataFrame):
             try:
-                data=self.interface.df.DataFrame(oriData)
-            except:
+                data = self.interface.df.DataFrame(ori_data)
+            except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
-                print('Input data (original) should be in a format that can be translated to pandas dataframe!')
+                print('Input data (original) should be in a format that can be \
+                       translated to pandas dataframe!')
                 raise
 
-        if not isinstance(oriClust, self.interface.df.DataFrame):
+        if not isinstance(ori_clust, self.interface.df.DataFrame):
             try:
-                data=self.interface.df.DataFrame(oriClust)
-            except:
+                data = self.interface.df.DataFrame(ori_clust)
+            except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
-                print('Input data (clusters) should be in a format that can be translated to pandas dataframe!')
+                print('Input data (clusters) should be in a format that can be \
+                       translated to pandas dataframe!')
                 raise
 
+        self.ori_data = ori_data.astype(self.interface.num.float)
+        self.data = data[self.ori_data.columns].astype(self.interface.num.float)
+        self.ori_clust = ori_clust
+        self.refpath = refpath
+        self.outpath = outpath
+        self.root = root
+        self.debug = debug
 
-        self.oriData=oriData.astype(self.interface.num.float)
-        self.data=data[self.oriData.columns].astype(self.interface.num.float)
-        self.oriClust=oriClust
-        self.refpath=refpath
-        self.outpath=outpath
-        self.root=root
-        self.debug=debug
+        self.children = {}
+        self.parents = {}
+        self._build_hierarchy()
 
-        self.children={}
-        self.parents={}
-        self._buildHierarchy()
-
-        self.membership=[]
+        self.membership = []
 
         """ Configure log. """
 
-        logname='raccoon_knn_'+str(os.getpid())+'.log'
-        print('Log information will be saved to '+logname)
+        logname = 'raccoon_knn_' + str(os.getpid()) + '.log'
+        print('Log information will be saved to ' + logname)
 
-        logging.basicConfig(level=logging.INFO, filename=os.path.join(outpath, logname), filemode="a+",
-                        format="%(asctime)-15s %(levelname)-8s %(message)s")
+        logging.basic_config(
+            level=logging.INFO,
+            filename=os.path.join(outpath, logname),
+            filemode="a+",
+            format="%(asctime)-15s %(levelname)-8s %(message)s")
         logging.getLogger('matplotlib.font_manager').disabled = True
 
         if self.debug:
             logging.getLogger().setLevel(logging.DEBUG)
-            self._umapRs=32
+            self._umap_rs = 32
         else:
             logging.getLogger().setLevel(logging.INFO)
-            self._umapRs=None
+            self._umap_rs = None
 
-
-    def _buildHierarchy(self):
-
+    def _build_hierarchy(self):
         """ Builds a dictionary with information on the classess hierarchy. """
 
         # Unneccessarily complicated, but it works in case the classes have custom names
         # and are not already ordered hierarchically
         # TODO: clean up
 
-        for i in range(len(self.oriClust.columns)):
-            parent=self.oriClust.columns[i]
-            parentIx=self.oriClust[self.oriClust[parent]==1].index
-            self.children[parent]=[]
-            for j in range(len(self.oriClust.columns)):
-                if i!=j:
-                    child=self.oriClust.columns[j]
-                    childIx=self.oriClust[self.oriClust[child]==1].index
+        for i in range(len(self.ori_clust.columns)):
+            parent = self.ori_clust.columns[i]
+            parent_ix = self.ori_clust[self.ori_clust[parent] == 1].index
+            self.children[parent] = []
+            for j in range(len(self.ori_clust.columns)):
+                if i != j:
+                    child = self.ori_clust.columns[j]
+                    child_ix = self.ori_clust[self.ori_clust[child] == 1].index
                     if child not in self.parents:
-                        self.parents[child]=[]
-                    if all(ix in parentIx for ix in childIx):
+                        self.parents[child] = []
+                    if all(ix in parent_ix for ix in child_ix):
                         self.children[parent].append(child)
                         self.parents[child].append(parent)
 
-        for parent,children in self.children.items():
-            toremove=[]
+        for parent, children in self.children.items():
+            toremove = []
             for j in children:
                 for k in children:
-                    if j!=k and j in self.children[k]:
+                    if j != k and j in self.children[k]:
                         toremove.append(j)
-            self.children[parent]=[c for c in self.children[parent] if c not in toremove]
+            self.children[parent] = [c for c in self.children[parent]
+                                     if c not in toremove]
 
-        for child,parents in self.parents.items():
-            if parents!=[]:
-                lengths=[self.oriClust[x].sum() for x in parents]
-                self.parents[child]=parents[lengths.index(min(lengths))]
+        for child, parents in self.parents.items():
+            if parents != []:
+                lengths = [self.ori_clust[x].sum() for x in parents]
+                self.parents[child] = parents[lengths.index(min(lengths))]
             else:
-                self.parents[child]=None
+                self.parents[child] = None
 
-
-    def _dampenChildProb(self):
-
+    def _dampen_child_prob(self):
         """ Renormalize the probabilities of a child class according to that of its parent. """
 
         for child in self.membership.columns:
             if self.parents[child] is not None:
-                self.membership[child]*=self.membership[self.parents[child]]
+                self.membership[child] *= self.membership[self.parents[child]]
 
-
-    def assignMembership(self):
-
-        """ Identifies class membership probabilities with a distance-weighted k-nearest neighbours algorith. """
+    def assign_membership(self):
+        """ Identifies class membership probabilities with a distance-weighted
+            k-nearest neighbours algorith. """
 
         logging.info("Loading parameters data")
 
-        names=[]
+        names = []
 
-        paramdata=self.interface.df.read_csv(os.path.join(self.refpath,'paramdata.csv'))
-        paramdata['name']=paramdata['name'].str.strip('cluster ')
-        paramdata=paramdata.set_index('name',drop=True)
+        paramdata = self.interface.df.read_csv(
+            os.path.join(self.refpath, 'paramdata.csv'))
+        paramdata['name'] = paramdata['name'].str.strip('cluster ')
+        paramdata = paramdata.set_index('name', drop=True)
 
-        for f in os.listdir(self.refpath): 
+        for f in os.listdir(self.refpath):
 
             if f.endswith('.pkl') and not f.endswith('_2d.pkl'):
 
                 try:
 
-                    with open(os.path.join(self.refpath,f), 'rb') as file:
+                    with open(os.path.join(self.refpath, f), 'rb') as file:
                         names.append(f.strip('.pkl'))
-                        loader=pickle.load(file)
-                        genecut=loader[0]
-                        mapping=loader[1]
-                        nnei=mapping.n_neighbors
-                        metric=paramdata['metric_clust'].loc[names[-1]]
-                        norm=paramdata['norm'].loc[names[-1]]
+                        loader = pickle.load(file)
+                        genecut = loader[0]
+                        mapping = loader[1]
+                        nnei = mapping.n_neighbors
+                        metric = paramdata['metric_clust'].loc[names[-1]]
+                        norm = paramdata['norm'].loc[names[-1]]
                         file.close()
 
-                except:
+                except BaseException:
 
                     continue
-                    
-                logging.info("Working with subclusters of "+ names[-1])
+
+                logging.info("Working with subclusters of " + names[-1])
 
                 logging.debug('Nearest Neighbours #: {:d}'.format(nnei))
-                logging.debug('Clustering metric: '+metric)
+                logging.debug('Clustering metric: ' + metric)
 
-                if isinstance(genecut,self.interface.df.Index):
-                    
+                if isinstance(genecut, self.interface.df.Index):
+
                     """ low information filter. """
 
-                    dfCut=self.data[genecut]
-                
+                    df_cut = self.data[genecut]
+
                 else:
-                
+
                     """ tSVD. """
-                    #sparseMat=csr_matrix(self.data.values)
-                    #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=self.data.index)
-                    dfCut=self.interface.df.DataFrame(genecut.transform(self.data.values), index=self.data.index)
-
-
+                    # sparse_mat=csr_matrix(self.data.values)
+                    #df_cut=self.interface.df.DataFrame(genecut.transform(sparse_mat),
+                    #iidex=self.data.index)
+                    df_cut = self.interface.df.DataFrame(genecut.transform(self.data.values),
+                            index=self.data.index)
 
                 if not self.interface.num.isnan(norm):
 
-                    logging.debug('Norm: '+norm)
-                
+                    logging.debug('Norm: ' + norm)
+
                     """ Normalize data. """
 
-                    dfCut=self.interface.df.DataFrame(normalize(dfCut, norm=norm), index=dfCut.index, columns=dfCut.columns)
+                    df_cut = self.interface.df.DataFrame(normalize(df_cut, norm=norm),
+                        index=df_cut.index,
+                        columns=df_cut.columns)
 
-                proj=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
-                #cudf workaround
-                proj.index=dfCut.index
+                proj = self.interface.df.DataFrame(mapping.transform(df_cut.values),
+                    index=df_cut.index)
+                # cudf workaround
+                proj.index = df_cut.index
 
-                if names[-1]==self.root:
-                    refDf=self.oriData
-                    nextClust=self.oriClust[[child for child,parent in self.parents.items() if parent is None]]
+                if names[-1] == self.root:
+                    ref_df = self.ori_data
+                    next_clust = self.ori_clust[[
+                        child for child, parent in self.parents.items() if parent is None]]
                 else:
-                    refDf=self.oriData[self.oriClust[names[-1]]==1]
-                    nextClust=self.oriClust[self.oriClust[names[-1]]==1][self.children[names[-1]]]
+                    ref_df = self.ori_data[self.ori_clust[names[-1]] == 1]
+                    next_clust = self.ori_clust[self.ori_clust[names[-1]]== 1]\
+                                [self.children[names[-1]]]
 
-                if isinstance(genecut,self.interface.df.Index):
-                    
+                if isinstance(genecut, self.interface.df.Index):
+
                     """ low information filter. """
 
-                    dfCut=refDf[genecut]
-                
+                    df_cut = ref_df[genecut]
+
                 else:
-                
+
                     """ tSVD. """
-                    #sparseMat=csr_matrix(refDf.values)
-                    #dfCut=self.interface.df.DataFrame(genecut.transform(sparseMat), index=refDf.index)
-                    dfCut=self.interface.df.DataFrame(genecut.transform(refDf.values), index=refDf.index)
+                    # sparse_mat=csr_matrix(ref_df.values)
+                    #df_cut=self.interface.df.DataFrame(genecut.transform(sparse_mat),
+                    #      index=ref_df.index)
+                    df_cut = self.interface.df.DataFrame(
+                        genecut.transform(ref_df.values), index=ref_df.index)
 
-                projRef=self.interface.df.DataFrame(mapping.transform(dfCut.values), index=dfCut.index)
-                #cudf workaround
-                projRef.index=dfCut.index
+                proj_ref = self.interface.df.DataFrame(
+                    mapping.transform(df_cut.values), index=df_cut.index)
+                # cudf workaround
+                proj_ref.index = df_cut.index
 
-                projAll=self.interface.df.concat([proj,projRef],axis=0)
-               
-                neigh=self.interface.nNeighbor(n_neighbors=nnei, metric=metric, n_jobs=-1).fit(projAll)
-                kn=neigh.kneighbors(projAll, n_neighbors=len(projAll), return_distance=True)
+                proj_all = self.interface.df.concat([proj, proj_ref], axis=0)
 
-                newk=[]
+                neigh = self.interface.n_neighbor(
+                    n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj_all)
+                kn = neigh.kneighbors(
+                    proj_all,
+                    n_neighbors=len(proj_all),
+                    return_distance=True)
+
+                newk = []
                 for i in range(len(proj)):
-                    newk.append([[],[]])
-                    tupl=[(x,y) for x,y in zip(kn[0][i],kn[1][i]) if y in range(len(proj),len(projRef)+len(proj))]
+                    newk.append([[], []])
+                    tupl = [(x, y)
+                            for x, y in zip(kn[0][i], kn[1][i])
+                            if y in range(len(proj), len(proj_ref) + len(proj))]
                     for t in tupl:
                         newk[-1][0].append(t[0])
                         newk[-1][1].append(t[1])
 
                 for k in range(len(newk)):
-                    newk[k]=[newk[k][0][:nnei],newk[k][1][:nnei]]
-                    
-                valals=[]   
+                    newk[k] = [newk[k][0][:nnei], newk[k][1][:nnei]]
+
+                valals = []
                 for k in range(len(newk)):
-                    vals=nextClust.loc[projAll.iloc[newk[k][1]].index].apply(lambda x: x/newk[k][0], axis=0)[1:]
-                    valals.append((vals.sum(axis=0)/vals.sum().sum()).values)
+                    vals = next_clust.loc[proj_all.iloc[newk[k][1]].index].apply(
+                        lambda x: x / newk[k][0], axis=0)[1:]
+                    valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
 
-                self.membership.append(self.interface.df.DataFrame(valals, index=proj.index, columns=nextClust.columns))     
-            
-        if len(names)>0:
+                self.membership.append(
+                    self.interface.df.DataFrame(valals,
+                        index=proj.index,
+                        columns=next_clust.columns))
 
-            self.membership=self.interface.df.concat(self.membership,axis=1)
-            self.membership=self.membership.reindex(columns=self.oriClust.columns)
-            self.membership.fillna(0,inplace=True)
+        if len(names) > 0:
 
-            #TODO: currently this assumes the classes are ordered hiearchically, make general
-            self._dampenChildProb()
+            self.membership = self.interface.df.concat(self.membership, axis=1)
+            self.membership = self.membership.reindex(columns=self.ori_clust.columns)
+            self.membership.fillna(0, inplace=True)
 
-            logging.info('=========== Assignment Complete ===========')        
-            logging.info('Total time of the operation: {:.3f} seconds'.format((time.time() - self.start_time)))
-            logging.info(psutil.virtual_memory())    
-        
+            # TODO: currently this assumes the classes are ordered
+            # hiearchically, make general
+            self._dampen_child_prob()
+
+            logging.info('=========== Assignment Complete ===========')
+            logging.info('Total time of the operation: {:.3f} seconds'.format(
+                    (time.time() - self.start_time)))
+            logging.info(psutil.virtual_memory())
+
         else:
-            
+
             logging.error("No trained map files found!")
-            print("ERROR: No trained map files found!")            
-
-
+            print("ERROR: No trained map files found!")

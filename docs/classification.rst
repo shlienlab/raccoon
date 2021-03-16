@@ -17,15 +17,17 @@ To run this classifier, :code:`savemap` must be active during the clustering.
 
 To k-NN object, has to be initialised with the dataset do be predicted,
 the original dataset used to build the clusters, their membership
-table (as output by :code:`recursiveClustering`) 
-and the path to the reference folder (:code:`raccoonData`) 
+table (as output by :code:`recursive_clustering`) 
+and the path to the reference folder (:code:`raccoon_data`) 
 containing the trained maps. It also take an output folder for logging purposes
 and a debugging mode switch.
 
 .. code-block:: python
+  
+  from raccoon.utils.classification import KNN
 
-  obj = knn(dfToPredict, df, clusterMembership, refpath=r'./raccoonData', outpath=r'./')
-  obj.assignMembership()
+  obj = KNN(df_to_predict, df, cluster_membership, refpath=r'./raccoon_data', outpath=r'./')
+  obj.assign_membership()
 
   output = obj.membership
   

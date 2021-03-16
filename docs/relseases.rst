@@ -33,6 +33,5 @@ To Do
 ...   
     - Add automatic testing with nose/pytest
    
-   - Make HDBSCAN,seaborn optional
-   - Add more clustering identification options
+   - Add more clusters identification options
 

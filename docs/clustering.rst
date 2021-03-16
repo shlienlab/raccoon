@@ -13,10 +13,10 @@ and call the recursion by themeslves.
 
 .. code-block:: python
 
-  obj = recursiveClustering(data, **kwargs)
+  obj = RecursiveClustering(data, **kwargs)
   obj.recurse()
   
-:code:`recursiveClustering` takes an initial matrix-like object 
+:code:`RecursiveClustering` takes an initial matrix-like object 
 (rows as samples, columns as features), and a number of optional flags,
 including a matching list of labels 
 for plotting (:code:`labs`).
@@ -27,9 +27,9 @@ and assignment of the hierarchy of identified classes.
 
 .. code-block:: python
 
-  obj.clusOpt
+  obj.clus_opt
 
-The numerous flags available to :code:`recursiveClustering` 
+The numerous flags available to :code:`RecursiveClustering` 
 allows for great flexibility in the clustering analysis.
 
 Among these we find
@@ -113,12 +113,15 @@ To drive the optimization, different clustering evaluation scores can be used
 :code:`'silhouette'`  **Silhouette Score**: mesures the ratio of the intra-cluster 
                       and inter-cluster distances, it ranges between 1 for an optimal
                       separation and -1 for ill-defined clusters. [Rousseeuw1987]_
+:code:`'dunn'`        **Dunn Index**: mesures the ratio of the intra-cluster and 
+                      inter-cluster distances, it ranges between +inf for an optimal
+                      separation and 0 for ill-defined clusters. [Dunn1973]_
 ====================  ============================================================
 
 These scores require to measure the distances between points and/or clusters
-in the embedded space. With :code:`metricC`, one can select which metric to use.
+in the embedded space. With :code:`metric_clu`, one can select which metric to use.
 Standard measures, as implemented in :code:`sklearn` 
-(e.g. :code:`'euclidean'` or :code:`'cosine'`) are available.
+(e.g. :code:`'euclidean'`, :code:`'cosine'`, or :code:`'mahalanobis'`) are available.
 
 When :code:`'silhouette'` is selected, its mean value on all data points is maximized. 
 To assure quality in the library's outputs, set of parameters
@@ -176,7 +179,7 @@ the results and the efficiency of the algorithm. The choice of metric for the ob
 function will also depend on this value, as :code:`'euclidean'` distances are only viable in two 
 dimensions.
 
-We suggest you leave the choice of mapping metric (:code:`metricM`), the number of epochs (:code:`epochs`) 
+We suggest you leave the choice of mapping metric (:code:`metric_map`), the number of epochs (:code:`epochs`) 
 and learning rate (:code:`lr`), to their default values unless you know what you are doing.
 
 Finally, as in the case of the features removal step, the number of nearest neighbours,
@@ -211,7 +214,7 @@ as :code:`guess` which allows the algorithm to find an ideal range based on the 
 If :code:`'DBSCAN'` is chosen as clusterer, its minimum value of cluster size can also be set
 with :code:`minclusize`.
 
-This step is also affected by the choice of :code:`metricC` as distances need to be measured
+This step is also affected by the choice of :code:`metric_clu` as distances need to be measured
 in the embedded space.
 
 For those clustering algorithm that allow to discard points at noise, the :code:`outliers`
@@ -251,18 +254,18 @@ color coded according to which points were used for the training and which trans
 Saving hierarchy information
 ============================
 
-The resulting clustering membership will be stored as a one-hot-encoded pandas dataframe in the :code:`obj.clusOpt` variable.
+The resulting clustering membership will be stored as a one-hot-encoded pandas dataframe in the :code:`obj.clus_opt` variable.
 However, auxiliary functions are available to store the hierarchy information as an :code:`anytree` object as well.
 
 .. code-block:: python
   
   import raccoon.utils.trees as trees
 
-  tree = trees.buildTree(obj.clusOpt)
+  tree = trees.build_tree(obj.clus_opt)
 
-:code:`buildTree` requires the membership assignment table as input and optionally a path to where to save the tree in :code:`json` format.
+:code:`build_tree` requires the membership assignment table as input and optionally a path to where to save the tree in :code:`json` format.
 By default it will be saved in the home directory of the run.
-To load a tree from the :code:`json` foile :code:`loadTree` only requires its path.
+To load a tree from the :code:`json` foile :code:`load_tree` only requires its path.
 
 Repeating a run
 ===============
@@ -282,6 +285,7 @@ References
         
 .. [Storn1997] Storn R. and Price K. (1997),  "Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces", Journal of Global Optimization, 11: 341-359.
 .. [Rousseeuw1987] Rousseeuw P. J. (1987), "Silhouettes: a Graphical Aid to the Interpretation and Validation of Cluster Analysis", Computational and Applied Mathematics, 20: 53-65.
+.. [Dunn1973] Dunn J. C. (1973), "Well-Separated Clusters and Optimal Fuzzy Partitions", Journal of Cybernetics, 4:1, 95-104.
 .. [Hansen1987] Hansen, P. C. (1987), "The truncatedSVD as a method for regularization", BIT, 27:,: 534–553. 
 .. [Ester1996] Ester M., Kriegel H. P., Sander J. and Xu X. (1996), “A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise”, Proceedings of the 2nd International Conference on Knowledge Discovery and Data Mining, 226-231.
 .. [Campello2013] Campello R.J.G.B., Moulavi D., Sander J. (2013) Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining, PAKDD  Lecture Notes in Computer Science, vol 7819.

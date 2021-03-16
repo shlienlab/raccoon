@@ -3,30 +3,30 @@ Set of standardized tests for the clustering function of RACCOON
 F. Comitani     @2020
 """
 import os
-import pandas as pd
-
-
-#tmp workarond
 import sys
+# tmp workarond
 sys.path.append(r'/hpf/largeprojects/adam/projects/raccoon')
 
-from raccoon.utils.classification import knn
+import pandas as pd
 
-def knn_test(data,refpath):
+from raccoon.utils.classification import KNN
 
-    """ k-NN classification test, euclidean grid. 
+def knn_test(data, refpath):
+    """ k-NN classification test, euclidean grid.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
             refpath (string): path to reference files.
     """
 
-    rcknn=knn(data.sample(frac=.5), data, pd.read_hdf(os.path.join(refpath,'raccoonData/finalOutput.h5')), refpath=os.path.join(refpath,'raccoonData'), outpath=refpath)
-    rcknn.assignMembership()
+    rcknn = KNN(data.sample(frac=.5), data,
+        pd.read_hdf(os.path.join(refpath,'raccoon_data/final_output.h5')),
+        refpath=os.path.join(refpath,'raccoon_data'),
+        outpath=refpath)
+    rcknn.assign_membership()
 
 
-def knn_gpu_test(data,refpath):
-
+def knn_gpu_test(data, refpath):
     """ k-NN classification test, euclidean grid, with RAPIDS.
 
         Args:
@@ -34,8 +34,13 @@ def knn_gpu_test(data,refpath):
             refpath (string): path to reference files.
     """
 
-    rcknn=knn(data.sample(frac=.5), data, pd.read_hdf(os.path.join(refpath,'raccoonData/finalOutput.h5')), refpath=os.path.join(refpath,'raccoonData'), outpath=refpath, gpu=True)
-    rcknn.assignMembership()
+    rcknn = KNN(data.sample(frac=.5), data,
+        pd.read_hdf(os.path.join(refpath,'raccoon_data/final_output.h5')),
+        refpath=os.path.join(refpath,'raccoon_data'),
+        outpath=refpath,
+        gpu=True)
+    rcknn.assign_membership()
+
 
 if __name__ == "__main__":
 

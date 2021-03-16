@@ -1,9 +1,11 @@
 """
-Optional Imports class
+Optional imports class for RACCOON
+(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2021
 """
 
-class optionalImports:
+
+class OptionalImports:
 
     """ Static container to keep track of optional
         libraries and their imports """

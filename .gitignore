@@ -137,3 +137,5 @@ backups/
 */.DS_Store
 */*/.DS_Store
 
+# Pylint reports
+pylint*

@@ -4,7 +4,7 @@
 ## Recursive Algorithm for Coarse-to-fine Clusters OptimizatiON
 ### v 0.3.0
 
-raccoon is a python 3 package for recursive clustering automatization. 
+`raccoon` is a python 3 package for recursive clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set as to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
 
 This library includes
@@ -16,6 +16,14 @@ This library includes
 * GPU implementation with RAPIDS
 
 Detailed documentation, API references and tutorials can be found at this [link](http://raccoon.readthedocs.org/en/latest/).
+
+### Why recursion?
+
+When working with complex high-dimensionality datasets, one may be interested in data relationships at different hierarchical levels. In a pet image recognition project, one may want to distinguish not only cats from dogs, but also different breeds.
+While a number of hierarchical clustering methods are available, they generally tend to ignore that optimal parameters of dimensionality reduction and other steps in a typical clustering analysis are dependent on the subset of data being considered, and work instead on a single set space. 
+The optimal dimensionality for separating dog breeds may lay on a different lower-dimensionality manifold than the one that allows to separate distinc species, while features that may be irrelevant in distinguishing a cat from a dog may hold considerable information at the breeds level. 
+For a proper hierarchal analysis, the choice of clustering parameters should be repeated at each iteration, accounting for the new range and shape of the data subsets.
+`raccoon` identifies the proper clustering parameters at each hierarchical level, by repeating the optimization recursively and independently for each identified cluster.  
 
 ### Dependencies
 
@@ -63,9 +71,9 @@ automatically set up a recursive clusters search with just some basic options.
 
     import raccoon as rc
 
-    clusterMembership, tree = rc.run(input, dim=2, popcut=25,
+    cluster_membership, tree = rc.run(input, dim=2, popcut=25,
                                      optimizer='auto', dynmesh=True,
-                                     metricClu='cosine', metricMap='cosine',
+                                     metric_clu='cosine', metric_map='cosine',
                                      outpath='./output', gpu=False)
 
 For more details on how to customize your run, library API and tutorials, please see the documentaion.

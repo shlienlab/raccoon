@@ -23,13 +23,13 @@ to validate the classes ant their hierarchy.
    from keras.datasets import mnist
 
 
-   nSamples = 25000
+   n_samples = 25000
    seed = 32
 
    (x_train, y_train), (x_test, y_test) = mnist.load_data()
    x_train = x_train.reshape(x_train.shape[0],x_train.shape[1]*x_train.shape[2])
-   inputDf = pd.DataFrame(x_train).sample(nSamples,random_state=seed)
-   labels = pd.Series(y_train).sample(nSamples,random_state=seed)
+   input_df = pd.DataFrame(x_train).sample(n_samples,random_state=seed)
+   labels = pd.Series(y_train).sample(n_samples,random_state=seed)
 
 we reformat the input and its labels into :code:`pandas` object, the library is able to work with any array-like format, 
 but :code:`pandas` dataframes will make our life easier. We also fix the random state seed for debugging purposes.
@@ -46,10 +46,10 @@ here we select some default values as explained in the follwing paragraphs.
 
   import raccoon as rc 
 
-  clusterMembership, tree = rc.run(inputDf, lab=labels, dim=2, popcut=50, 
-                      filterfeat='tSVD', optimizer='de', depop=25, deiter=25,  
-                      neifactor=0.5, metricC='euclidean', metricM='cosine',  
-                      outpath='./raccoonOutputs/', savemap=True) 
+  cluster_membership, tree = rc.run(input_df, lab=labels, dim=2, popcut=50, 
+                      filterfeat='t_sVD', optimizer='de', depop=25, deiter=25,  
+                      neifactor=0.5, metric_clu='euclidean', metric_map='cosine',  
+                      outpath='./raccoon_outputs/', savemap=True) 
 
 this function will automatically take care of initialising the clustering object and run it for us, it just requires the selection of which kind of tools to use.
 
@@ -59,9 +59,9 @@ if you are using an array-like format, make sure the order of your datapoints an
 
 The :code:`dim` parameter sets the dimensionality of the target space. As we go towards less and less dimensions, we start introducing artefacts (tears and deformations)
 in the embedding, but the cost to identify the clusters and compute the objective function also decreases, making the calculations more efficient.
-When chosing this parameter one should weight accuracy against cost. Here, for demonstration purposes we chose to reduce our space to only two dimensions. This also allows us to chose :code:`metricC='euclidean'` 
+When chosing this parameter one should weight accuracy against cost. Here, for demonstration purposes we chose to reduce our space to only two dimensions. This also allows us to chose :code:`metric_clu='euclidean'` 
 as the metric for the clusters identification and speed up considerably the calculations. When working with higher dimensions, metrics that handle >2 dimensions better (e.g. :code:`'cosine'` distance) should be used instead. 
-:code:`metricM` sets the metric used for the non-linear dimensionality reduction step and should be left as by default unless you really know what you are doing.
+:code:`metric_map` sets the metric used for the non-linear dimensionality reduction step and should be left as by default unless you really know what you are doing.
 .. add plot to show
 
 *Note*: When working with higher-dimensionality embedding, the library will keep producing two-dimensional plots to help with visual inspection of the results if the plotting 
@@ -83,15 +83,15 @@ With :code:`optimizer='de'` we need to set two more parameters, the number of ca
 Here, 25 for both is reasonable choice.
 .. add citations  
 
-Finally, :code:`run` will return a dataframe, :code:`clustersMembership`, with a one-hot-encoded clusters membership for the input datapoints and it will save important information to disk, in the chosen
+Finally, :code:`run` will return a dataframe, :code:`clusters_membership`, with a one-hot-encoded clusters membership for the input datapoints and it will save important information to disk, in the chosen
 output folder. Subdirectories will be automatically built to store plots and data, if the output path already contains a previous raccoon run, a prompt will ask you if you wish to delete them or interrupt the operation.
 If :code:`outputpath` is not explicitly given, the directory where the script is run will be set as home.
 We also activate :code:`savemap`, asking the algorithm to save the trained UMAP objects. These can require quite a bit of disk space, but will came in handy when we build the nearest-neighbour classifier.
 
 .. Manually running the clustering, to add in another section
-    obj = recursiveClustering(data, **kwargs) 
+    obj = RecursiveClustering(data, **kwargs) 
     obj.recurse()
-	obj.clusOpt
+	obj.clus_opt
 
 A hierarchical tree object, :code:`tree`, will also be returned in ouptu. It is formatted 
 as a list of nodes with information on the hierarchy, the parent-child relationship
@@ -143,7 +143,7 @@ Outputs
 
 Now that the run instance finished its job we can start looking at the results.
 
-If we open our clusterMembership we can see to which classes each datapoint is assigned to. The structure is hierarchical and multilabelling is present. 
+If we open our cluster_membership we can see to which classes each datapoint is assigned to. The structure is hierarchical and multilabelling is present. 
 As for the naming convention, we assign :code:`'0'` to the full dataset and maintains information on the parent classes at each level. 
 In this way, the first classes identified, children of :code:`'0'` will be called :code:`'0_0', '0_1', ...`,
 while the children of :code:`'0_2'` will be :code:`'0_2_0', '0_2_1', ...`.
@@ -164,7 +164,7 @@ A json file containing an :code:`anytree` object is also saved in output and and
 .. code-block:: python
 
   import raccoon.trees as trees
-  nodes = trees.loadTree('racccoonData/tree.json')
+  nodes = trees.load_tree('racccoon_data/tree.json')
 
 
 In the plot folder we find two-dimensional projection of our dataset at different steps of the recursion. They are color coded by cluster or by label (if provided). 
@@ -289,12 +289,12 @@ The results will be stored in the :code:`membership` attribute.
 
 .. code-block:: python
 
-	from raccoon.utils.classification import knn
+	from raccoon.utils.classification import KNN
 
-	rcknn=knn(dfToPredict, df, clusterMembership, refpath=r'./raccoonData', outpath=r'./')
-	rcknn.assignMembership()
+	rcknn=KNN(df_to_predict, df, cluster_membership, refpath=r'./raccoon_data', outpath=r'./')
+	rcknn.assign_membership()
 
-	newMembership = rcknn.membership
+	new_membership = rcknn.membership
 
 The classifier outputs a probability assignment, 
 we impose .5 as cutoff to binarize the results and plot them in the following heatmap. 

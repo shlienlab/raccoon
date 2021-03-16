@@ -1,17 +1,19 @@
 """
-Interface for parallelizable functions for RACCOON (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+Interface for parallelizable functions for RACCOON
+(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2020-2021
 """
 
-class interface:
+
+class Interface:
 
     """ Interface for parallelizable functions. """
 
     def __init__(self):
-        
+
         self.num = None
         self.df = None
-        
+
         self.tSVD = None
         self.UMAP = None
         self.DBSCAN = None
@@ -25,49 +27,31 @@ class interface:
         self.num = None
         self.df = None
 
-    def decompose():
+    def decompose(self):
         pass
 
-    def dimRed():
+    def dim_red(self):
         pass
 
-    def cluster():
+    def cluster(self):
         pass
 
-    def nNeighbor():
+    def n_neighbor(self):
         pass
 
-    def labelBin():
+    def label_bin(self):
         pass
 
-    def oneHot():
+    def one_hot(self):
+        pass
+
+    def silhouette(self):
+        pass
+
+    def dunn(self):
         pass
     
-    def silhouette():
-        pass
-
-    def dunn():
-        pass
-
-    def filterKey(self, dct, keys):
-
-        """ Remove entry from dictionary by key.
-
-        Args:
-            dct (dict): dictionary to change.
-            key (obj): key or list of keys to filter.
-        Returns
-            (dict): filtered dictionary.
-        """
-        if not isinstance(keys, list):
-            keys=[keys]
-
-        return {key:value for key,value in dct.items()
-              if key not in keys}
-
-
-    def getValue(self, var):
-        
+    def get_value(self, var):
         """ Returns value of given variable.
 
         Args:
@@ -77,21 +61,36 @@ class interface:
         """
 
         return var
+    
+    @staticmethod
+    def filter_key(dct, keys):
+        """ Remove entry from dictionary by key.
+
+        Args:
+            dct (dict): dictionary to change.
+            key (obj): key or list of keys to filter.
+        Returns
+            (dict): filtered dictionary.
+        """
+        if not isinstance(keys, list):
+            keys = [keys]
+
+        return {key: value for key, value in dct.items()
+                if key not in keys}
 
 
-class interfaceCPU(interface):
+class InterfaceCPU(Interface):
 
     """ Interface for CPU functions. """
 
     def __init__(self):
-       
         """ Load the required CPU libraries. """
 
         super().__init__()
 
-        import numpy 
+        import numpy
         import pandas as pd
-        
+
         from sklearn.decomposition import TruncatedSVD as tSVD
         from umap import UMAP
         from sklearn.cluster import DBSCAN
@@ -116,10 +115,9 @@ class interfaceCPU(interface):
         self.pwd = pwd
 
     def decompose(self, **kwargs):
-        
         """ Sets up features filtering object.
 
-        Args: 
+        Args:
             (dict): keyword arguments for features filtering.
         Returns:
             (obj): features filtering object.
@@ -127,8 +125,7 @@ class interfaceCPU(interface):
 
         return self.tSVD(**kwargs)
 
-    def dimRed(self, **kwargs):
-
+    def dim_red(self, **kwargs):
         """ Sets up dimensionality reduction object.
 
         Args:
@@ -140,7 +137,6 @@ class interfaceCPU(interface):
         return self.UMAP(**kwargs)
 
     def cluster(self, **kwargs):
-
         """ Sets up clusters identification object.
 
         Args:
@@ -151,8 +147,7 @@ class interfaceCPU(interface):
 
         return self.DBSCAN(**kwargs)
 
-    def nNeighbor(self, **kwargs):
-
+    def n_neighbor(self, **kwargs):
         """ Sets up nearest neighbors object.
 
         Args:
@@ -163,8 +158,7 @@ class interfaceCPU(interface):
 
         return self.NN(**kwargs)
 
-    def labelBin(self, **kwargs):
-
+    def label_bin(self, **kwargs):
         """ Sets up label binarizer object.
 
         Args:
@@ -175,8 +169,7 @@ class interfaceCPU(interface):
 
         return self.lb(**kwargs)
 
-    def oneHot(self, **kwargs):
-
+    def one_hot(self, **kwargs):
         """ Sets up one-hot encoder object.
 
         Args:
@@ -188,7 +181,6 @@ class interfaceCPU(interface):
         return self.ohe(**kwargs)
 
     def silhouette(self, points, labels, **kwargs):
-        
         """ Calculates the silhouette score for a set of points
             and clusters labels.
 
@@ -202,30 +194,26 @@ class interfaceCPU(interface):
 
         return self.sis(points, labels, **kwargs)
 
-    def invCov(self, data):
-
+    def inv_cov(self, data):
         """ Attempts to find the inverse of the covariance matrix
             if the matrix is singular use the Moore-Penrose pseudoinverse.
 
         Args:
             data (self.df.Dataframe or ndarray): matrix containing the datapoints.
         Returns:
-            (ndarray): the (pseudo)inverted covariance matrix. 
+            (ndarray): the (pseudo)inverted covariance matrix.
         """
 
         try:
             return self.num.linalg.inv(self.num.cov(data.T))
-        except:
+        except BaseException:
             return self.num.linalg.pinv(self.num.cov(data.T))
 
-
-
     def dunn(self, points, labels, **kwargs):
-        
         """ Calculates the dunn index score for a set of points
             and clusters labels.
             WARNING: slow!
-    
+
         Args:
             points (self.df.DataFrame): points coordinates.
             labels (self.df.Series): clusters membership labels.
@@ -234,26 +222,27 @@ class interfaceCPU(interface):
             (int): dunn index on given points.
         """
 
-        centroids=self.num.array([self.getValue(points[labels==l].mean())
-                for l in self.num.unique(labels)])
+        centroids = self.num.array([self.get_value(points[labels == l].mean())
+                                    for l in self.num.unique(labels)])
 
         if kwargs['metric'] == 'mahalanobis':
-            invcov = self.invCov(centroids)
-            samples = [self.pwd(points[labels==l], **kwargs, VI=self.invCov(points[labels==l])).max() for l in self.num.unique(labels)]
-            kwargs['VI']=invcov
+            invcov = self.inv_cov(centroids)
+            samples = [self.pwd(points[labels == l], **kwargs,
+                VI=self.inv_cov(points[labels == l])).max()
+                for l in self.num.unique(labels)]
+            kwargs['VI'] = invcov
         else:
-            samples = [self.pwd(points[labels==l], **kwargs).max() for l in self.num.unique(labels)]
+            samples = [self.pwd(points[labels == l], **kwargs).max()
+                       for l in self.num.unique(labels)]
 
         inter = self.pwd(centroids, **kwargs)
-        self.num.fill_diagonal(inter,inter.max()+1)
+        self.num.fill_diagonal(inter, inter.max() + 1)
         inter = self.num.amin(inter)
         intra = self.num.amax(samples)
 
-        return inter/intra
+        return inter / intra
 
-
-    def getValue(self, var, pandas=False):
-
+    def get_value(self, var, pandas=False):
         """ Returns value of given variable,
 
         Args:
@@ -263,15 +252,15 @@ class interfaceCPU(interface):
             (any): value of the input variable.
         """
 
-        if isinstance(var,(self.df.Index,self.df.Series,self.df.DataFrame)) and not pandas:
+        if isinstance(var, (self.df.Index, self.df.Series,
+                            self.df.DataFrame)) and not pandas:
             return var.values
-        
+
         return var
 
     def set(self, var):
-
-        """ Wrapper for python set, 
-            GPU friendly..
+        """ Wrapper for python set,
+            GPU friendly.
 
         Args:
             (any): input variable.
@@ -282,19 +271,18 @@ class interfaceCPU(interface):
         return set(var)
 
 
-class interfaceGPU(interface):
+class InterfaceGPU(Interface):
 
     """ Interface for GPU functions. """
 
     def __init__(self):
-       
         """ Load the required CPU libraries. """
-        
+
         super().__init__()
 
         import cupy
         import cudf
-        
+
         from cuml.decomposition import TruncatedSVD as tSVD
         from cuml.manifold.umap import UMAP as UMAP
         from cuml import DBSCAN as DBSCAN
@@ -302,15 +290,15 @@ class interfaceGPU(interface):
         from cuml.experimental.preprocessing import normalize
         from cuml.preprocessing import LabelBinarizer
         from cuml.preprocessing import OneHotEncoder
-        from cuml.metrics.pairwise_distances import pairwise_distances as pwd        
+        from cuml.metrics.pairwise_distances import pairwise_distances as pwd
 
-        #silhouette score GPU not availablei in cuml 0.17a (memory issues)
+        # silhouette score GPU not availablei in cuml 0.17a (memory issues)
         #from cuml.metrics.cluster import silhouette_score
         from sklearn.metrics import silhouette_score
 
         self.num = cupy
         self.df = cudf
-        
+
         self.tSVD = tSVD
         self.UMAP = UMAP
         self.DBSCAN = DBSCAN
@@ -322,10 +310,9 @@ class interfaceGPU(interface):
         self.pwd = pwd
 
     def decompose(self, **kwargs):
-        
         """ Sets up features filtering object.
 
-        Args: 
+        Args:
             (dict): keyword arguments for features filtering.
         Returns:
             (obj): features filtering object.
@@ -333,8 +320,7 @@ class interfaceGPU(interface):
 
         return self.tSVD(**kwargs)
 
-    def dimRed(self, **kwargs):
-
+    def dim_red(self, **kwargs):
         """ Sets up dimensionality reduction object.
 
         Args:
@@ -342,11 +328,10 @@ class interfaceGPU(interface):
         Returns:
             (obj): dimensionality reduction object.
         """
-        
-        return self.UMAP(**self.filterKey(kwargs, 'metric'))
+
+        return self.UMAP(**self.filter_key(kwargs, 'metric'))
 
     def cluster(self, **kwargs):
-
         """ Sets up clusters identification object.
 
         Args:
@@ -355,10 +340,10 @@ class interfaceGPU(interface):
             (obj): clusters identification object.
         """
 
-        return self.DBSCAN(**self.filterKey(kwargs, ['metric','leaf_size','n_jobs','metric_params']))
+        return self.DBSCAN(
+            **self.filter_key(kwargs, ['metric', 'leaf_size', 'n_jobs', 'metric_params']))
 
-    def nNeighbor(self, **kwargs):
-
+    def n_neighbor(self, **kwargs):
         """ Sets up nearest neighbors object.
 
         Args:
@@ -367,10 +352,9 @@ class interfaceGPU(interface):
             (obj): features nearest neighbors.
         """
 
-        return self.NN(**self.filterKey(kwargs, ['n_jobs','metric_params']))
+        return self.NN(**self.filter_key(kwargs, ['n_jobs', 'metric_params']))
 
-    def labelBin(self, **kwargs):
-
+    def label_bin(self, **kwargs):
         """ Sets up label binarizer object.
 
         Args:
@@ -380,9 +364,8 @@ class interfaceGPU(interface):
         """
 
         return self.lb(**kwargs)
-    
-    def oneHot(self, **kwargs):
 
+    def one_hot(self, **kwargs):
         """ Sets up one-hot encoder object.
 
         Args:
@@ -393,11 +376,10 @@ class interfaceGPU(interface):
 
         return self.ohe(**kwargs)
 
-    def silhouette(self, points, labels, **kwargs): 
-        
+    def silhouette(self, points, labels, **kwargs):
         """ Calculates the silhouette score for a set of points
             and clusters labels.
-        
+
         Args:
             points (self.df.DataFrame): points coordinates.
             labels (self.df.Series): clusters membership labels.
@@ -405,28 +387,30 @@ class interfaceGPU(interface):
         Returns:
             (int): silhouette score on given points.
         """
-        
-        #temporary workaround until GPU implementation is fixed
-        return self.sis(self.getValue(self.getValue(points)), self.getValue(labels), **kwargs)
 
-    def invCov(self, data):
+        # temporary workaround until GPU implementation is fixed
+        return self.sis(
+            self.get_value(
+                self.get_value(points)),
+            self.get_value(labels),
+            **kwargs)
 
+    def inv_cov(self, data):
         """ Attempts to find the inverse of the covariance matrix
             if the matrix is singular use the Moore-Penrose pseudoinverse.
 
         Args:
             data (self.df.Dataframe or ndarray): matrix containing the datapoints.
         Returns:
-            (ndarray): the (pseudo)inverted covariance matrix. 
+            (ndarray): the (pseudo)inverted covariance matrix.
         """
 
         try:
             return self.num.linalg.inv(self.num.cov(data.T))
-        except:
+        except BaseException:
             return self.num.linalg.pinv(self.num.cov(data.T))
 
     def dunn(self, points, labels, **kwargs):
-
         """ Calculates the dunn index score for a set of points
             and clusters labels.
             WARNING: slow!
@@ -439,22 +423,22 @@ class interfaceGPU(interface):
             (int): dunn index on given points.
         """
 
-        #TODO: clean up all this back and forth between gpu and cpu
+        # TODO: clean up all this back and forth between gpu and cpu
 
-        inter = self.pwd(self.num.array([self.getValue(points[labels==l].mean()) 
-                for l in self.num.unique(labels).get()]), **kwargs)
-        self.num.fill_diagonal(inter,inter.max()+1)
+        inter = self.pwd(self.num.array([self.get_value(points[labels == l].mean())
+            for l in self.num.unique(labels).get()]), **kwargs)
+        self.num.fill_diagonal(inter, inter.max() + 1)
 
         inter = self.num.amin(inter)
 
-        intra = self.num.amax(self.num.array([self.pwd(points[labels==l], **kwargs).max().max() 
-                for l in self.num.unique(labels).get()]))
+        intra = self.num.amax(self.num.array([self.pwd(
+            points[labels == l], **kwargs).max().max()
+            for l in self.num.unique(labels).get()]))
 
-        return self.getValue(inter/intra)
+        return self.get_value(inter / intra)
 
-    def getValue(self, var, pandas=False):
-
-        """ Returns value of given variable, 
+    def get_value(self, var, pandas=False):
+        """ Returns value of given variable,
             transferring it from GPU to CPU.
 
         Args:
@@ -463,27 +447,29 @@ class interfaceGPU(interface):
         Returns:
             (any): value of the input variable.
         """
-        
-        if isinstance(var,self.df.Index):
+
+        if isinstance(var, self.df.Index):
             return var.values_host
-        
-        elif isinstance(var,self.df.Series):
+
+        elif isinstance(var, self.df.Series):
             if pandas:
                 return var.to_pandas()
             return var.values_host
-        
-        elif isinstance(var,self.df.DataFrame):
+
+        elif isinstance(var, self.df.DataFrame):
             if pandas:
                 return var.to_pandas()
             return var.values
-        
-        elif isinstance(var,self.num.ndarray):
+
+        elif isinstance(var, self.num.ndarray):
             return self.num.asnumpy(var)
-        
+
+        elif isinstance(var, list):
+            return var
+
         return var.get()
 
     def set(self, var):
-
         """ Wrapper for python set,
             GPU friendly..
 
@@ -493,7 +479,8 @@ class interfaceGPU(interface):
             (set): set of the input variable.
         """
 
-        return set(self.getValue(var))
+        return set(self.get_value(var))
+
 
 if __name__ == "__main__":
 
