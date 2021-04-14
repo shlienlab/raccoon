@@ -40,8 +40,8 @@ import raccoon.interface as interface
 
 try:
     import hdbscan as HDBSCAN
-    optionalImports.hdbscan = True
-except BaseException:
+    OptionalImports.hdbscan = True
+except ImportError:
     pass
 
 __version__ = "0.3.0"
@@ -154,7 +154,8 @@ class RecursiveClustering:
                 default 4, must be >3 if optimizer='de'),
                 this is a single dimension, the actuall mesh will contain n*n points.
             clusterer (string): selects which algorithm to use for clusters identification.
-                Choose between 'DBSCAN' (default) or HDBSCAN.
+                Choose among 'DBSCAN' (default), 'SNN' (Shared Nearest Neighbours DBSCAN),  HDBSCAN,
+                or 'louvain' (Louvain community detection with SNN).
             cparmrange (array, list) or string: clusters identification parameter range to
                 be explored (default 'guess').
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it
@@ -263,6 +264,7 @@ class RecursiveClustering:
         self.neicap = neicap
         self.metric_map = metric_map
         self.metric_clu = metric_clu
+        self.mparams = {}
         self.popcut = popcut
         self.filterfeat = filterfeat
         self.ffrange = ffrange
@@ -294,8 +296,8 @@ class RecursiveClustering:
         """ CPU vs GPU methods check. """
 
         if self.gpu:
-            if self.clusterer != 'DBSCAN':
-                warnings.warn("Only DBSCAN is available with RAPIDS, \
+            if self.clusterer not in  ['DBSCAN', 'louvain']:
+                warnings.warn("Only DBSCAN or louvain are available with RAPIDS, \
                                setting clusterer as DBSCAN!")
                 self.clusterer = 'DBSCAN'
                 if self.fromfile:
@@ -327,6 +329,7 @@ class RecursiveClustering:
                 self.dynmesh = False
 
                 if self._name not in self.fromfile.index:
+                    #HERE TO START TO IMLPEMENT CONTINUE
                     self.nnei = []
                     self.ffrange = []
                     self.cparmrange = []
@@ -783,7 +786,9 @@ class RecursiveClustering:
         # not_implemented_error: String Arrays is not yet implemented in cudf
         #tmplab = tmplab.set_index(DataGlobal.dataset.loc[self.data_ix].index.values)
         tmplab = tmplab.set_index(self.interface.get_value(
-            DataGlobal.dataset.loc[self.data_ix].index))
+            #attempt to fix error for transform data
+            #DataGlobal.dataset.loc[self.data_ix].index))
+            labs_opt.index))
         tmplab.columns = [self._name + "_" + str(x)
                           for x in range(len(tmplab.columns.values))]
 
@@ -793,35 +798,38 @@ class RecursiveClustering:
         """ Estimates the point of flex of a pairwise distances plot.
 
         Args:
-            pj (pandas dataframe): projection of saxmples in the low-dimensionality space
-                obtained with UMAP.
+            pj (pandas dataframe/numpy matrix): projection of saxmples in the low-dimensionality space
+                obtained with UMAP, or adjacency matrix if SNN.
 
         Returns:
             (float): elbow value.
         """
 
-        mparams = {}
-        if self.metric_clu == 'mahalanobis':
-            try:
-                mparams = {
-                    'VI': self.interface.num.linalg.inv(
-                        self.interface.num.cov(pj.T))}
-            except BaseException:
-                mparams = {
-                    'VI': self.interface.num.linalg.pinv(
-                        self.interface.num.cov(pj.T))}
+        if self.clusterer=='SNN':
+            
+            mat=self.interface.num.copy(pj)
+            self.interface.num.fill_diagonal(mat,self.interface.num.inf)
+            neigh=self.interface.num.nanmin(mat,axis=1)
+            del mat
 
-        neigh = self.interface.n_neighbor(
-            n_neighbors=2,
-            metric=self.metric_clu,
-            metric_params=mparams,
-            n_jobs=-1).fit(pj)
+            #alternative to copying the matrix and filling the diagonal
+            #n=pj.shape[0]
+            #neigh=self.interface.num.min(self.interface.num.lib.stride_tricks.as_strided(pj, (n-1,n+1), (pj.itemsize*(n+1), pj.itemsize))[:,1:], axis=0)
+            if not isinstance(neigh, self.interface.df.DataFrame):
+                neigh = self.interface.df.DataFrame(neigh, columns=['elbow'])
 
-        neigh = neigh.kneighbors(pj, return_distance=True)[0]
-        if not isinstance(neigh, self.interface.df.DataFrame):
-            neigh = self.interface.df.DataFrame(neigh)
-
-        neigh.columns = ['0', 'elbow']
+        else:
+            neigh = self.interface.n_neighbor(
+                n_neighbors=2,
+                metric=self.metric_clu,
+                metric_params=self.mparams,
+                n_jobs=-1).fit(pj)
+            neigh = neigh.kneighbors(pj, return_distance=True)[0]
+            
+            if not isinstance(neigh, self.interface.df.DataFrame):
+                neigh = self.interface.df.DataFrame(neigh)
+            neigh.columns = ['0', 'elbow']
+        
         neigh = neigh.sort_values('elbow')
         neigh['delta'] = neigh['elbow'].diff().shift(periods=-1) \
             + neigh['elbow'].diff().shift(periods=+1) \
@@ -831,7 +839,24 @@ class RecursiveClustering:
         # cuDF doesn't have idxmax, so here is a probably quite expensive
         # workaround
         neigh = neigh.sort_values('delta').dropna()
-        return neigh['elbow'].iloc[-1]
+       
+        #an issue with elbow position being at zero arises 
+        #occasionally with SNN
+        #this shouldn't happen unless points are overlapping
+        #fix itm but for now use this workaround
+        
+        pos=0
+        i=0
+        while pos==0 and i>-neigh.shape[0]:
+            pos=neigh['elbow'].iloc[i-1]
+            i=-1
+
+        if pos==0:
+            #random value, if you get here probably something is wrong
+            #with your data
+            return 0.01
+        else:
+            return pos
 
     def _guess_parm(self, pj):
         """ Estimate a range for the clustering identification parameter.
@@ -847,7 +872,13 @@ class RecursiveClustering:
         """ Use pairwise knn distances elbow method for DBSCAN;
             Take the square root of the total population for HDBSCAN."""
 
-        if self.clusterer == 'DBSCAN':
+        if self.clusterer == 'louvain':
+            logging.debug(
+                'Resolution range guess: [{:.5f},{:.5f}]'.format(
+                    0, 5))
+            return self.interface.num.linspace(0, 5, 6)
+
+        if self.clusterer  in ['DBSCAN', 'SNN']:
             ref = self._elbow(pj)
             logging.debug(
                 'Epsilon range guess: [{:.5f},{:.5f}]'.format(
@@ -877,6 +908,32 @@ class RecursiveClustering:
 
         else:
             sys.exit('ERROR: clustering algorithm not recognized')
+
+    def snn(self, points, num_neigh):
+        """ Calculates Shared Nearest Neighbour (SNN) matrix
+
+        Args:
+            points (dataframe or matrix): points coordinates.
+            num_neigh (int): number of neighbours considered
+                to define the similarity of two points.
+
+        Returns:
+            (matrix): SNN matrix as input for DBSCAN.
+        """
+
+        neigh = self.interface.n_neighbor(
+            n_neighbors=num_neigh+1,
+            metric=self.metric_clu,
+            metric_params=self.mparams,
+            n_jobs=-1).fit(points)
+       
+        allnei=neigh.kneighbors(points, return_distance=False)
+        if self.gpu:
+            allnei=allnei.drop(0,axis=1)
+            neighlist = [self.interface.set(allnei.loc[x].values) for x in self.interface.get_value(allnei.index)]
+        else:
+            neighlist = [self.interface.set(x[1:]) for x in allnei]
+        return 1-self.interface.num.asarray([[len(i.intersection(j))/num_neigh for j in neighlist] for i in neighlist])
 
     def calc_score(self, points, labels):
         """ Select and calculate scoring function for optimization.
@@ -913,26 +970,31 @@ class RecursiveClustering:
         Returns:
             (list of int): list of assigned clusters. """
 
-        mparams = {}
-        if self.metric_clu == 'mahalanobis':
-            try:
-                mparams = {
-                    'VI': self.interface.num.linalg.inv(
-                        self.interface.num.cov(pj.T))}
-            except BaseException:
-                mparams = {
-                    'VI': self.interface.num.linalg.pinv(
-                        self.interface.num.cov(pj.T))}
+
+        if self.clusterer == 'SNN':
+            return self.interface.cluster(pj,
+                eps=cparm,
+                min_samples=self.minclusize,
+                metric='precomputed',
+                n_jobs=-1,
+                leaf_size=15)
+        
+        if self.clusterer == 'louvain':
+            return self.interface.cluster_louvain(pj,
+                resolution=cparm)
 
         if self.clusterer == 'DBSCAN':
-            return self.interface.cluster(
+            #NOTE: distances should be pre-computed like in SNN
+            #to speed up this search
+            return self.interface.cluster(pj,
                 eps=cparm,
                 min_samples=self.minclusize,
                 metric=self.metric_clu,
-                metric_params=mparams,
+                metric_params=self.mparams,
                 n_jobs=-1,
-                leaf_size=15).fit_predict(pj)
-        elif self.clusterer == 'HDBSCAN':
+                leaf_size=15)
+            
+        if self.clusterer == 'HDBSCAN':
             clusterer = HDBSCAN(
                 algorithm=algorithm,
                 alpha=1.0,
@@ -941,14 +1003,14 @@ class RecursiveClustering:
                 leaf_size=15,
                 allow_single_cluster=False,
                 metric=self.metric_clu,
-                metric_params=mparams,
+                metric_params=self.mparams,
                 min_cluster_size=self.minclusize,
                 min_samples=int(cparm),
                 cluster_selection_epsilon=cse,
                 p=None).fit(pj)
             return clusterer.labels_
-        else:
-            sys.exit('ERROR: clustering algorithm not recognized')
+        
+        sys.exit('ERROR: clustering algorithm not recognized')
 
     def _run_single_instance(self, cutoff, nn):
         """ Run a single instance of clusters search for a given features cutoff and
@@ -1050,13 +1112,33 @@ class RecursiveClustering:
                 if self.metric_clu == 'cosine':
                     hdbalgo = 'generic'
                     pj = pj.astype(self.interface.num.float64)
+           
+            self.mparams = {}
+            if self.metric_clu == 'mahalanobis':
+                try:
+                    self.mparams = {
+                        'VI': self.interface.num.linalg.inv(
+                            self.interface.num.cov(pj.T))}
+                except BaseException:
+                    self.mparams = {
+                        'VI': self.interface.num.linalg.pinv(
+                            self.interface.num.cov(pj.T))} 
+ 
+            if self.clusterer == 'SNN':
+                to_cluster=self.snn(pj,nn)
+            elif self.clusterer == 'louvain':
+                to_cluster=1-self.snn(pj,nn)
+                if self.gpu:
+                    to_cluster=self.interface.build_graph(to_cluster)
+            else:
+                to_cluster=pj
 
             """ Set clustering parameter range at the first iteration. """
-
+            
             # TODO: check if better to update at every iteration
             cparmrange = self.cparmrange
             if cparmrange == 'guess':
-                cparmrange = self._guess_parm(pj)
+                cparmrange = self._guess_parm(to_cluster)
 
             # Note: Calculating (H)DBSCAN on a grid of parameters is cheap even
             # with Differential Evolution.
@@ -1067,7 +1149,7 @@ class RecursiveClustering:
                     'Clustering parameter: {:.5f}'.format(
                         self.interface.get_value(cparm)))
 
-                labs = self._find_clusters(pj, cparm, cse, hdbalgo)
+                labs = self._find_clusters(to_cluster, cparm, cse, hdbalgo)
 
                 # not 100% sure about this, keep until weights on noise will be
                 # added
@@ -1082,9 +1164,9 @@ class RecursiveClustering:
                 if sil > sil_opt:
                     cparm_opt = cparm
                     sil_opt = sil
-                    labs_opt = labs
+                    labs_opt=self.interface.df.Series(labs, index=pj.index)
 
-        return sil_opt, self.interface.df.Series(labs_opt, index=pj.index),\
+        return sil_opt, labs_opt,\
             cparm_opt, pj, mapping, keepfeat, decomposer
 
     def _objective_function(self, params):
@@ -1140,6 +1222,7 @@ class RecursiveClustering:
         labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
         cparm_opt = self.interface.num.nan
         nei_opt = DataGlobal.dataset.loc[self.data_ix].shape[0]
+
         if self.filterfeat in ['variance', 'MAD']:
             cut_opt = 1.0
         elif self.filterfeat == 'tSVD':
@@ -1237,11 +1320,32 @@ class RecursiveClustering:
                     scoreslist[0].append(cutoff)
                     scoreslist[1].append(nn)
                     scoreslist[2].append(-0.0001)
+
+                    self.mparams = {}
+                    if self.metric_clu == 'mahalanobis':
+                        try:
+                            self.mparams = {
+                                'VI': self.interface.num.linalg.inv(
+                                    self.interface.num.cov(pj.T))}
+                        except BaseException:
+                            self.mparams = {
+                                'VI': self.interface.num.linalg.pinv(
+                                    self.interface.num.cov(pj.T))}
+
+                    if self.clusterer == 'SNN':
+                        to_cluster=self.snn(pj,nn)
+                    elif self.clusterer == 'louvain':
+                        to_cluster=1-self.snn(pj,nn)
+                        if self.gpu:
+                            to_cluster=self.interface.build_graph(to_cluster)
+                    else:
+                        to_cluster=pj
+
                     """ Set clustering parameter range at the first iteration. """
 
                     cparmrange = self.cparmrange
                     if cparmrange == 'guess':
-                        cparmrange = self._guess_parm(pj)
+                        cparmrange = self._guess_parm(to_cluster)
                     # Note: Calculating (H)DBSCAN on a grid of parameters is
                     # cheap even with Differential Evolution.
 
@@ -1250,8 +1354,8 @@ class RecursiveClustering:
                         logging.debug(
                             'Clustering parameter: {:.5f}'.format(
                                 self.interface.get_value(cparm)))
-
-                        labs = self._find_clusters(pj, cparm, cse, hdbalgo)
+                        
+                        labs = self._find_clusters(to_cluster, cparm, cse, hdbalgo)
 
                         # not 100% sure about this, keep until weights on noise
                         # will be added
@@ -1272,7 +1376,8 @@ class RecursiveClustering:
                         if sil > sil_opt:
                             cparm_opt = cparm
                             sil_opt = sil
-                            labs_opt = labs
+                            pj_opt = pj
+                            labs_opt = self.interface.df.Series(labs, index=pj_opt.index)
                             nei_opt = nn
                             pj_opt = pj
                             cut_opt = cutoff
@@ -1290,7 +1395,7 @@ class RecursiveClustering:
             pj_opt = pj
             map_opt = mapping
 
-        return sil_opt, self.interface.df.Series(labs_opt, index=pj_opt.index),\
+        return sil_opt, labs_opt,\
                cparm_opt, nei_opt, pj_opt, cut_opt, map_opt, keepfeat, decomp_opt,\
                scoreslist
 
@@ -1395,48 +1500,57 @@ class RecursiveClustering:
         if self.transform is not None:
             logging.info('Transform-only Samples #: {:d}'.format(
                     len(self.transform)))
-
+       
         numpoints = DataGlobal.dataset.loc[self.data_ix].shape[0]
+        
         if self.transform is not None:
             numpoints -= len(self.transform)
 
-        if self.neirange == 'logspace':
-            if self.neifactor >= 1:
-                minbound = self.interface.num.log10(
-                    self.interface.num.sqrt(numpoints - 1))
-                maxbound = self.interface.num.log10(numpoints - 1)
+        if numpoints != 0:
+            
+            if self.neirange == 'logspace':
+                if self.neifactor >= 1:
+                    minbound = self.interface.num.log10(
+                        self.interface.num.sqrt(numpoints - 1))
+                    maxbound = self.interface.num.log10(numpoints - 1)
+                else:
+                    minbound = self.interface.num.log10(
+                        self.interface.num.sqrt(numpoints * self.neifactor))
+                    maxbound = self.interface.num.log10(numpoints * self.neifactor)
+
+                
+                """ Neighbours cap. """
+
+                if self.neicap is not None:
+                    if minbound > self.interface.num.log10(self.neicap):
+                        minbound = self.interface.num.log10(self.neicap / 10)
+                    if maxbound > self.interface.num.log10(self.neicap):
+                        maxbound = self.interface.num.log10(self.neicap)
+
+                """ Hard limit. """
+
+                if minbound < 1:
+                    minbound = 1
+
+                nnrange = sorted([int(x) for x in self.interface.num.logspace(
+                    minbound, maxbound, num=self.neipoints[0])])
+
+            elif self.neirange == 'sqrt':
+                nnrange = [int(self.interface.num.sqrt(
+                    numpoints * self.neifactor))]
             else:
-                minbound = self.interface.num.log10(
-                    self.interface.num.sqrt(numpoints * self.neifactor))
-                maxbound = self.interface.num.log10(numpoints * self.neifactor)
+                nnrange = self.neirange
+                if not isinstance(nnrange, list):
+                    nnrange = [nnrange]
 
-            """ Neighbours cap. """
+            if self.neirange != 'logspace' and self.neicap is not None:
+                nnrange = sorted(list(self.interface.set(
+                    [x if x <= self.neicap else self.neicap for x in nnrange])))
 
-            if self.neicap is not None:
-                if minbound > self.interface.num.log10(self.neicap):
-                    minbound = self.interface.num.log10(self.neicap / 10)
-                if maxbound > self.interface.num.log10(self.neicap):
-                    maxbound = self.interface.num.log10(self.neicap)
-
-            """ Hard limit. """
-
-            if minbound < 1:
-                minbound = 1
-
-            nnrange = sorted([int(x) for x in self.interface.num.logspace(
-                minbound, maxbound, num=self.neipoints[0])])
-
-        elif self.neirange == 'sqrt':
-            nnrange = [int(self.interface.num.sqrt(
-                numpoints * self.neifactor))]
         else:
-            nnrange = self.neirange
-            if not isinstance(nnrange, list):
-                nnrange = [nnrange]
 
-        if self.neirange != 'logspace' and self.neicap is not None:
-            nnrange = sorted(list(self.interface.set(
-                [x if x <= self.neicap else self.neicap for x in nnrange])))
+            nnrange = []
+        
 
         """ Run Optimizer. """
 
@@ -1466,31 +1580,46 @@ class RecursiveClustering:
                 self._objective_function, bounds, maxiter=self.deiter[0],
                 popsize=self.depop[0], integers=[False, True], seed=self._seed)
 
+            if not isinstance(labs_opt,self.interface.df.Series):
+                labs_opt=self.interface.df.Series(labs_opt, index=pj_opt.index)
+            
             logging.info('Done!')
-
+            
         else:
             sys.exit('ERROR: optimizer not recognized')
+            
+        if not isinstance(labs_opt,self.interface.df.Series):
+            labs_opt=self.interface.df.Series(labs_opt, index=pj_opt.index)
 
         """ If data to be projected only is provided, apply projection. """
 
         if self.transform is not None:
 
-            # A bit redundant, try to clean up
-            if self.filterfeat in ['variance', 'MAD', 'correlation']:
-                transdata = DataGlobal.dataset.loc[self.data_ix][keepfeat].loc[self.transform]
-            elif self.filterfeat == 'tSVD':
-                transdata = decomp_opt.transform(
-                    DataGlobal.dataset.loc[self.transform])
+            #if no clustering was found
+            if self.interface.num.isnan(keepfeat):
+               labs_new=self.interface.df.Series([0]*len(self.transform),
+                    index=self.transform)
+               labs_opt=self.interface.df.concat([labs_opt,labs_new], axis=0)
 
-            pj_opt = self.interface.df.concat([pj_opt, self.interface.df.DataFrame(
-                map_opt.transform(transdata), index=self.transform)], axis=0)
+            else:
+                # A bit redundant, try to clean up
+                if self.filterfeat in ['variance', 'MAD', 'correlation']:
+                    transdata = DataGlobal.dataset[keepfeat].loc[self.transform]
+                elif self.filterfeat == 'tSVD':
+                    transdata = decomp_opt.transform(
+                        DataGlobal.dataset.loc[self.transform])
 
-            logging.debug(
-                'Transform-only data found at this level: membership will be assigned with KNN')
+                pj_opt = self.interface.df.concat([pj_opt, self.interface.df.DataFrame(
+                    map_opt.transform(transdata), index=self.transform)], axis=0)
 
-            """ Assign cluster membership with k-nearest neighbors. """
+                logging.debug(
+                    'Transform-only data found at this level: membership will be assigned with KNN')
 
-            labs_opt = self._KNN(nei_opt, pj_opt, labs_opt)
+                """ Assign cluster membership with k-nearest neighbors. """
+
+                labs_opt = self._KNN(nei_opt, pj_opt, labs_opt)
+        
+
 
         """ Dealing with discarded points if outliers!='ignore'
             applies only if there's more than one cluster identified
@@ -1573,7 +1702,6 @@ class RecursiveClustering:
                     'raccoon_data/' + self._name + '.h5'),
                 key='proj')
 
-        # let's see if this saves us from the perpetual memory crash
         del chomap
 
         if n_clu < 2:
@@ -1587,6 +1715,8 @@ class RecursiveClustering:
 
         """ Binarize data. """
 
+        #TEST REMOVE IF CREATES ISSUES
+        clus_tmp = clus_tmp.astype(int)
         clus_tmp = self._one_hot_encode(clus_tmp)
 
         """ Dig within each subcluster and repeat. """
@@ -1605,6 +1735,12 @@ class RecursiveClustering:
                     to_transform = None
             else:
                 to_transform = None
+           
+            #if you got a class of just transforms (weird! shouldn't happen!) check this!
+            if to_transform is not None and len(to_transform)==len(sel_new.index):
+                logging.warning('Found a class with transform-only data, ' +
+                                'something must have gone wrong along the way.')
+                continue
 
             """ Move along the list of parameters to change granularity. """
             if self.optimizer == 'grid' and len(self.ffpoints) > 1:

@@ -20,8 +20,6 @@ import raccoon.interface as interface
 
 class KNN:
 
-    # TODO: add logging!
-
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
 
     def __init__(self, data, ori_data, ori_clust,
@@ -74,7 +72,7 @@ class KNN:
 
         if not isinstance(ori_data, self.interface.df.DataFrame):
             try:
-                data = self.interface.df.DataFrame(ori_data)
+                ori_data = self.interface.df.DataFrame(ori_data)
             except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data (original) should be in a format that can be \
@@ -83,7 +81,7 @@ class KNN:
 
         if not isinstance(ori_clust, self.interface.df.DataFrame):
             try:
-                data = self.interface.df.DataFrame(ori_clust)
+                ori_clust = self.interface.df.DataFrame(ori_clust)
             except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
                 print('Input data (clusters) should be in a format that can be \
@@ -109,7 +107,7 @@ class KNN:
         logname = 'raccoon_knn_' + str(os.getpid()) + '.log'
         print('Log information will be saved to ' + logname)
 
-        logging.basic_config(
+        logging.basicConfig(
             level=logging.INFO,
             filename=os.path.join(outpath, logname),
             filemode="a+",
@@ -132,12 +130,12 @@ class KNN:
 
         for i in range(len(self.ori_clust.columns)):
             parent = self.ori_clust.columns[i]
-            parent_ix = self.ori_clust[self.ori_clust[parent] == 1].index
+            parent_ix = self.interface.get_value(self.ori_clust[self.ori_clust[parent] == 1].index)
             self.children[parent] = []
             for j in range(len(self.ori_clust.columns)):
                 if i != j:
                     child = self.ori_clust.columns[j]
-                    child_ix = self.ori_clust[self.ori_clust[child] == 1].index
+                    child_ix = self.interface.get_value(self.ori_clust[self.ori_clust[child] == 1].index)
                     if child not in self.parents:
                         self.parents[child] = []
                     if all(ix in parent_ix for ix in child_ix):
@@ -205,13 +203,14 @@ class KNN:
                 logging.debug('Nearest Neighbours #: {:d}'.format(nnei))
                 logging.debug('Clustering metric: ' + metric)
 
-                if isinstance(genecut, self.interface.df.Index):
+                try:
+                #if isinstance(genecut, self.interface.df.Index):
 
                     """ low information filter. """
 
                     df_cut = self.data[genecut]
 
-                else:
+                except:
 
                     """ tSVD. """
                     # sparse_mat=csr_matrix(self.data.values)
@@ -220,7 +219,8 @@ class KNN:
                     df_cut = self.interface.df.DataFrame(genecut.transform(self.data.values),
                             index=self.data.index)
 
-                if not self.interface.num.isnan(norm):
+                try:
+                #if not self.interface.num.isnan(norm):
 
                     logging.debug('Norm: ' + norm)
 
@@ -229,6 +229,10 @@ class KNN:
                     df_cut = self.interface.df.DataFrame(normalize(df_cut, norm=norm),
                         index=df_cut.index,
                         columns=df_cut.columns)
+                
+                except:
+
+                    pass
 
                 proj = self.interface.df.DataFrame(mapping.transform(df_cut.values),
                     index=df_cut.index)
@@ -244,13 +248,14 @@ class KNN:
                     next_clust = self.ori_clust[self.ori_clust[names[-1]]== 1]\
                                 [self.children[names[-1]]]
 
-                if isinstance(genecut, self.interface.df.Index):
+                try:
+                #if isinstance(genecut, self.interface.df.Index):
 
                     """ low information filter. """
 
                     df_cut = ref_df[genecut]
 
-                else:
+                except:
 
                     """ tSVD. """
                     # sparse_mat=csr_matrix(ref_df.values)
@@ -277,7 +282,8 @@ class KNN:
                 for i in range(len(proj)):
                     newk.append([[], []])
                     tupl = [(x, y)
-                            for x, y in zip(kn[0][i], kn[1][i])
+                            for x, y in zip(self.interface.get_value(kn[0][i]), 
+                                            self.interface.get_value(kn[1][i]))
                             if y in range(len(proj), len(proj_ref) + len(proj))]
                     for t in tupl:
                         newk[-1][0].append(t[0])
@@ -288,13 +294,27 @@ class KNN:
 
                 valals = []
                 for k in range(len(newk)):
-                    vals = next_clust.loc[proj_all.iloc[newk[k][1]].index].apply(
-                        lambda x: x / newk[k][0], axis=0)[1:]
+                    #apply not available in cudf...
+                    #vals = next_clust.loc[proj_all.iloc[newk[k][1]].index].apply(
+                    #    lambda x: x / newk[k][0], axis=0)[1:]
+                    
+                    tmp = next_clust.loc[proj_all.iloc[newk[k][1]].index]
+
+                    if not self.gpu:
+
+                        vals = tmp.div(newk[k][0],axis=1)
+
+                    else:
+                        tmp.reset_index(drop=True, inplace=True)
+                        vals = tmp.T.div(newk[k][0]).T
+
                     valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
+               
+                valals=self.interface.num.stack(valals)
 
                 self.membership.append(
                     self.interface.df.DataFrame(valals,
-                        index=proj.index,
+                        index=self.interface.get_value(proj.index),
                         columns=next_clust.columns))
 
         if len(names) > 0:

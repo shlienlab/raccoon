@@ -35,6 +35,7 @@ packages and their inherited dependencies:
 
    - scikit-learn
    - umap-learn
+   - scikit-network
 
 For a full list see :code:`requirements.txt`
 

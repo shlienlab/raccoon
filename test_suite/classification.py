@@ -11,36 +11,21 @@ import pandas as pd
 
 from raccoon.utils.classification import KNN
 
-def knn_test(data, refpath):
+def knn_test(data, refpath, gpu=False):
     """ k-NN classification test, euclidean grid.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
             refpath (string): path to reference files.
+            gpu (bool): if True use gpu implementation.
     """
-
+    
     rcknn = KNN(data.sample(frac=.5), data,
         pd.read_hdf(os.path.join(refpath,'raccoon_data/final_output.h5')),
         refpath=os.path.join(refpath,'raccoon_data'),
-        outpath=refpath)
+        outpath=refpath, 
+        gpu=gpu)
     rcknn.assign_membership()
-
-
-def knn_gpu_test(data, refpath):
-    """ k-NN classification test, euclidean grid, with RAPIDS.
-
-        Args:
-            data (pandas dataframe, matrix): input test dataframe.
-            refpath (string): path to reference files.
-    """
-
-    rcknn = KNN(data.sample(frac=.5), data,
-        pd.read_hdf(os.path.join(refpath,'raccoon_data/final_output.h5')),
-        refpath=os.path.join(refpath,'raccoon_data'),
-        outpath=refpath,
-        gpu=True)
-    rcknn.assign_membership()
-
 
 if __name__ == "__main__":
 

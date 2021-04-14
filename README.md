@@ -2,7 +2,7 @@
 
 
 ## Recursive Algorithm for Coarse-to-fine Clusters OptimizatiON
-### v 0.3.0
+### v 0.3.1
 
 `raccoon` is a python 3 package for recursive clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set as to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
@@ -10,8 +10,8 @@ It searches for the optimal clusters in your data by running low information fea
 This library includes
 
 * features filtering by variance, MAD or t-SVD
-* integrated UMAP dimensionality reduction
-* clusters identification by DBSCAN or HDBSCAN
+* integrated unsupervised/supervised UMAP dimensionality reduction
+* clusters identification by DBSCAN, HDBSCAN, SNN or Louvain
 * k-NN classification
 * GPU implementation with RAPIDS
 
@@ -31,6 +31,7 @@ Beside basic scientific and plotting libraries, the current version requires
 
 ```
 - scikit-learn
+- scikit-network
 - umap-learn
 - seaborn
 ```
@@ -47,9 +48,10 @@ Optional dependencies include
 raccoon can be run on GPU by leveraging RAPIDS libraries. Since these libraries are still in active development, the latest versions are required to avoid issues.
 
 ```
-- cupy v8.00
-- cuml v0.17
-- cudf v0.17
+- cupy v8.60
+- cuml v0.18
+- cudf v0.18
+- cugraph v0.18
 ```
 
 Currently there are some major (hopefully temporary) limitation in this implementation. UMAP can only run with euclidean distance, DBSCAN is the only clusters identification algorithm available.

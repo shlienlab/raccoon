@@ -1,5 +1,8 @@
 {
     "grid":     true,
+    "mahal":     true,
+    "snn":      true,
+    "louvain":  true,
     "load":     true,
     "de":       true,
     "auto":     true,
@@ -7,7 +10,6 @@
     "high":     true,
     "trans":    true,
     "knn":      true,
-    "gpu":      true,
-    "knn_gpu":  true,
-    "clean":    true
+    "clean":    false,
+    "gpu":      false
 }

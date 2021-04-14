@@ -23,6 +23,7 @@ class Interface:
         self.ohe = None
         self.sis = None
         self.pwd = None
+        self.louvain = None
 
         self.num = None
         self.df = None
@@ -34,6 +35,9 @@ class Interface:
         pass
 
     def cluster(self):
+        pass
+    
+    def louvain(self):
         pass
 
     def n_neighbor(self):
@@ -100,6 +104,7 @@ class InterfaceCPU(Interface):
         from sklearn.preprocessing import OneHotEncoder
         from sklearn.metrics import silhouette_score
         from sklearn.metrics import pairwise_distances as pwd
+        from sknetwork.clustering import Louvain 
 
         self.num = numpy
         self.df = pd
@@ -107,6 +112,7 @@ class InterfaceCPU(Interface):
         self.tSVD = tSVD
         self.UMAP = UMAP
         self.DBSCAN = DBSCAN
+        self.louvain = Louvain
         self.NN = NN
         self.norm = normalize
         self.lb = LabelBinarizer
@@ -136,16 +142,31 @@ class InterfaceCPU(Interface):
 
         return self.UMAP(**kwargs)
 
-    def cluster(self, **kwargs):
-        """ Sets up clusters identification object.
+    def cluster(self, pj, **kwargs):
+        """ Sets up clusters identification object with DBSCAN.
 
         Args:
+            pj (DataFrame): projected data to cluster.
             (dict): keyword arguments for clusters identification.
         Returns:
             (obj): clusters identification object.
         """
 
-        return self.DBSCAN(**kwargs)
+        clusterer = self.DBSCAN(**kwargs)
+        return clusterer.fit_predict(pj)
+    
+    def cluster_louvain(self, pj, **kwargs):
+        """ Sets up clusters identification object with Louvain..
+
+        Args:
+            pj (DataFrame): adjacency matrix to cluster.
+            (dict): keyword arguments for clusters identification.
+        Returns:
+            (obj): clusters identification object.
+        """
+        
+        clusterer = self.louvain(**kwargs)
+        return clusterer.fit_transform(pj)
 
     def n_neighbor(self, **kwargs):
         """ Sets up nearest neighbors object.
@@ -291,6 +312,8 @@ class InterfaceGPU(Interface):
         from cuml.preprocessing import LabelBinarizer
         from cuml.preprocessing import OneHotEncoder
         from cuml.metrics.pairwise_distances import pairwise_distances as pwd
+        from cugraph import Graph
+        from cugraph.community.louvain import louvain
 
         # silhouette score GPU not availablei in cuml 0.17a (memory issues)
         #from cuml.metrics.cluster import silhouette_score
@@ -302,12 +325,15 @@ class InterfaceGPU(Interface):
         self.tSVD = tSVD
         self.UMAP = UMAP
         self.DBSCAN = DBSCAN
+        self.louvain = louvain
         self.NN = NN
         self.norm = normalize
         self.lb = LabelBinarizer
         self.ohe = OneHotEncoder
         self.sis = silhouette_score
         self.pwd = pwd
+        self.graph = Graph
+
 
     def decompose(self, **kwargs):
         """ Sets up features filtering object.
@@ -331,17 +357,49 @@ class InterfaceGPU(Interface):
 
         return self.UMAP(**self.filter_key(kwargs, 'metric'))
 
-    def cluster(self, **kwargs):
-        """ Sets up clusters identification object.
+    def cluster(self, pj, **kwargs):
+        """ Sets up clusters identification object with DBSCAN.
 
         Args:
+            pj (DataFrame): projected data to cluster.
             (dict): keyword arguments for clusters identification.
         Returns:
             (obj): clusters identification object.
         """
 
-        return self.DBSCAN(
+        clusterer= self.DBSCAN(
             **self.filter_key(kwargs, ['metric', 'leaf_size', 'n_jobs', 'metric_params']))
+        return clusterer.fit_predict(pj)
+
+    def build_graph(self, pj):
+        """ Builds a graph from an adjacency matrix 
+
+        Args:
+            pj (DataFrame): adjacency matrix to cluster.
+        Returns:
+            (Graph): cuGraph undirected graph
+        """
+        
+        g=self.graph()
+        g.from_numpy_matrix(self.get_value(pj))
+        return g.to_undirected()
+
+    def cluster_louvain(self, pj, **kwargs):
+        """ Sets up clusters identification object with Louvain.
+
+        Args:
+            pj (Graph): cuGraph undirected graph from adjacency matrix
+            (dict): keyword arguments for clusters identification.
+        Returns:
+            (obj): clusters identification object.
+        """
+        
+        #Apparently there's no way to get a Graph directly from cupy adjacency matrix...
+        #so I need to make sure that pj is a pd dataframe... 
+        #return self.louvain(self.graph().from_pandas_adjacency(pj), **kwargs)
+        #temporary super-inefficient workaround
+        parts, modularity = self.louvain(pj, **kwargs)
+        return parts['partition']
 
     def n_neighbor(self, **kwargs):
         """ Sets up nearest neighbors object.
@@ -464,7 +522,8 @@ class InterfaceGPU(Interface):
         elif isinstance(var, self.num.ndarray):
             return self.num.asnumpy(var)
 
-        elif isinstance(var, list):
+        elif isinstance(var, list) or isinstance(var, float)\
+            or isinstance(var, int):
             return var
 
         return var.get()

@@ -139,3 +139,7 @@ backups/
 
 # Pylint reports
 pylint*
+
+# Personal tests
+test_suite/cputest/
+test_suite/gputest/
