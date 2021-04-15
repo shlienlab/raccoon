@@ -800,6 +800,14 @@ class RecursiveClustering:
             #attempt to fix error for transform data
             #DataGlobal.dataset.loc[self.data_ix].index))
             labs_opt.index))
+        
+        """ Discard unassigned labels. """
+
+        if -1 in tmplab.columns:
+            tmplab.drop(-1,axis=1,inplace=True)
+
+        """ Rename columns. """
+
         tmplab.columns = [self._name + "_" + str(x)
                           for x in range(len(tmplab.columns.values))]
 
