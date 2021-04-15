@@ -144,6 +144,19 @@ def high_test(data, labels=None, gpu=False):
                                      dynmesh=True, maxmesh=3, minmesh=3,
                                      outpath='./out_test_high', savemap=True, debug=True, gpu=gpu)
 
+def super_test(data, labels=None, gpu=False):
+    """ Supervised clustering test, euclidean grid.
+
+        Args:
+            data (pandas dataframe, matrix): input test dataframe.
+            labels (pandas series, array): input test labels.
+            gpu (bool): if True use gpu implementation.
+    """
+
+    cluster_membership, tree = rc.run(data, lab=labels, supervised=True, dim=2, popcut=20, maxdepth=1,
+                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dynmesh=True, maxmesh=3, minmesh=3,
+                                     outpath='./out_test_super', savemap=True, debug=True, gpu=gpu)
 
 def trans_test(data, labels=None, gpu=False):
     """ Clustering test, euclidean grid with transform-only data.
@@ -158,22 +171,6 @@ def trans_test(data, labels=None, gpu=False):
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3,
                                      outpath='./out_test_trans', savemap=True, debug=True, gpu=gpu)
-
-#REMOVE
-#def gpu_test(data, labels=None, gpu=False):
-#    """ Clustering test, de cosine (will fall to euclidean)  with t-SVD on RAPIDS.
-#
-#        Args:
-#            data (pandas dataframe, matrix): input test dataframe.
-#            labels (pandas series, array): input test labels.
-#            gpu (bool): if True use gpu implementation.    
-#    """
-#
-#    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1,
-#                                     filterfeat='tSVD', optimizer='de', metric_clu='cosine', metric_map='cosine',
-#                                     dynmesh=True, maxmesh=3, minmesh=3, clusterer='HDBSCAN',
-#                                     outpath='./out_test_gpu', savemap=True, debug=True, gpu=True)
-
 
 if __name__ == "__main__":
 

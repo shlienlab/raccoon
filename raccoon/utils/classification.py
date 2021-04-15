@@ -10,6 +10,8 @@ import sys
 import pickle
 
 import logging
+DEBUG_R = 15
+
 import time
 import psutil
 
@@ -115,7 +117,9 @@ class KNN:
         logging.getLogger('matplotlib.font_manager').disabled = True
 
         if self.debug:
-            logging.getLogger().setLevel(logging.DEBUG)
+            #logging.getLogger().setLevel(logging.DEBUG)
+            logging.addLevelName(DEBUG_R, 'DEBUG_R')
+            logging.getLogger().setLevel(DEBUG_R)
             self._umap_rs = 32
         else:
             logging.getLogger().setLevel(logging.INFO)
@@ -200,8 +204,8 @@ class KNN:
 
                 logging.info("Working with subclusters of " + names[-1])
 
-                logging.debug('Nearest Neighbours #: {:d}'.format(nnei))
-                logging.debug('Clustering metric: ' + metric)
+                logging.log(DEBUG_R, 'Nearest Neighbours #: {:d}'.format(nnei))
+                logging.log(DEBUG_R, 'Clustering metric: ' + metric)
 
                 try:
                 #if isinstance(genecut, self.interface.df.Index):
@@ -222,7 +226,7 @@ class KNN:
                 try:
                 #if not self.interface.num.isnan(norm):
 
-                    logging.debug('Norm: ' + norm)
+                    logging.log(DEBUG_R, 'Norm: ' + norm)
 
                     """ Normalize data. """
 
@@ -302,7 +306,7 @@ class KNN:
 
                     if not self.gpu:
 
-                        vals = tmp.div(newk[k][0],axis=1)
+                        vals = tmp.div(newk[k][0],axis=0)
 
                     else:
                         tmp.reset_index(drop=True, inplace=True)

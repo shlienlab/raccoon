@@ -9,6 +9,7 @@
     "tsvd":     true,
     "high":     true,
     "trans":    true,
+    "super":    true,
     "knn":      true,
     "clean":    false,
     "gpu":      false

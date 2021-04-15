@@ -219,31 +219,29 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
+    """ Supervised Clustering. """
+
+    if to_run['super']:
+        try:
+            #with HidePrints():
+            super_test(xx, labels = yy, gpu=to_run['gpu'])
+            print('Supervised Clustering Test:\t'+colored('PASSED', 'green'))
+        except Exception as e:
+            print('Supervised Clustering Test:\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))
+            traceback.print_exc()
+
     """ Test Transform-only. """
 
     if to_run['trans']:
         try:
             #with HidePrints():
             trans_test(xx, labels = yy, gpu=to_run['gpu'])
-            print('Transform-only Test:\t'+colored('PASSED', 'green'))
+            print('Transform-only Test:\t\t'+colored('PASSED', 'green'))
         except Exception as e:
-            print('Transform-only Test:\t'+colored('FAILED', 'red'))
+            print('Transform-only Test:\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
             traceback.print_exc()
-
-    #""" Test GPU. """
-
-    #if to_run['gpu']:
-    #    try:
-    #        #with HidePrints():
-    #            # Test the import
-    #            # to make sure rc doesn't just fall back to CPU in absence of RAPIDS
-    #            from cuml import UMAP
-    #            gpu_test(xx, labels = yy, gpu=to_run['gpu'])
-    #        print('GPU Test:\t\t\t'+colored('PASSED', 'green'))
-    #    except Exception as e:
-    #        print('GPU Test:\t\t\t'+colored('FAILED', 'red'))
-    #        print('An error occourred: ' + str(e))
 
     """ Test k-NN. """
 
@@ -256,20 +254,6 @@ if __name__ == "__main__":
             print('k-NN Test:\t\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))        
             traceback.print_exc()
-
-    #""" Test k-NN with GPU. """
-
-    #if to_run['knn_gpu']:
-    #    try:
-    #        #with HidePrints():
-    #            # Test the import
-    #            # to make sure rc doesn't just fall back to CPU in absence of RAPIDS
-    #            from cuml import UMAP
-    #            knn_gpu_test(xx, './out_test_gpu')
-    #        print('k-NN GPU Test:\t\t\t'+colored('PASSED', 'green'))
-    #    except Exception as e:
-    #        print('k-NN GPU Test:\t\t\t'+colored('FAILED', 'red'))
-    #        print('An error occourred: ' + str(e))        
 
     """ Clean up. """
 
@@ -286,7 +270,7 @@ if __name__ == "__main__":
         remove_dir('./out_test_auto')
         remove_dir('./out_test_tsvd')
         remove_dir('./out_test_high')
+        remove_dir('./out_test_super')
         remove_dir('./out_test_trans')
-        #remove_dir('./out_test_gpu')
 
     print('All done!')

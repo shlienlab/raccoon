@@ -354,6 +354,11 @@ class InterfaceGPU(Interface):
         Returns:
             (obj): dimensionality reduction object.
         """
+        
+        #typo in cuml
+        if 'target_weight' in kwargs.keys():
+            kwargs['target_weights']=kwargs['target_weight']
+            del kwargs['target_weight']
 
         return self.UMAP(**self.filter_key(kwargs, 'metric'))
 

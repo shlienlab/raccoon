@@ -12,6 +12,8 @@ import csv
 import pickle
 
 import logging
+DEBUG_R = 15
+
 import time
 import psutil
 
@@ -61,7 +63,8 @@ class RecursiveClustering:
 
     """ To perform recursive clustering on a samples x features matrix. """
 
-    def __init__(self, data, lab=None, transform=None, supervised=False, dim=2, epochs=5000,
+    def __init__(self, data, lab=None, transform=None, supervised=False, 
+                supervised_weight=0.5, dim=2, epochs=5000,
                 lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0,
                 neicap=250, metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
@@ -83,6 +86,10 @@ class RecursiveClustering:
                 initial matrix that should be transformed-only
                 and not used for training the dimensionality reduction map.
             supervised (bool): if true, use labels for supervised dimensionality reduction with
+                UMAP (default False, works only if lab !=None).
+            supervised_weight (float): how much weight is given to the labels in supervised UMAP
+                (default 0.5).
+            if true, use labels for supervised dimensionality reduction with
                 UMAP (default False, works only if lab !=None).
             dim (integer): number of dimensions of the target projection (default 2).
             epochs (integer): number of UMAP epochs.
@@ -251,6 +258,7 @@ class RecursiveClustering:
                            reduction, setting supervised to False.")
             self.supervised = False
 
+        self.super_w = supervised_weight
         self.optimizer = optimizer
         # Keep track of the original optimizer if changed
         self.optimtrue = optimizer
@@ -481,7 +489,9 @@ class RecursiveClustering:
         """ Setup logging. """
 
         if self.debug:
-            logging.getLogger().setLevel(logging.DEBUG)
+            #logging.getLogger().setLevel(logging.DEBUG)
+            logging.addLevelName(DEBUG_R, 'DEBUG_R')
+            logging.getLogger().setLevel(DEBUG_R)
             os.environ['NUMBA_DEBUG'] = '0'  # Not working
             self._umap_rs = 32
             self._seed = 32
@@ -557,7 +567,7 @@ class RecursiveClustering:
                 new_data = functions._near_zero_var_drop(
                     new_data, self.interface, thresh=cutoff, type=self.filterfeat)
 
-            logging.debug("Dropped Features #: " + '{:1.0f}'.format(
+            logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
                 DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
 
             # Extra passage needed in case the transform data cut was
@@ -569,7 +579,7 @@ class RecursiveClustering:
             new_data = functions._drop_collinear(
                 new_data, self.interface, thresh=cutoff)
 
-            logging.debug("Dropped Features #: " + '{:1.0f}'.format(
+            logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
                 DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
 
             # Extra passage needed in case the transform data cut was
@@ -670,6 +680,7 @@ class RecursiveClustering:
                 n_neighbors=n_nei,
                 n_epochs=self.epochs,
                 learning_rate=self.lr,
+                target_weight=self.super_w,
                 verbose=False)
 
             if self.transform is not None:
@@ -873,14 +884,14 @@ class RecursiveClustering:
             Take the square root of the total population for HDBSCAN."""
 
         if self.clusterer == 'louvain':
-            logging.debug(
+            logging.log(DEBUG_R, 
                 'Resolution range guess: [{:.5f},{:.5f}]'.format(
                     0, 5))
             return self.interface.num.linspace(0, 5, 6)
 
         if self.clusterer  in ['DBSCAN', 'SNN']:
             ref = self._elbow(pj)
-            logging.debug(
+            logging.log(DEBUG_R, 
                 'Epsilon range guess: [{:.5f},{:.5f}]'.format(
                     ref / 50, ref * 1.5))
 
@@ -897,7 +908,7 @@ class RecursiveClustering:
             step = int((maxbound - minbound) / 50)
             if step < 1:
                 step = 1
-            logging.debug(
+            logging.log(DEBUG_R, 
                 'Minimum samples range guess: [{:d},{:d}] with a {:d} point(s) step'.format(
                     self.interface.get_value(minbound),
                     self.interface.get_value(maxbound),
@@ -1038,11 +1049,11 @@ class RecursiveClustering:
         init = 'spectral'
         if DataGlobal.dataset.loc[self.data_ix].shape[0] <= self.dim + 1:
             init = 'random'
-        logging.debug('Initialization: ' + init)
+        logging.log(DEBUG_R, 'Initialization: ' + init)
 
         """ Remove columns with low information from data matrix. """
 
-        logging.debug('Features cutoff: {:.3f}'.format(cutoff))
+        logging.log(DEBUG_R, 'Features cutoff: {:.3f}'.format(cutoff))
 
         data_cut, decomposer = self._features_removal(cutoff)
 
@@ -1053,7 +1064,7 @@ class RecursiveClustering:
 
             """ Normalize data. """
 
-            logging.debug('Normalize with ' + self.norm)
+            logging.log(DEBUG_R, 'Normalize with ' + self.norm)
 
             data_cut = self.interface.df.DataFrame(
                 self.interface.norm(
@@ -1064,13 +1075,14 @@ class RecursiveClustering:
 
         """ Project data with UMAP. """
 
-        logging.debug('Number of nearest neighbors: {:d}'.format(nn))
+        logging.log(DEBUG_R, 'Number of nearest neighbors: {:d}'.format(nn))
 
         mapping = self.interface.dim_red(
             metric=self.metric_map,
             n_components=self.dim, min_dist=0.0, spread=1,
             n_neighbors=nn, n_epochs=self.epochs,
             learning_rate=self.lr, verbose=False,
+            target_weight=self.super_w,
             random_state=self._umap_rs, init=init)
 
         if self.transform is not None:
@@ -1145,7 +1157,7 @@ class RecursiveClustering:
 
             for cparm in cparmrange:  # self.cparmrange
 
-                logging.debug(
+                logging.log(DEBUG_R, 
                     'Clustering parameter: {:.5f}'.format(
                         self.interface.get_value(cparm)))
 
@@ -1217,7 +1229,7 @@ class RecursiveClustering:
         """
 
         sil_opt = -0.0001
-        keepfeat = self.interface.num.nan
+        keepfeat = []
         decomp_opt = None
         labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
         cparm_opt = self.interface.num.nan
@@ -1232,7 +1244,7 @@ class RecursiveClustering:
         init = 'spectral'
         if DataGlobal.dataset.loc[self.data_ix].shape[0] <= self.dim + 1:
             init = 'random'
-        logging.debug('Initialization: ' + init)
+        logging.log(DEBUG_R, 'Initialization: ' + init)
 
         if self.ffrange == 'kde':
             self.ffrange = ['kde']
@@ -1241,7 +1253,7 @@ class RecursiveClustering:
 
             """ Remove columns with low information from data matrix. """
 
-            logging.debug('Features cutoff: {:.3f}'.format(cutoff))
+            logging.log(DEBUG_R, 'Features cutoff: {:.3f}'.format(cutoff))
 
             data_cut, decomposer = self._features_removal(cutoff)
 
@@ -1249,7 +1261,7 @@ class RecursiveClustering:
 
                 """ Normalize data. """
 
-                logging.debug('Normalize with ' + self.norm)
+                logging.log(DEBUG_R, 'Normalize with ' + self.norm)
 
                 data_cut = self.interface.df.DataFrame(
                     self.interface.norm(
@@ -1262,13 +1274,14 @@ class RecursiveClustering:
 
                 """ Project data with UMAP. """
 
-                logging.debug('Number of nearest neighbors: {:d}'.format(nn))
+                logging.log(DEBUG_R, 'Number of nearest neighbors: {:d}'.format(nn))
 
                 mapping = self.interface.dim_red(
                     metric=self.metric_map,
                     n_components=self.dim,
                     min_dist=0.0, spread=1, n_neighbors=nn,
                     n_epochs=self.epochs, learning_rate=self.lr,
+                    target_weight=self.super_w,
                     verbose=False, random_state=self._umap_rs,
                     init=init)
 
@@ -1351,7 +1364,7 @@ class RecursiveClustering:
 
                     for cparm in cparmrange:  # self.cparmrange
 
-                        logging.debug(
+                        logging.log(DEBUG_R, 
                             'Clustering parameter: {:.5f}'.format(
                                 self.interface.get_value(cparm)))
                         
@@ -1367,7 +1380,7 @@ class RecursiveClustering:
                         else:
                             sil = 0
 
-                        logging.debug('Clustering score: {:.3f}'.format(sil))
+                        logging.log(DEBUG_R, 'Clustering score: {:.3f}'.format(sil))
 
                         if sil > scoreslist[2][-1]:
                             scoreslist[2].pop()
@@ -1596,7 +1609,7 @@ class RecursiveClustering:
         if self.transform is not None:
 
             #if no clustering was found
-            if self.interface.num.isnan(keepfeat):
+            if len(keepfeat) == 0:
                labs_new=self.interface.df.Series([0]*len(self.transform),
                     index=self.transform)
                labs_opt=self.interface.df.concat([labs_opt,labs_new], axis=0)
@@ -1612,7 +1625,7 @@ class RecursiveClustering:
                 pj_opt = self.interface.df.concat([pj_opt, self.interface.df.DataFrame(
                     map_opt.transform(transdata), index=self.transform)], axis=0)
 
-                logging.debug(
+                logging.log(DEBUG_R, 
                     'Transform-only data found at this level: membership will be assigned with KNN')
 
                 """ Assign cluster membership with k-nearest neighbors. """
