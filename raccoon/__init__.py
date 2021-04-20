@@ -1175,16 +1175,28 @@ class RecursiveClustering:
                 # added
                 compset = self.interface.set(labs)
                 compset.discard(-1)
-
-                if len(compset) > 1:
+                
+                #if too many were discarded take another
+                labs = self.interface.df.Series(labs, index=pj.index)
+                ratio = labs.value_counts()
+                if -1 in ratio:
+                    ratio=ratio[-1]/labs.shape[0]
+                else:
+                    ratio=0
+                
+                #could be stricter/looser
+                if len(compset) > 1 and ratio<=.3:
                     sil = self.calc_score(pj, labs)
                 else:
-                    sil = 0
+                    if ratio<=.3:
+                        logging.log(DEBUG_R,
+                            'Too many points discarded (>30%)!')
+                    sil = -0.0001
 
                 if sil > sil_opt:
                     cparm_opt = cparm
                     sil_opt = sil
-                    labs_opt=self.interface.df.Series(labs, index=pj.index)
+                    labs_opt = labs
 
         return sil_opt, labs_opt,\
             cparm_opt, pj, mapping, keepfeat, decomposer
@@ -1377,16 +1389,28 @@ class RecursiveClustering:
                                 self.interface.get_value(cparm)))
                         
                         labs = self._find_clusters(to_cluster, cparm, cse, hdbalgo)
-
+                        
                         # not 100% sure about this, keep until weights on noise
                         # will be added
                         compset = self.interface.set(labs)
                         compset.discard(-1)
+                        
+                        #if too many were discarded take another
+                        labs = self.interface.df.Series(labs, index=pj.index)
+                        ratio = labs.value_counts()
+                        if -1 in ratio:
+                            ratio=ratio[-1]/labs.shape[0]
+                        else:
+                            ratio=0
 
-                        if len(compset) > 1:
+                        #could be stricter/looser
+                        if len(compset) > 1 and ratio<=.3:
                             sil = self.calc_score(pj, labs)
                         else:
-                            sil = 0
+                            if ratio<=.3:
+                                logging.log(DEBUG_R,
+                                    'Too many points discarded (>30%)!')
+                            sil = -0.0001
 
                         logging.log(DEBUG_R, 'Clustering score: {:.3f}'.format(sil))
 
@@ -1398,7 +1422,7 @@ class RecursiveClustering:
                             cparm_opt = cparm
                             sil_opt = sil
                             pj_opt = pj
-                            labs_opt = self.interface.df.Series(labs, index=pj_opt.index)
+                            labs_opt = labs
                             nei_opt = nn
                             pj_opt = pj
                             cut_opt = cutoff
