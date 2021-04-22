@@ -210,20 +210,25 @@ def _calc_RPD(mh, labs, interface, plot=True, name='rpd', path=""):
     return vals
 
 
-def setup(outpath=None, RPD=False):
+def setup(outpath=None, chk=False, RPD=False):
     """ Set up folders that are written to during clustering,
     as well as a log file where all standard output is sent.
         If such folders are already present in the path, delete them.
 
     Args:
         outpath (string): path where output files will be saved.
-
+        chk (bool): if true create checkpoints subdirectory
+            (default False).
+        RPD (bool): deprecated, if true created RPD distributions base pickle
+            (default False).
     """
 
     """ Build folders and delete old data if present. """
 
     try:
         os.makedirs(os.path.join(outpath, 'raccoon_data'))
+        if chk:
+            os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
         os.makedirs(os.path.join(outpath, 'raccoon_plots'))
     except FileExistsError:
         warnings.warn('raccoon_data/raccoon_plots already found in path!')
@@ -234,6 +239,8 @@ def setup(outpath=None, RPD=False):
         if answer.startswith('y'):
             shutil.rmtree(os.path.join(outpath, 'raccoon_data'))
             os.makedirs(os.path.join(outpath, 'raccoon_data'))
+            if chk:
+                os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
             shutil.rmtree(os.path.join(outpath, 'raccoon_plots'))
             os.makedirs(os.path.join(outpath, 'raccoon_plots'))
         else:
@@ -245,9 +252,9 @@ def setup(outpath=None, RPD=False):
         to be written to at each iteration. """
 
     vals = ['name', 'n_samples', 'n_clusters',
-        'dim', 'silhouette_score', 'n_neighbours',
-        'cluster_parm', 'genes_cutoff', 'metric_map',
-        'metric_clust', 'norm', 'reassigned']
+        'dim', 'obj_function_score', 'n_neighbours',
+        'cluster_parm', 'features_cutoff', 'metric_map',
+        'metric_clust', 'norm', 'reassigned', 'seed']
 
     with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
         writer = csv.writer(file)
@@ -311,3 +318,33 @@ def loc_cat(labels, indices, supervised):
         except BaseException:
             warnings.warn("Failed to subset labels.")
     return None
+
+#def makeleaf_csv(filename, rowname):
+#    
+#    """ Replaces the 'leaf' column value in a given row
+#        in the params csv file.
+
+#    Args:
+#        filename (string): path to file to modify.
+#        rowname (string): name of the cluster (row) to modify.
+#    """
+    
+#    with open(filename, 'rt') as infile,\
+#         open(filename[:-4]+'_tmp.csv', 'wt') as outfile:
+        
+#        reader = csv.reader(infile)
+#        writer = csv.writer(outfile)
+#        for line in reader:
+#            if line[0] == 'cluster ' + rowname:
+#                writer.writerow(line[:-2]+['True',line[-1]])
+#                break
+#            else:
+#                writer.writerow(line)
+#        writer.writerows(reader)
+
+#        infile.close()
+#        outfile.close()
+
+#        os.remove(filename)
+#        os.rename(filename[:-4]+'_tmp.csv',filename)
+

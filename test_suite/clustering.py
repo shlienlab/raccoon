@@ -12,7 +12,7 @@ import raccoon as rc
 
 
 def grid_test(data, labels=None, gpu=False):
-    """ Clustering test, euclidean grid.
+    """ Clustering test, euclidean grid, with checkpoints.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
@@ -20,9 +20,9 @@ def grid_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1,
+    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=4,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
+                                     dynmesh=True, maxmesh=3, minmesh=3, chk=True,
                                      outpath='./out_test_grid', savemap=True, debug=True, gpu=gpu)
 
 def mahalanobis_test(data, labels=None, gpu=False):
@@ -77,7 +77,7 @@ def load_test(data, load_path, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=2,
+    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3, fromfile=load_path,
                                      outpath='./out_test_load', savemap=True, debug=True, gpu=gpu)
