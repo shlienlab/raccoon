@@ -21,6 +21,16 @@ from scipy.signal import argrelextrema
 
 from raccoon.utils.plots import plot_violin
 
+def sort_len_num(lista):
+    """ Sort elements of a list by length first, then by numbers.
+
+    Args:
+        lista (list): the list to sort.
+
+    Returns:
+        (list): the sorted list.
+    """
+    return sorted(lista, key=lambda x: (len(x), x))
 
 def _near_zero_var_drop(data, interface, thresh=0.99, type='variance'):
     """ Drop features with low variance/MAD based on a threshold after sorting them,
@@ -210,67 +220,12 @@ def _calc_RPD(mh, labs, interface, plot=True, name='rpd', path=""):
     return vals
 
 
-def setup(outpath=None, chk=False, RPD=False):
-    """ Set up folders that are written to during clustering,
-    as well as a log file where all standard output is sent.
-        If such folders are already present in the path, delete them.
+def setup_log (outpath):
+    """ Set up logging.
 
     Args:
         outpath (string): path where output files will be saved.
-        chk (bool): if true create checkpoints subdirectory
-            (default False).
-        RPD (bool): deprecated, if true created RPD distributions base pickle
-            (default False).
     """
-
-    """ Build folders and delete old data if present. """
-
-    try:
-        os.makedirs(os.path.join(outpath, 'raccoon_data'))
-        if chk:
-            os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
-        os.makedirs(os.path.join(outpath, 'raccoon_plots'))
-    except FileExistsError:
-        warnings.warn('raccoon_data/raccoon_plots already found in path!')
-        answer = None
-        while answer not in ['y', 'yes', 'n', 'no']:
-            answer = input(
-                "Do you want to delete the old folders? [Y/N]  ").lower()
-        if answer.startswith('y'):
-            shutil.rmtree(os.path.join(outpath, 'raccoon_data'))
-            os.makedirs(os.path.join(outpath, 'raccoon_data'))
-            if chk:
-                os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
-            shutil.rmtree(os.path.join(outpath, 'raccoon_plots'))
-            os.makedirs(os.path.join(outpath, 'raccoon_plots'))
-        else:
-            print('Please remove raccoon_data/plots manually or \
-                   change output directory before proceeding!')
-            sys.exit(1)
-
-    """ Generate empty optimal paramaters table,
-        to be written to at each iteration. """
-
-    vals = ['name', 'n_samples', 'n_clusters',
-        'dim', 'obj_function_score', 'n_neighbours',
-        'cluster_parm', 'features_cutoff', 'metric_map',
-        'metric_clust', 'norm', 'reassigned', 'seed']
-
-    with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
-        writer = csv.writer(file)
-        writer.writerow(vals)
-        file.close()
-
-    """ Generate empty calc_RPD distributions pickle,
-        to be written to at each iteration. """
-
-    if RPD:
-        with open(os.path.join(outpath, 'raccoon_data/rpd.pkl'), 'wb') as file:
-            empty = []
-            pickle.dump(empty, file)
-            file.close()
-
-    """ Configure log. """
 
     logname = 'raccoon_' + str(os.getpid()) + '.log'
     print('Log information will be saved to ' + logname)
@@ -283,6 +238,103 @@ def setup(outpath=None, chk=False, RPD=False):
         filemode="a+",
         format="%(asctime)-15s %(levelname)-8s %(message)s")
     logging.getLogger('matplotlib.font_manager').disabled = True
+
+
+def setup(outpath=None, chk=False, RPD=False, delete=True):
+    """ Set up folders that are written to during clustering,
+    as well as a log file where all standard output is sent.
+        If such folders are already present in the path, delete them.
+
+    Args:
+        outpath (string): path where output files will be saved.
+        chk (bool): if true create checkpoints subdirectory
+            (default False).
+        RPD (bool): deprecated, if true created RPD distributions base pickle
+            (default False).
+        delete (bool): if true delete folders if already present,
+            user confirmation will always be required before deleting folders
+            (default True).
+    """
+
+    """ Build folders and delete old data if present. """
+
+    try:
+        os.makedirs(os.path.join(outpath, 'raccoon_data'))
+        if chk:
+            os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
+        os.makedirs(os.path.join(outpath, 'raccoon_plots'))
+    except FileExistsError:
+        warnings.warn('raccoon_data/raccoon_plots already found in path!')
+        
+        if delete:
+            answer = None
+            while answer not in ['y', 'yes', 'n', 'no']:
+                answer = input(
+                    "Do you want to delete the old folders? [Y/N]  ").lower()
+            if answer.startswith('y'):
+                shutil.rmtree(os.path.join(outpath, 'raccoon_data'))
+                os.makedirs(os.path.join(outpath, 'raccoon_data'))
+                if chk:
+                    os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
+                shutil.rmtree(os.path.join(outpath, 'raccoon_plots'))
+                os.makedirs(os.path.join(outpath, 'raccoon_plots'))
+            else:
+                print('Please remove raccoon_data/plots manually or \
+                       change output directory before proceeding!')
+                sys.exit(1)
+       
+        else:
+        
+            #quite ugly, remember to clean up
+            try:
+                os.makedirs(os.path.join(outpath, 'raccoon_data'))
+            except:
+                pass
+
+            if chk:
+                try:
+                    os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
+                except:
+                    pass
+            try:
+                os.makedirs(os.path.join(outpath, 'raccoon_plots'))
+            except:
+                pass
+
+    """ Generate empty optimal paramaters table,
+        to be written to at each iteration. """
+
+    vals = ['name', 'n_samples', 'n_clusters',
+        'dim', 'obj_function_score', 'n_neighbours',
+        'cluster_parm', 'features_cutoff', 'metric_map',
+        'metric_clust', 'norm', 'reassigned', 'seed']
+   
+    if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
+        os.rename(os.path.join(outpath, 'raccoon_data/paramdata.csv'),\
+                  os.path.join(outpath, 'raccoon_data/paramdata.BAK_' + str(os.getpid()) + '.csv'))
+
+    with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
+        writer = csv.writer(file)
+        writer.writerow(vals)
+        file.close()
+
+    """ Generate empty calc_RPD distributions pickle,
+        to be written to at each iteration. TO REMOVE """
+
+    if RPD:
+    
+        if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/rpd.pkl')):
+            os.rename(os.path.join(outpath, 'raccoon_data/rpd.pkl'),\
+                      os.path.join(outpath, 'raccoon_data/rpd.BAK_' + str(os.getpid()) + '.pkl'))
+        
+        with open(os.path.join(outpath, 'raccoon_data/rpd.pkl'), 'wb') as file:
+            empty = []
+            pickle.dump(empty, file)
+            file.close()
+
+    """ Configure log. """
+
+    setup_log(outpath)
 
 
 def sigmoid(x, interface, a=0, b=1):
@@ -318,33 +370,3 @@ def loc_cat(labels, indices, supervised):
         except BaseException:
             warnings.warn("Failed to subset labels.")
     return None
-
-#def makeleaf_csv(filename, rowname):
-#    
-#    """ Replaces the 'leaf' column value in a given row
-#        in the params csv file.
-
-#    Args:
-#        filename (string): path to file to modify.
-#        rowname (string): name of the cluster (row) to modify.
-#    """
-    
-#    with open(filename, 'rt') as infile,\
-#         open(filename[:-4]+'_tmp.csv', 'wt') as outfile:
-        
-#        reader = csv.reader(infile)
-#        writer = csv.writer(outfile)
-#        for line in reader:
-#            if line[0] == 'cluster ' + rowname:
-#                writer.writerow(line[:-2]+['True',line[-1]])
-#                break
-#            else:
-#                writer.writerow(line)
-#        writer.writerows(reader)
-
-#        infile.close()
-#        outfile.close()
-
-#        os.remove(filename)
-#        os.rename(filename[:-4]+'_tmp.csv',filename)
-

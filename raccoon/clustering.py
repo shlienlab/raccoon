@@ -28,6 +28,7 @@ warnings.filterwarnings(
     "ignore",
     category=numba.errors.NumbaPerformanceWarning)
 
+from math import nan
 import random
 
 import raccoon.utils.plots as plotting
@@ -53,8 +54,6 @@ class DataGlobal:
     """ Static container for the input data to be filled
         by the user at the first iteration. """
 
-    # Hopefully this saves a bit of memory
-
     dataset = None
     labels = None
 
@@ -73,7 +72,7 @@ class RecursiveClustering:
                 clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore',
                 fromfile=None,  # resume=False,
                 name='0', debug=False, maxdepth=None, savemap=False, RPD=False,
-                outpath="", depth=-1, chk=False, 
+                outpath="", depth=0, chk=False, 
                 #chk_freq=-1, _chk_step=0,
                 gpu=False, _user=True):
         """ Initialize the the class.
@@ -194,7 +193,7 @@ class RecursiveClustering:
             outpath (string): path to the location where outputs will be saved (default,
                 save to the current folder).
             depth (integer): current depth of recursion (should be left as default
-                -1, unless continuing from a previous run).
+                0, unless continuing from a previous run).
             chk (bool): save checkpoints (default False, reccomended for big jobs).
             #chk_freq (int): frequency of checkpoint saves (default -1, do not save checkpoints).
             #_chk_step (int): chekcpoints step tracker, do not change.
@@ -605,11 +604,12 @@ class RecursiveClustering:
         """ Stop the recursion if a given maxdepth parameter has been reached. """
 
         if self.maxdepth is not None:
-            self.maxdepth -= 1
-            if self.maxdepth == -1:
-                self.clus_opt = None
+            #self.maxdepth -= 1
+            #if self.maxdepth == -1:
+            if self.maxdepth <= self._depth:
+                #self.clus_opt = None
                 return True
-            return False
+        return False
 
     def _plot(self, n_nei, proj, cut_opt,
               keepfeat, decomposer, clus_opt, scoreslist):
@@ -1047,7 +1047,8 @@ class RecursiveClustering:
 
         Args:
             cutoff (float): features cutoff.
-            nn (int): UMAP nearest neighbors value.
+            nn (int
+            from math import nan): UMAP nearest neighbors value.
 
         Returns:
             sil_opt (float): silhoutte score corresponding to the best set of parameters.
@@ -1635,14 +1636,11 @@ class RecursiveClustering:
                 self._objective_function, bounds, maxiter=self.deiter[0],
                 popsize=self.depop[0], integers=[False, True], seed=self._seed)
 
-            if not isinstance(labs_opt,self.interface.df.Series):
-                labs_opt=self.interface.df.Series(labs_opt, index=pj_opt.index)
-            
             logging.info('Done!')
             
         else:
             sys.exit('ERROR: optimizer not recognized')
-            
+           
         if not isinstance(labs_opt,self.interface.df.Series):
             labs_opt=self.interface.df.Series(labs_opt, index=pj_opt.index)
 
@@ -1716,9 +1714,10 @@ class RecursiveClustering:
             binarizing the resulting labels, plotting and repeating. 
          """
 
-        self._depth += 1
+        #self._depth += 1
 
         if self._level_check():
+            self.clust_opt=None
             return
 
         if DataGlobal.dataset.loc[self.data_ix].shape[0] < self.popcut:
@@ -1731,7 +1730,7 @@ class RecursiveClustering:
 
         """ Save cluster best parameters to table. """
 
-        vals = ['cluster ' + self._name,
+        vals = [self._name,
                 DataGlobal.dataset.loc[self.data_ix].shape[0],
                 n_clu, self.dim, minimum, n_nei,
                 chosen, cut, self.metric_map,
@@ -1784,8 +1783,8 @@ class RecursiveClustering:
                 #change to feather
                 clus_tmp.to_hdf(
                     os.path.join(
-                        self.outpath, 'raccoon_data/chk/classes_chk_'+self._name+'.h5'),
-                        #self.outpath, 'raccoon_data/chk/classes_chk{:03d}.h5'.format(self._chk_step)),
+                        self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.h5'),
+                        #self.outpath, 'raccoon_data/chk/clusters_chk{:03d}.h5'.format(self._chk_step)),
                     key='df')
             
             #copyfile(os.path.join(self.outpath, 'raccoon_data/paramdata.csv'),
@@ -1800,7 +1799,7 @@ class RecursiveClustering:
             sel_new = DataGlobal.dataset.loc[self.data_ix].loc[clus_tmp[clus_tmp[l] == 1].index]
 
             logging.info('Going deeper within Cluster # ' +
-                         str(l) + ' [depth: {:d}'.format(self._depth) + ']')
+                         str(l) + ' [depth: {:d}'.format(self._depth+1) + ']')
 
             if self.transform is not None:
                 indices = list(sel_new.index.values)
@@ -1848,7 +1847,7 @@ class RecursiveClustering:
                 clusterer=self.clusterer, cparmrange=self.cparmrange, minclusize=self.minclusize,
                 outliers=self.outliers, fromfile=self.fromfile, name=str(l), debug=self.debug,
                 maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD,
-                outpath=self.outpath, depth=self._depth, 
+                outpath=self.outpath, depth=self._depth+1, 
                 #chk_freq=self.chk_freq, _chk_step=self._chk_step+1,
                 chk=self.chk, gpu=self.gpu, _user=False)
 
