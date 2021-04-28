@@ -38,6 +38,8 @@ def run(data, **kwargs):
         kwargs['outpath'] = os.getcwd()
     if 'RPD' not in kwargs:
         kwargs['RPD'] = False
+    if 'chk' not in kwargs:
+        kwargs['chk'] = False
 
     """ Setup folders and files, remove old data if present. """
 
@@ -105,6 +107,8 @@ def resume(data, chkpath, **kwargs):
         kwargs['maxdepth'] = None  #default value
     if 'depth' in kwargs:
         del kwargs['depth']
+    if 'chk' not in kwargs:
+        kwargs['chk'] = True
 
     """ Setup CPU/GPU interface. """
 
@@ -148,7 +152,8 @@ def resume(data, chkpath, **kwargs):
     else:
         old_clus = old_clus[0]
 
-    old_clus=old_clus[functions.sort_len_num(intf.get_value(old_clus.columns))]
+    #old_clus=old_clus[functions.sort_len_num(intf.get_value(old_clus.columns))]
+    old_clus=old_clus[functions.sort_len_num(old_clus.columns)]
     new_clus=[old_clus]
 
     """ Setup logging."""
@@ -159,21 +164,20 @@ def resume(data, chkpath, **kwargs):
 
     """ Fix discrepancies between parameters file and clusters. """
 
-    to_drop = [x for x in oldparams.index if oldparams['name'].loc[x] != '0' and
+    to_drop = [x for x in intf.get_value(oldparams.index) if oldparams['name'].loc[x] != '0' and
                oldparams['name'].loc[x] not in old_clus.columns]
 
     if len(to_drop) > 0:
-        logging.warning('Discrepancies between parameter file and clusters found in {:d} cases\n'.format(len(to_drop))+\
+        logging.warning('Discrepancies between parameter file and clusters found in {:d} case(s)\n'.format(len(to_drop))+\
             'these will be automatically fixed.')
-        
+
         oldparams.drop(to_drop,inplace=True)
 
     """ Identify clusters to resume. 
         Check population size, and depth. 
     """
-    
     to_run = [x for x in old_clus.columns
-                if x not in oldparams['name'].values and
+                if x not in intf.get_value(oldparams['name']) and
                 old_clus[x].sum()>kwargs['popcut'] and
                 (kwargs['maxdepth'] is None or x.count('_') < kwargs['maxdepth'])]
 
@@ -186,8 +190,7 @@ def resume(data, chkpath, **kwargs):
 
         for x in to_run:
             logging.info('Resuming cluster: '+x)
-            
-            cludata = data.loc[old_clus[x]==1]
+            cludata = data[intf.get_value(old_clus[x]==1)]
             clulevel = x.count('_')
 
             obj = RecursiveClustering(cludata, depth=clulevel, name=x, **kwargs)
@@ -198,11 +201,12 @@ def resume(data, chkpath, **kwargs):
     
             del obj
 
-        if len(new_clus)>1:
-            new_clus = intf.df.concat(new_clus,axis=1).fillna(0)
-            new_clus = new_clus[functions.sort_len_num(intf.get_value(new_clus.columns))]
-        else:
-            new_clus = new_clus[0]
+    if len(new_clus)>1:
+        new_clus = intf.df.concat(new_clus,axis=1).fillna(0)
+        #new_clus = new_clus[functions.sort_len_num(intf.get_value(new_clus.columns))]
+        new_clus = new_clus[functions.sort_len_num(new_clus.columns)]
+    else:
+        new_clus = new_clus[0]
 
     """ Save the assignment to disk and buil tree. """
 
@@ -224,6 +228,7 @@ def resume(data, chkpath, **kwargs):
             len(new_clus.columns)))
     else:
         logging.info('No clusters found! Try changing the search parameters')
+
     logging.info(
         'Total time of the operation: {:.3f} seconds'.format(
             (time.time() - start_time)))

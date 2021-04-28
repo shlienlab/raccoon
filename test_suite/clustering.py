@@ -20,7 +20,7 @@ def grid_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=4,
+    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=2,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3, chk=True,
                                      outpath='./out_test_grid', savemap=True, debug=True, gpu=gpu)
@@ -67,22 +67,22 @@ def louvain_test(data, labels=None, gpu=False):
                                      dynmesh=True, maxmesh=3, minmesh=3,
                                      outpath='./out_test_louvain', savemap=True, debug=True, gpu=gpu)
 
-def load_test(data, load_path, labels=None, gpu=False):
-    """ Clustering test, euclidean grid loading parameters data from file.
+def resume_test(data, resume_path, labels=None, gpu=False):
+    """ Resume clustering test, euclidean grid loading parameters data from file.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
-            load_path (strin): path to parameters data file to load.
+            resume_path (string): path to parameters data file to load.
             labels (pandas series, array): input test labels.
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1,
+    cluster_membership, tree = rc.resume(data, lab=labels, dim=2, popcut=20, maxdepth=3,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3, fromfile=load_path,
-                                     outpath='./out_test_load', savemap=True, debug=True, gpu=gpu)
+                                     dynmesh=True, maxmesh=3, minmesh=3,
+                                     chkpath=resume_path, savemap=True, debug=True, gpu=gpu)
 
-    tree = trees.load_tree('./out_test_load/raccoon_data/tree.json')
+    tree = trees.load_tree('./out_test_grid/raccoon_data/tree_final.json')
 
 
 def de_test(data, labels=None, gpu=False):

@@ -70,10 +70,8 @@ class RecursiveClustering:
                 optimizer='grid', depop=10, deiter=10, score='silhouette',
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore',
-                fromfile=None,  # resume=False,
                 name='0', debug=False, maxdepth=None, savemap=False, RPD=False,
                 outpath="", depth=0, chk=False, 
-                #chk_freq=-1, _chk_step=0,
                 gpu=False, _user=True):
         """ Initialize the the class.
 
@@ -176,10 +174,6 @@ class RecursiveClustering:
                 if 'ignore' discard them
                 if 'reassign' try to assign them to other clusters with knn if more than 10%
                 of the total population was flagged.
-            fromfile (string): path to parmdata.csv file to load, if active it will overwrite all
-                other selections to follow the loaded parameters, unless resume is active.
-            resume (bool): if True, resume the search from a previous run (works only if
-                fromfile is provided).
             name (string): name of current clustering level (should be left as default, '0',
                 unless continuing from a previous run).
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
@@ -195,8 +189,6 @@ class RecursiveClustering:
             depth (integer): current depth of recursion (should be left as default
                 0, unless continuing from a previous run).
             chk (bool): save checkpoints (default False, reccomended for big jobs).
-            #chk_freq (int): frequency of checkpoint saves (default -1, do not save checkpoints).
-            #_chk_step (int): chekcpoints step tracker, do not change.
             gpu (bool): Activate GPU version (requires RAPIDS).
             _user (bool): Boolean switch to distinguish initial user input versus recursion
                 calls, do not change.
@@ -302,12 +294,7 @@ class RecursiveClustering:
         self.minclusize = minclusize
         self.outliers = outliers
 
-        self.fromfile = fromfile
-        #self.resume = resume
-
         self.chk = chk
-        #self.chk_freq = chk_freq
-        #self._chk_step = _chk_step
 
         """ CPU vs GPU methods check. """
 
@@ -316,58 +303,12 @@ class RecursiveClustering:
                 warnings.warn("Only DBSCAN or louvain are available with RAPIDS, \
                                setting clusterer as DBSCAN!")
                 self.clusterer = 'DBSCAN'
-                if self.fromfile:
-                    warnings.warn("Clusterer changed while loading paramiter file detected, \
-                                   results may be inconsistent!")
 
             if self.metric_map != 'euclidean' or self.metric_clu != 'euclidean':
                 warnings.warn("Only euclidean is available with RAPIDS, setting metrics \
                                as euclidean!")
                 self.metric_map = 'euclidean'
                 self.metric_clu = 'euclidean'
-                if self.fromfile:
-                    warnings.warn("Metrics changed while loading paramiter file detected, \
-                                   results may be inconsistent!")
-
-        """ Try to load parameters data. """
-
-        if self.fromfile is not None:
-
-            try:
-
-                if isinstance(self.fromfile, str):
-                    self.fromfile = self.interface.df.read_csv(self.fromfile)
-                    self.fromfile.set_index('name', inplace=True)
-                    self.fromfile.index = [
-                        x.strip('cluster ') for x in self.fromfile.index]
-
-                self.optimizer = 'grid'
-                self.dynmesh = False
-
-                if self._name not in self.fromfile.index:
-                    #HERE TO START TO IMLPEMENT CONTINUE
-                    self.nnei = []
-                    self.ffrange = []
-                    self.cparmrange = []
-                    self.norm = self.interface.num.nan
-                else:
-                    self.dim = int(self.fromfile['dim'].loc[self._name])
-                    self.neirange = [
-                        int(self.fromfile['n_neighbours'].loc[self._name])]
-                    self.ffrange = [
-                        float(self.fromfile['genes_cutoff'].loc[self._name])]
-                    self.cparmrange = [
-                        float(self.fromfile['cluster_parm'].loc[self._name])]
-                    self.metric_map = self.fromfile['metric_map'].loc[self._name]
-                    self.metric_clu = self.fromfile['metric_clust'].loc[self._name]
-                    self.norm = self.fromfile['norm'].loc[self._name]
-
-                if self.interface.num.isnan(self.norm):
-                    self.norm = None
-
-            except BaseException:
-                sys.exit('ERROR: there was a problem loading the parameters file.')
-                raise
 
         """ Checks on optimizer choice. """
 
@@ -395,9 +336,6 @@ class RecursiveClustering:
 
             warnings.warn("HDBSCAN not found, setting clusterer as DBSCAN!")
             self.clusterer = 'DBSCAN'
-            if self.fromfile:
-                warnings.warn("Clusterer changed while loading paramiter file detected, \
-                               results may be inconsistent!")
 
         """ Evaluate parameters granularity options. """
 
@@ -492,7 +430,8 @@ class RecursiveClustering:
                     self.ffrange = sorted([int(x) for x in self.interface.num.logspace(
                         self.interface.num.log10(min([50,
                             DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.3])),
-                        self.interface.num.log10(DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9),                             num=self.ffpoints[0])])
+                        self.interface.num.log10(DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9),
+                        num=self.ffpoints[0])])
 
         """ Setup logging. """
 
@@ -1435,7 +1374,6 @@ class RecursiveClustering:
                             pj_opt = pj
                             labs_opt = labs
                             nei_opt = nn
-                            pj_opt = pj
                             cut_opt = cutoff
                             map_opt = mapping
                             if self.filterfeat in [
@@ -1776,7 +1714,6 @@ class RecursiveClustering:
 
         """ Checkpoint. """
 
-        #if self.chk_freq != -1 and self._chk_step % self.chk_freq == 0:
         if self.chk:
             
             if clus_tmp is not None:
@@ -1784,14 +1721,8 @@ class RecursiveClustering:
                 clus_tmp.to_hdf(
                     os.path.join(
                         self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.h5'),
-                        #self.outpath, 'raccoon_data/chk/clusters_chk{:03d}.h5'.format(self._chk_step)),
                     key='df')
             
-            #copyfile(os.path.join(self.outpath, 'raccoon_data/paramdata.csv'),
-            #    os.path.join(self.outpath, 'raccoon_data/chk/paramdata_chk'+self._name+'.csv'))
-            #    os.path.join(self.outpath, 'raccoon_data/chk/paramdata_chk{:03d}.csv'.format(self._chk_step)))
-
-
         """ Dig within each subcluster and repeat. """
 
         for l in list(clus_tmp.columns):
@@ -1845,13 +1776,11 @@ class RecursiveClustering:
                 depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                 clusterer=self.clusterer, cparmrange=self.cparmrange, minclusize=self.minclusize,
-                outliers=self.outliers, fromfile=self.fromfile, name=str(l), debug=self.debug,
+                outliers=self.outliers, name=str(l), debug=self.debug,
                 maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD,
                 outpath=self.outpath, depth=self._depth+1, 
-                #chk_freq=self.chk_freq, _chk_step=self._chk_step+1,
                 chk=self.chk, gpu=self.gpu, _user=False)
 
-            #self._chk_step = deep.recurse()
             deep.recurse()
 
             if deep.clus_opt is not None:
