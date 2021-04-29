@@ -62,7 +62,7 @@ def _create_dataset():
             random_state=32, cluster_std=1.0)
 
     x2, y2 = make_blobs(n_samples=50, centers=1, n_features=16,
-            random_state=32, cluster_std=10.0, center_box=(15, 15))
+            random_state=64, cluster_std=2.5, center_box=(10, 10))
 
     return pd.DataFrame(np.concatenate([x, x2])), pd.Series(
             np.concatenate([y, np.where(y2 == 0, 3, y2)]))
@@ -97,10 +97,10 @@ if __name__ == "__main__":
     xx, yy = _create_dataset()
 
     if to_run['grid'] == False and (
-            to_run['knn'] == True or to_run['load'] == True):
+            to_run['knn'] == True or to_run['resume'] == True):
         print('Warning: k-NN and Load test can\'t be run without Grid test')
-        to_run['knn'] = False
-        to_run['load'] = False
+        #to_run['knn'] = False
+        #to_run['resume'] = False
 
     #if to_run['gpu'] == False and (to_run['knn_gpu'] == True):
     #    print('Warning: k-NN GPU can\'t be run without GPU test')
@@ -158,12 +158,12 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
-    """ Test Load. """
+    """ Test Resume. """
 
-    if to_run['load']:
+    if to_run['resume']:
         try:
             #with HidePrints():
-            load_test(xx, './out_test_grid/raccoon_data/paramdata.csv', labels=yy, gpu=to_run['gpu'])
+            resume_test(xx, './out_test_grid', labels=yy, gpu=to_run['gpu'])
             print('Load Test:\t\t\t'+colored('PASSED', 'green'))
             colored('PASSED', 'green')
         except Exception as e:
@@ -265,7 +265,7 @@ if __name__ == "__main__":
         remove_dir('./out_test_mahalanobis')
         remove_dir('./out_test_snn')
         remove_dir('./out_test_louvain')
-        remove_dir('./out_test_load')
+        #remove_dir('./out_test_resume')
         remove_dir('./out_test_de')
         remove_dir('./out_test_auto')
         remove_dir('./out_test_tsvd')

@@ -14,8 +14,9 @@ def build_tree(table, outpath=None):
         the hierarchy of identified classes.
 
     Args:
-        table (pandas dataframe): one-hot-encoded table of class membership
-        outpath (string): path where output files will be saved.
+        table (pandas dataframe): one-hot-encoded table of class membership.
+        outpath (string): path where output files will be saved
+            (includes filename).
 
     """
 
@@ -39,7 +40,7 @@ def build_tree(table, outpath=None):
         n.leaf = len(n.children) == 0
 
     exporter = JsonExporter(indent=2, sort_keys=True)
-    with open(os.path.join(outpath, 'tree.json'), 'w') as handle:
+    with open(outpath, 'w') as handle:
         exporter.write(nodes[0], handle)
 
     return nodes

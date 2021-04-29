@@ -3,7 +3,7 @@
 Release History
 ===============
 
-Version 0.3.1a
+Version 0.3.2
 ===============
 
 Features
@@ -18,22 +18,19 @@ Features
    - k-Nearest Neighbours classification
    - Parameters range selection can be automatic, for large jobs
      the mesh can be dynamically adapted 
+   - Old runs can be resumed or extended for a finer search. 
    - A short tutorial with the MNIST dataset is available
+
 
    - GPU implementation with RAPIDS
 
+...
+
 To Do 
 =====
-...
    - Currently parallelization is only available through 
      of sklearn and UMAP and is automatically active when possible. 
      Implement threading on separate sibling clusters instances
-   
-   - Add more objective functions
    - Add weights to objective function to account for the datapoints discarded as noise
 ...   
-   - Add automatic testing with nose/pytest
-   - Fix loading feature
-   
-   - Add more clusters identification options
 

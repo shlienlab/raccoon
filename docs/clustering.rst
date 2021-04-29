@@ -4,7 +4,7 @@ Clustering
 ====================
 
 
-A wrapper function (:code:`run`) is available for the user's convenicence,
+A wrapper function (:code:`run`) is available for the user's convenience,
 it takes all arguments available to the clustering object and will output the
 membership assignment.
 
@@ -13,10 +13,10 @@ and call the recursion by themeslves.
 
 .. code-block:: python
 
-  obj = RecursiveClustering(data, **kwargs)
+  obj = recursiveClustering(data, **kwargs)
   obj.recurse()
   
-:code:`RecursiveClustering` takes an initial matrix-like object 
+:code:`recursiveClustering` takes an initial matrix-like object 
 (rows as samples, columns as features), and a number of optional flags,
 including a matching list of labels 
 for plotting (:code:`labs`).
@@ -27,9 +27,9 @@ and assignment of the hierarchy of identified classes.
 
 .. code-block:: python
 
-  obj.clus_opt
+  obj.clusOpt
 
-The numerous flags available to :code:`RecursiveClustering` 
+The numerous flags available to :code:`recursiveClustering` 
 allows for great flexibility in the clustering analysis.
 
 Among these we find
@@ -59,8 +59,7 @@ to the features removal step.
 Optimizers
 ==========
 
-There are currently two available optimizers, to be set with the :code:`optimizer` flag,
-and the option to let the algorithm decide which to use on its own.
+There are currently two available optimizers, to be set with the :code:`optimizer` flag
 
 ===============  ============================================================  
 :code:`'grid'`   **Grid Search**: given a set of parameters ranges and steps, 
@@ -69,10 +68,6 @@ and the option to let the algorithm decide which to use on its own.
 :code:`'de'`     **Differential Evolution**: a simple evolutionary algorithm,
                  it requires to set a number of candidates for the parametric 
                  space search and a number of maximum iterations [Storn1997]_
-:code:`'auto'`   **Automatic**: dynamically adapt the optimizer choice 
-                 to the dataset size. Grid Search will be used for larger
-                 coarse searches, DE will be saved for smaller datasets and 
-                 more detailed runs.
 ===============  ============================================================
 
 While Grid Search requires to define the exact set of points to explore, either directly
@@ -113,19 +108,22 @@ To drive the optimization, different clustering evaluation scores can be used
 :code:`'silhouette'`  **Silhouette Score**: mesures the ratio of the intra-cluster 
                       and inter-cluster distances, it ranges between 1 for an optimal
                       separation and -1 for ill-defined clusters. [Rousseeuw1987]_
-:code:`'dunn'`        **Dunn Index**: mesures the ratio of the intra-cluster and 
-                      inter-cluster distances, it ranges between +inf for an optimal
-                      separation and 0 for ill-defined clusters. [Dunn1973]_
+:code:`'dunn'`        **Dunn Index**: is the ratio of the minimum inter-cluster 
+                      distance and the maximum cluster diameter. It ranges from 0
+                      to infinity. [Dunn1973]_
 ====================  ============================================================
 
 These scores require to measure the distances between points and/or clusters
-in the embedded space. With :code:`metric_clu`, one can select which metric to use.
+in the embedded space. With :code:`metricC`, one can select which metric to use.
 Standard measures, as implemented in :code:`sklearn` 
-(e.g. :code:`'euclidean'`, :code:`'cosine'`, or :code:`'mahalanobis'`) are available.
+(e.g. :code:`'euclidean'` or :code:`'cosine'`) are available.
 
 When :code:`'silhouette'` is selected, its mean value on all data points is maximized. 
 To assure quality in the library's outputs, set of parameters
 generating a negative score are automatically discarded.
+
+*Warning*: the current implementation of the Dunn Index is not
+well optimized, avoid it unless necessary.
 
 Population Cutoff
 -----------------
@@ -179,7 +177,7 @@ the results and the efficiency of the algorithm. The choice of metric for the ob
 function will also depend on this value, as :code:`'euclidean'` distances are only viable in two 
 dimensions.
 
-We suggest you leave the choice of mapping metric (:code:`metric_map`), the number of epochs (:code:`epochs`) 
+We suggest you leave the choice of mapping metric (:code:`metricM`), the number of epochs (:code:`epochs`) 
 and learning rate (:code:`lr`), to their default values unless you know what you are doing.
 
 Finally, as in the case of the features removal step, the number of nearest neighbours,
@@ -199,11 +197,20 @@ The clusters identification tool is chosen with the :code:`clusterer` flag
 
 =================  ================================================================  
 :code:`'DBSCAN'`   **Density-Based Spatial Clustering of Applications with Noise**: 
-                   density based clustering, requires an :math:`$\epsilon$` distance 
-                   to define clusters neighborhood [Ester1996]_
+                   density based clustering, requires an :math:`$\epsilon$` 
+                   distance to define clusters neighborhood [Ester1996]_
 :code:`'HDBSCAN'`  **Hierarchical DBSCAN**: based on DBSCAN, it attempts to remove
-                   the dependency on :math:`$\epsilon$` but is still affected by the 
-                   choice of minimum cluster population [Campello2013]_
+                   the dependency on :math:`$\epsilon$` but is still affected by 
+                   the choice of minimum cluster population [Campello2013]_
+:code:`'SNN'`      **Shared Nearest Neighbors**: it accounts for clusters of varying
+                   density by building an adjacency matrix based on the number of
+                   neighbours within a given threshold. This implementation relies
+                   on DBSCAN to find the clusters from the similarity
+                   matrix. [Jarvis1973]_
+:code:`'louvain'`  **Louvain Community Detection**: this is an algorithm devised
+                   for the identification of communities in large networks. This  
+                   implementation is based on the adjacency matrix calculated
+                   with SNN. [Blondel2008]_
 =================  ================================================================
 
 Depending on which method has been chosen, different parameters are set as tunable for 
@@ -214,7 +221,7 @@ as :code:`guess` which allows the algorithm to find an ideal range based on the 
 If :code:`'DBSCAN'` is chosen as clusterer, its minimum value of cluster size can also be set
 with :code:`minclusize`.
 
-This step is also affected by the choice of :code:`metric_clu` as distances need to be measured
+This step is also affected by the choice of :code:`metricC` as distances need to be measured
 in the embedded space.
 
 For those clustering algorithm that allow to discard points at noise, the :code:`outliers`
@@ -226,7 +233,6 @@ flag allows the user to chose what to do with these points:
 :code:`'reassign'`  attempts to force the assignment of a cluster membership to all 
                     the points marked as noise by means ofnearest neighbours.
 ==================  ================================================================
-
 
 Given that this step is in most cases considerably less expensive than the other two, 
 and that the DE algorithm efficacy is considerably reduced above 2 dimensions, the 
@@ -251,41 +257,82 @@ Activating this function will produce extra plots at each iteration, of projecti
 color coded according to which points were used for the training and which transformed only.
 
 
+Supervised clustering
+=====================
+
+The :code:`supervised` boolean flag activates supervised dimensionality reduction with UMAP. When this flag is active, class labels need to be provided in :code:`labs`
+and are used to guide the training of the lower dimensionality spaces. You can tune how much the supervised information will affect the training with :code:`supervised_weight`, which correspondes to the :code:`target_weight` flag in UMAP. This is to be set to 0.0 to ignore the labels, or 1.0 to fully rely on them. By default it is set as 0.5.
+
+
 Saving hierarchy information
 ============================
 
-The resulting clustering membership will be stored as a one-hot-encoded pandas dataframe in the :code:`obj.clus_opt` variable.
+The resulting clustering membership will be stored as a one-hot-encoded pandas dataframe in the :code:`obj.clusOpt` variable.
 However, auxiliary functions are available to store the hierarchy information as an :code:`anytree` object as well.
 
 .. code-block:: python
   
   import raccoon.utils.trees as trees
 
-  tree = trees.build_tree(obj.clus_opt)
+  tree = trees.buildTree(obj.clusOpt)
 
-:code:`build_tree` requires the membership assignment table as input and optionally a path to where to save the tree in :code:`json` format.
+:code:`buildTree` requires the membership assignment table as input and optionally a path to where to save the tree in :code:`json` format.
 By default it will be saved in the home directory of the run.
-To load a tree from the :code:`json` foile :code:`load_tree` only requires its path.
+To load a tree from the :code:`json` foile :code:`loadTree` only requires its path.
 
-Repeating a run
-===============
+Plotting
+========
 
-The :code:`fromfile` flag takes the path to a :code:`paramdata.csv` as input and allows the user to repeat a run using the optimal parameters and skipping the search
-altogether. Activating this flag will override all other parameters. This can be useful to reproduce past works, save more files (e.g. trained maps) or plots. 
+Each run will produce a series of plots, which can be found in the :code:`raccoon_plots` folder.
+These will include 2d UMAP projections of the subset selected at each iteration, color-coded by class and by label (if provided).
 
-GPU
-===
+.. image:: figs/proj_sample.png
+  :width: 500
 
-If a GPU is available on your system you can speed up your calculations by activating the `gpu` boolean flag when initializing the run.
-You will need `CuPy <https://cupy.dev/>`_ and `RAPIDS <https://rapids.ai/>`_ to be installed.
-See :code:`requirements.txt` for details on modules and versions. 
+And an optimization surface build from the explored sets of parameters. This plot shows a color map of the objective function best score
+as a function of number of neighbours and the feature filters parameter value. Each set of parameters tested is a dot, the chosen
+optimal set is circled in black.
+
+.. image:: figs/opt_sample.png
+  :width: 500
+
+Resuming a run and checkpoints
+==============================
+
+It is possible to resume a previously interrupted run (or one which completed succesfully in case you want to deepen the hierarchy), 
+with the wrapper function :code:`resume`. This takes the same inputs as :code:`run`, with the exception of :code:`outpath` which is ignored.
+:code:`chkpath` is needed in its place. This should point to the folder where the instance to be resumed was run.
+Please note the parent folder to :code:`raccoon_data` needs to be provided.
+
+.. code-block:: python
+  
+  import raccoon as rc
+
+  cluster_membership, tree = rc.resume(data, lab=labels, dim=2, popcut=20, maxdepth=3,
+                                     chkpath='path_to_original_run', savemap=True)
+
+To resume, the original run needs checkpoint files. To create them, activate the :code:`chk` boolean flag during your original run. 
+This will automatically build a :code:`chk`  subdirectory in the data folder and populate it temporary class assignments. 
+While saving checkpoints may affect the efficiency of the run, it is reccomended for
+larger jobs to avoid losing all progress if something were to go wrong. 
+
+When resuming a run, all new data will be saved in the original directory tree.
+
+:code:`resume` takes most of the same arguments as :code:`run`, you are free to change them,  
+e.g to allow for a finer or deeper search by decreasing :code:`popcut` or increasing :code:`maxdepth`. The algorithm will automatically search for all
+candidate classes and extend the search. This includes classes higher up in the hierarchy that fell below the population threshold. 
+Classes that were discarded as noise by the clustering algorithm or were below the :code:`minclusize` cutoff
+cannot be recovered.
+
 
 References
 ----------
         
 .. [Storn1997] Storn R. and Price K. (1997),  "Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces", Journal of Global Optimization, 11: 341-359.
 .. [Rousseeuw1987] Rousseeuw P. J. (1987), "Silhouettes: a Graphical Aid to the Interpretation and Validation of Cluster Analysis", Computational and Applied Mathematics, 20: 53-65.
-.. [Dunn1973] Dunn J. C. (1973), "Well-Separated Clusters and Optimal Fuzzy Partitions", Journal of Cybernetics, 4:1, 95-104.
+.. [Dunn1973] Dunn J. C. (1973), "A Fuzzy Relative of the ISODATA Process and Its Use in Detecting Compact Well-Separated Clusters", Journal of Cybernetics, 3: 32-57.
 .. [Hansen1987] Hansen, P. C. (1987), "The truncatedSVD as a method for regularization", BIT, 27:,: 534–553. 
 .. [Ester1996] Ester M., Kriegel H. P., Sander J. and Xu X. (1996), “A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise”, Proceedings of the 2nd International Conference on Knowledge Discovery and Data Mining, 226-231.
-.. [Campello2013] Campello R.J.G.B., Moulavi D., Sander J. (2013) Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining, PAKDD  Lecture Notes in Computer Science, vol 7819.
+.. [Campello2013] Campello R. J. G. B., Moulavi D., Sander J. (2013), "Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining", PAKDD  Lecture Notes in Computer Science, vol 7819.
+.. [Jarvis1973] Jarvis R. A. and Patrick E. A. (1973) "Clustering Using a Similarity Measure Based on Shared Near Neighbors", IEEE Transactions on Computers, vC-22 11: 1025-1034.  
+.. [Blondel2008]  londel V. D., Guillaume J-L., Lambiotte R. and Lefebvre E. (2008), "Fast unfolding of communities in large networks", Journal of Statistical Mechanics, P10008. 

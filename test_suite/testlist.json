@@ -3,7 +3,7 @@
     "mahal":     true,
     "snn":      true,
     "louvain":  true,
-    "load":     true,
+    "resume":     true,
     "de":       true,
     "auto":     true,
     "tsvd":     true,
