@@ -108,6 +108,9 @@ To drive the optimization, different clustering evaluation scores can be used
 :code:`'silhouette'`  **Silhouette Score**: mesures the ratio of the intra-cluster 
                       and inter-cluster distances, it ranges between 1 for an optimal
                       separation and -1 for ill-defined clusters. [Rousseeuw1987]_
+:code:`'dunn'`        **Dunn Index**: is the ratio of the minimum inter-cluster 
+                      distance and the maximum cluster diameter. It ranges from 0
+                      to infinity. [Dunn1973]_
 ====================  ============================================================
 
 These scores require to measure the distances between points and/or clusters
@@ -118,6 +121,9 @@ Standard measures, as implemented in :code:`sklearn`
 When :code:`'silhouette'` is selected, its mean value on all data points is maximized. 
 To assure quality in the library's outputs, set of parameters
 generating a negative score are automatically discarded.
+
+*Warning*: the current implementation of the Dunn Index is not
+well optimized, avoid it unless necessary.
 
 Population Cutoff
 -----------------
@@ -191,11 +197,20 @@ The clusters identification tool is chosen with the :code:`clusterer` flag
 
 =================  ================================================================  
 :code:`'DBSCAN'`   **Density-Based Spatial Clustering of Applications with Noise**: 
-                   density based clustering, requires an :math:`$\epsilon$` distance 
-                   to define clusters neighborhood [Ester1996]_
+                   density based clustering, requires an :math:`$\epsilon$` 
+                   distance to define clusters neighborhood [Ester1996]_
 :code:`'HDBSCAN'`  **Hierarchical DBSCAN**: based on DBSCAN, it attempts to remove
-                   the dependency on :math:`$\epsilon$` but is still affected by the 
-                   choice of minimum cluster population [Campello2013]_
+                   the dependency on :math:`$\epsilon$` but is still affected by 
+                   the choice of minimum cluster population [Campello2013]_
+:code:`'SNN'`      **Shared Nearest Neighbors**: it accounts for clusters of varying
+                   density by building an adjacency matrix based on the number of
+                   neighbours within a given threshold. This implementation relies
+                   on DBSCAN to find the clusters from the similarity
+                   matrix. [Jarvis1973]_
+:code:`'louvain'`  **Louvain Community Detection**: this is an algorithm devised
+                   for the identification of communities in large networks. This  
+                   implementation is based on the adjacency matrix calculated
+                   with SNN. [Blondel2008]_
 =================  ================================================================
 
 Depending on which method has been chosen, different parameters are set as tunable for 
@@ -218,7 +233,6 @@ flag allows the user to chose what to do with these points:
 :code:`'reassign'`  attempts to force the assignment of a cluster membership to all 
                     the points marked as noise by means ofnearest neighbours.
 ==================  ================================================================
-
 
 Given that this step is in most cases considerably less expensive than the other two, 
 and that the DE algorithm efficacy is considerably reduced above 2 dimensions, the 
@@ -266,6 +280,22 @@ However, auxiliary functions are available to store the hierarchy information as
 By default it will be saved in the home directory of the run.
 To load a tree from the :code:`json` foile :code:`loadTree` only requires its path.
 
+Plotting
+========
+
+Each run will produce a series of plots, which can be found in the :code:`raccoon_plots` folder.
+These will include 2d UMAP projections of the subset selected at each iteration, color-coded by class and by label (if provided).
+
+.. image:: figs/proj_sample.png
+  :width: 500
+
+And an optimization surface build from the explored sets of parameters. This plot shows a color map of the objective function best score
+as a function of number of neighbours and the feature filters parameter value. Each set of parameters tested is a dot, the chosen
+optimal set is circled in black.
+
+.. image:: figs/opt_sample.png
+  :width: 500
+
 Resuming a run and checkpoints
 ==============================
 
@@ -300,6 +330,9 @@ References
         
 .. [Storn1997] Storn R. and Price K. (1997),  "Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces", Journal of Global Optimization, 11: 341-359.
 .. [Rousseeuw1987] Rousseeuw P. J. (1987), "Silhouettes: a Graphical Aid to the Interpretation and Validation of Cluster Analysis", Computational and Applied Mathematics, 20: 53-65.
+.. [Dunn1973] Dunn J. C. (1973), "A Fuzzy Relative of the ISODATA Process and Its Use in Detecting Compact Well-Separated Clusters", Journal of Cybernetics, 3: 32-57.
 .. [Hansen1987] Hansen, P. C. (1987), "The truncatedSVD as a method for regularization", BIT, 27:,: 534–553. 
 .. [Ester1996] Ester M., Kriegel H. P., Sander J. and Xu X. (1996), “A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise”, Proceedings of the 2nd International Conference on Knowledge Discovery and Data Mining, 226-231.
-.. [Campello2013] Campello R.J.G.B., Moulavi D., Sander J. (2013) Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining, PAKDD  Lecture Notes in Computer Science, vol 7819.
+.. [Campello2013] Campello R. J. G. B., Moulavi D., Sander J. (2013), "Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining", PAKDD  Lecture Notes in Computer Science, vol 7819.
+.. [Jarvis1973] Jarvis R. A. and Patrick E. A. (1973) "Clustering Using a Similarity Measure Based on Shared Near Neighbors", IEEE Transactions on Computers, vC-22 11: 1025-1034.  
+.. [Blondel2008]  londel V. D., Guillaume J-L., Lambiotte R. and Lefebvre E. (2008), "Fast unfolding of communities in large networks", Journal of Statistical Mechanics, P10008. 
