@@ -70,7 +70,7 @@ class RecursiveClustering:
                 optimizer='grid', depop=10, deiter=10, score='silhouette',
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore',
-                name='0', debug=False, maxdepth=None, savemap=False, RPD=False,
+                name='0', debug=False, maxdepth=None, savemap=True, RPD=False,
                 outpath="", depth=0, chk=False, 
                 gpu=False, _user=True):
         """ Initialize the the class.
@@ -180,7 +180,7 @@ class RecursiveClustering:
             maxdepth (int): Specify the maximum number of recursion iterations, if None (default),
                 keep going while possible.
                 0 stops the algorithm immediately, 1 stops it after the first level.
-            savemap (boolean): if active, saves the trained maps to disk (default is False).
+            savemap (boolean): if active, saves the trained maps to disk (default is True).
                 Needed to run the k-NN classifier.
             RPD (boolean): specifies whether to save RPD distributions for each cluster
                 (default is False). Warning: this option is unstable and not reccomended.

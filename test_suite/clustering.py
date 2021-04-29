@@ -20,7 +20,7 @@ def grid_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=2,
+    cluster_membership, tree = rc.run(data, lab=labels, dim=2, popcut=20, maxdepth=1,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3, chk=True,
                                      outpath='./out_test_grid', savemap=True, debug=True, gpu=gpu)

@@ -39,7 +39,9 @@ def _plot_score(scores, parm_opt, xlab, name='./scores.png', path=""):
 
     fig = plt.figure(figsize=(8, 4))
     ax = plt.gca()
-
+`
+    ax.set_facecolor('white')
+    
     cieling = max([max(scores[1]), 1.])
 
     ax.plot(sorted(scores[0]),
@@ -77,6 +79,8 @@ def _plot_score_surf(scores, parm_opt, name='./scores_surf.png', path=""):
 
     fig = plt.figure(figsize=(9, 8))
     ax = plt.gca()
+    
+    ax.set_facecolor('white')
 
     cieling = max([max(scores[2]), 1.])
 
@@ -227,6 +231,11 @@ def plot_map(df, labels, name='./projection.png', path=""):
 
     plt.figure(figsize=(10, 10))
     ax = plt.gca()
+    
+    ax.set_facecolor('white')
+    plt.grid(color='#aaaaaa')
+    plt.axis('off')
+
     for lab, col in zip(lbvals, colors):
         ax.scatter(df.loc[labels[labels == lab].index][0],
                    df.loc[labels[labels == lab].index][1],
