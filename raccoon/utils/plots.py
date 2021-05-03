@@ -39,7 +39,6 @@ def _plot_score(scores, parm_opt, xlab, name='./scores.png', path=""):
 
     fig = plt.figure(figsize=(8, 4))
     ax = plt.gca()
-`
     ax.set_facecolor('white')
     
     cieling = max([max(scores[1]), 1.])

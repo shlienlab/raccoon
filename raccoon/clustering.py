@@ -35,7 +35,6 @@ import raccoon.utils.plots as plotting
 import raccoon.utils.functions as functions
 import raccoon.utils.trees as trees
 import raccoon.utils.de as de
-import raccoon.utils.classification
 from raccoon.utils.option import OptionalImports
 import raccoon.interface as interface
 

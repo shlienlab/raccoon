@@ -8,24 +8,26 @@ import sys
 sys.path.append(r'/hpf/largeprojects/adam/projects/raccoon')
 
 import pandas as pd
+import raccoon as rc
 
-from raccoon.utils.classification import KNN
-
-def knn_test(data, refpath, gpu=False):
+def knn_test(data, reftab, refpath, gpu=False):
     """ k-NN classification test, euclidean grid.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
+            reftab (pandas dataframe, matrix): input test clustering
+                assignment table.
             refpath (string): path to reference files.
             gpu (bool): if True use gpu implementation.
     """
-    
-    rcknn = KNN(data.sample(frac=.5), data,
-        pd.read_hdf(os.path.join(refpath,'raccoon_data/final_output.h5')),
+   
+
+    new_membership = rc.classify(data.sample(frac=.5), data,
+        pd.read_hdf(reftab),
+        #pd.read_hdf(os.path.join(refpath,'raccoon_data/clusters_final.h5')),
         refpath=os.path.join(refpath,'raccoon_data'),
         outpath=refpath, 
         gpu=gpu)
-    rcknn.assign_membership()
 
 if __name__ == "__main__":
 

@@ -248,7 +248,13 @@ if __name__ == "__main__":
     if to_run['knn']:
         try:
             #with HidePrints():
-            knn_test(xx, './out_test_grid', gpu=to_run['gpu'])
+
+            if to_run['resume']:
+                reftab='./out_test_grid/raccoon_data/clusters_resumed_final.h5'
+            else:
+                reftab='./out_test_grid/raccoon_data/clusters_final.h5'
+
+            knn_test(xx, reftab, './out_test_grid', gpu=to_run['gpu'])
             print('k-NN Test:\t\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('k-NN Test:\t\t\t'+colored('FAILED', 'red'))

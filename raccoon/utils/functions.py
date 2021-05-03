@@ -310,13 +310,14 @@ def setup(outpath=None, chk=False, RPD=False, delete=True):
         'metric_clust', 'norm', 'reassigned', 'seed']
    
     if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
-        os.rename(os.path.join(outpath, 'raccoon_data/paramdata.csv'),\
+       shutil.copyfile(os.path.join(outpath, 'raccoon_data/paramdata.csv'),\
                   os.path.join(outpath, 'raccoon_data/paramdata.BAK_' + str(os.getpid()) + '.csv'))
-
-    with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
-        writer = csv.writer(file)
-        writer.writerow(vals)
-        file.close()
+    
+    if not os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
+        with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
+            writer = csv.writer(file)
+            writer.writerow(vals)
+            file.close()
 
     """ Generate empty calc_RPD distributions pickle,
         to be written to at each iteration. TO REMOVE """

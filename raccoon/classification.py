@@ -181,11 +181,12 @@ class KNN:
             os.path.join(self.refpath, 'paramdata.csv'))
         paramdata['name'] = paramdata['name'].str.strip('cluster ')
         paramdata = paramdata.set_index('name', drop=True)
-
+        
         for f in os.listdir(self.refpath):
-
-            if f.endswith('.pkl') and not f.endswith('_2d.pkl'):
-
+            
+            if f.endswith('.pkl') and not f.endswith('_2d.pkl') and (f.strip('.pkl') in paramdata.index)\
+                and paramdata['n_clusters'].loc[f.strip('.pkl')]>1:
+            
                 try:
 
                     with open(os.path.join(self.refpath, f), 'rb') as file:

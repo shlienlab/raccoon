@@ -19,6 +19,7 @@ import csv
 import raccoon.utils.functions as functions
 from raccoon.clustering import *
 import raccoon.interface as interface
+from raccoon.classification import KNN
 
 def run(data, **kwargs):
     """ Wrapper function to setup, create a RecursiveClustering object,
@@ -30,6 +31,8 @@ def run(data, **kwargs):
 
         Returns:
             clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
+            tree (anytree object): anytree structure with information on the clusters
+                                   hierarchy.
     """
 
     start_time = time.time()
@@ -91,7 +94,10 @@ def resume(data, chkpath, **kwargs):
             **kwargs: keyword arguments for RecursiveClustering.
 
         Returns:
-            clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
+            new_clus (pandas dataframe): one-hot-encoded clusters membership of the 
+                                        whole data.
+            tree (anytree object): anytree structure with information on the clusters
+                                   hierarchy.
     """
 
     start_time = time.time()
@@ -168,7 +174,8 @@ def resume(data, chkpath, **kwargs):
                oldparams['name'].loc[x] not in old_clus.columns]
 
     if len(to_drop) > 0:
-        logging.warning('Discrepancies between parameter file and clusters found in {:d} case(s)\n'.format(len(to_drop))+\
+        logging.warning('Discrepancies between parameter file and clusters'+\
+            'found in {:d} case(s)\n'.format(len(to_drop))+\
             'these will be automatically fixed.')
 
         oldparams.drop(to_drop,inplace=True)
@@ -235,6 +242,54 @@ def resume(data, chkpath, **kwargs):
     logging.info(psutil.virtual_memory())
 
     return new_clus, tree
+
+
+def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs):
+    """ Wrapper function to classify new data with KNN on
+        a previous RecursiveClustering output,
+
+       Args:
+            new_data (matrix or pandas dataframe): data to classify in 
+                dataframe-compatible format.
+            old_data (matrix or pandas dataframe): reference data on which the 
+                hierarchy was built.
+            membership (matrix or pandas dataframe): one-hot-encoded clusters assignment 
+                table from the original run. 
+            refpath (string): path to the location where trained umap files (pkl) are 
+                stored (default subdirectory racoon_data of current folder).
+            **kwargs: keyword arguments for KNN. 
+
+        Returns:
+            (pandas dataframe): one-hot-encoded clusters membership of the 
+                                         projected data.
+    """
+
+    start_time = time.time()
+
+    if 'outpath' not in kwargs or kwargs['outpath'] is None:
+        kwargs['outpath'] = os.getcwd()
+
+    """ Run classifier. """
+
+    obj = KNN(new_data, old_data, membership, refpath=refpath, **kwargs)
+    obj.assign_membership()
+
+    """ Save the assignment to disk and buil tree. """
+
+    if obj.membership is not None:
+        obj.membership.to_hdf(
+            os.path.join(
+                kwargs['outpath'], 'raccoon_data/classification_final.h5'),
+            key='df')
+
+    """ Log the total runtime and memory usage. """
+
+    logging.info(
+        'Total time of the operation: {:.3f} seconds'.format(
+            (time.time() - start_time)))
+    logging.info(psutil.virtual_memory())
+
+    return obj.membership
 
 
 if __name__ == "__main__":
