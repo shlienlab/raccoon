@@ -11,6 +11,7 @@
     "trans":    true,
     "super":    true,
     "knn":      true,
+    "update":   true,
     "clean":    false,
     "gpu":      false
 }

@@ -32,6 +32,7 @@ This process is then repeated recursively within each cluster identified.
 
    clustering.rst
    classification.rst
+   update.rst
 
 .. toctree::
    :maxdepth: 1

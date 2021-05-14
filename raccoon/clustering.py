@@ -219,8 +219,8 @@ class RecursiveClustering:
                         except BaseException:
                             pass
                     print("Unexpected error: ", sys.exc_info()[0])
-                    print("Input data should be in a format that can be translated \
-                           to pandas/cuDF dataframe!")
+                    print("Input data should be in a format that can be translated "+\
+                           "to pandas/cuDF dataframe!")
                     raise
 
             DataGlobal.dataset = data
@@ -232,8 +232,8 @@ class RecursiveClustering:
                     lab = self.interface.df.Series(lab)
                 except BaseException:
                     print("Unexpected error: ", sys.exc_info()[0])
-                    print("Labels data should be in a format that can be translated \
-                          to pandas series!")
+                    print("Labels data should be in a format that can be translated "+\
+                          "to pandas series!")
                     raise
                 try:
                     lab.index = data
@@ -241,7 +241,7 @@ class RecursiveClustering:
                     print("Unexpected error: ", sys.exc_info()[0])
                     print("Shape of labels data should be consistent with the shape of data!")
                     raise
-
+            
             DataGlobal.labels = lab
 
         self.data_ix = data
@@ -249,8 +249,8 @@ class RecursiveClustering:
 
         self.supervised = supervised
         if self.supervised and DataGlobal.labels is None:
-            warnings.warn("Labels need to be provided for supervised dimensionality \
-                           reduction, setting supervised to False.")
+            warnings.warn("Labels need to be provided for supervised dimensionality "+\
+                           "reduction, setting supervised to False.")
             self.supervised = False
 
         self.super_w = supervised_weight
@@ -299,35 +299,35 @@ class RecursiveClustering:
 
         if self.gpu:
             if self.clusterer not in  ['DBSCAN', 'louvain']:
-                warnings.warn("Only DBSCAN or louvain are available with RAPIDS, \
-                               setting clusterer as DBSCAN!")
+                warnings.warn("Only DBSCAN or louvain are available with RAPIDS, "+\
+                               "setting clusterer as DBSCAN!")
                 self.clusterer = 'DBSCAN'
 
             if self.metric_map != 'euclidean' or self.metric_clu != 'euclidean':
-                warnings.warn("Only euclidean is available with RAPIDS, setting metrics \
-                               as euclidean!")
+                warnings.warn("Only euclidean is available with RAPIDS, setting metrics "+\
+                               "as euclidean!")
                 self.metric_map = 'euclidean'
                 self.metric_clu = 'euclidean'
 
         """ Checks on optimizer choice. """
 
         if self.optimizer not in ['grid', 'de', 'auto']:
-            sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search, \'de\' \
-                      for Differential Evolution or \'auto\' for automatic selection.')
+            sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search, \'de\' '+\
+                      'for Differential Evolution or \'auto\' for automatic selection.')
 
         if self.optimizer == 'de' and self.ffrange == 'kde':
-            sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is \
-                      not compatible with Differential Evolution.')
+            sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is '+\
+                      'not compatible with Differential Evolution.')
 
         if self.filterfeat not in ['variance', 'MAD', 'correlation', 'tSVD']:
-            sys.exit('ERROR: Features filter must be either \'variance\' for low-variance removal, \
-                      \'MAD\' for low-MAD removal, \'correlation\' for correlation removal, \
-                      or \'tSVD\' for truncated SVD.')
+            sys.exit('ERROR: Features filter must be either \'variance\' for low-variance removal, '+\
+                      '\'MAD\' for low-MAD removal, \'correlation\' for correlation removal, '+\
+                      'or \'tSVD\' for truncated SVD.')
 
         if self.optimizer == 'auto' and dynmesh == False:
             self.optimizer = 'grid'
-            warnings.warn('Optimizer \'auto\' works only if dynamic mesh is active, \
-                           falling to Grid Search')
+            warnings.warn('Optimizer \'auto\' works only if dynamic mesh is active, '+\
+                           'falling to Grid Search')
 
         """ Checks optional modules. """
 
@@ -643,12 +643,12 @@ class RecursiveClustering:
                         self.supervised))
 
                 pj1 = self.interface.df.DataFrame(
-                    mapping.transform(scft), index=scft.index)
+                    mapping.transform(scft))
                 # cudf workaround
                 pj1.index = scft.index
 
                 pj2 = self.interface.df.DataFrame(
-                    mapping.transform(sct), index=sct.index)
+                    mapping.transform(sct))
                 # cudf workaround
                 pj2.index = sct.index
 
@@ -698,7 +698,7 @@ class RecursiveClustering:
         """ Plot the same 2-dimensional umap with labels if provided. """
 
         if DataGlobal.labels is not None:
-
+            
             plotting.plot_map(self.interface.get_value(proj, pandas=True), self.interface.get_value(
                 DataGlobal.labels.loc[proj.index], pandas=True),
                 'proj_labels_' + self._name, self.outpath)
@@ -715,51 +715,51 @@ class RecursiveClustering:
                 'proj_trans_' + self._name,
                 self.outpath)
 
-    def _one_hot_encode(self, labs_opt, minpop=10):
-        """ Construct and return a one-hot-encoded clusters membership dataframe.
-
-        Args:
-            labs_opt (pandas series): cluster membership series or list.
-
-        Returns:
-            tmplab (pandas dataframe): one-hot-encoded cluster membership dataframe.
-
-        """
-
-        if not isinstance(labs_opt, self.interface.df.DataFrame):
-            labs_opt = self.interface.df.DataFrame(labs_opt)
-
-        # cuml no sparse yet, bug inherited by cupy
-        ohe = self.interface.one_hot(sparse=False)
-        ohe.fit(labs_opt)
-
-        tmplab = self.interface.df.DataFrame(
-            ohe.transform(labs_opt),
-            columns=self.interface.get_value(
-                ohe.categories_[0])).astype(int)
-
-        """ Discard clusters that have less than minpop of population. """
-
-        tmplab.drop(tmplab.columns[self.interface.get_value(
-            tmplab.sum() < minpop)], axis=1, inplace=True)
-        # not_implemented_error: String Arrays is not yet implemented in cudf
-        #tmplab = tmplab.set_index(DataGlobal.dataset.loc[self.data_ix].index.values)
-        tmplab = tmplab.set_index(self.interface.get_value(
-            #attempt to fix error for transform data
-            #DataGlobal.dataset.loc[self.data_ix].index))
-            labs_opt.index))
-        
-        """ Discard unassigned labels. """
-
-        if -1 in tmplab.columns:
-            tmplab.drop(-1,axis=1,inplace=True)
-
-        """ Rename columns. """
-
-        tmplab.columns = [self._name + "_" + str(x)
-                          for x in range(len(tmplab.columns.values))]
-
-        return tmplab
+    #def _one_hot_encode(self, labs_opt, minpop=10):
+    #    """ Construct and return a one-hot-encoded clusters membership dataframe.
+    #
+    #    Args:
+    #        labs_opt (pandas series): cluster membership series or list.
+    #
+    #    Returns:
+    #        tmplab (pandas dataframe): one-hot-encoded cluster membership dataframe.
+    #
+    #    """
+    #
+    #    if not isinstance(labs_opt, self.interface.df.DataFrame):
+    #        labs_opt = self.interface.df.DataFrame(labs_opt)
+    #
+    #    # cuml no sparse yet, bug inherited by cupy
+    #    ohe = self.interface.one_hot(sparse=False)
+    #    ohe.fit(labs_opt)
+    #
+    #    tmplab = self.interface.df.DataFrame(
+    #        ohe.transform(labs_opt),
+    #        columns=self.interface.get_value(
+    #            ohe.categories_[0])).astype(int)
+    #
+    #    """ Discard clusters that have less than minpop of population. """
+    #
+    #    tmplab.drop(tmplab.columns[self.interface.get_value(
+    #        tmplab.sum() < minpop)], axis=1, inplace=True)
+    #    # not_implemented_error: String Arrays is not yet implemented in cudf
+    #    #tmplab = tmplab.set_index(DataGlobal.dataset.loc[self.data_ix].index.values)
+    #    tmplab = tmplab.set_index(self.interface.get_value(
+    #        #attempt to fix error for transform data
+    #        #DataGlobal.dataset.loc[self.data_ix].index))
+    #        labs_opt.index))
+    #    
+    #    """ Discard unassigned labels. """
+    #
+    #    if -1 in tmplab.columns:
+    #        tmplab.drop(-1,axis=1,inplace=True)
+    #
+    #    """ Rename columns. """
+    #
+    #    tmplab.columns = [self._name + "_" + str(x)
+    #                      for x in range(len(tmplab.columns.values))]
+    #
+    #    return tmplab
 
     def _elbow(self, pj):
         """ Estimates the point of flex of a pairwise distances plot.
@@ -902,28 +902,28 @@ class RecursiveClustering:
             neighlist = [self.interface.set(x[1:]) for x in allnei]
         return 1-self.interface.num.asarray([[len(i.intersection(j))/num_neigh for j in neighlist] for i in neighlist])
 
-    def calc_score(self, points, labels):
-        """ Select and calculate scoring function for optimization.
-
-        Args:
-            points (dataframe or matrix): points coordinates.
-            labels (series or matrix): clusters assignment.
-
-        Returns:
-            (float): clustering score.
-
-        """
-
-        if len(self.interface.set(labels)) > len(points)-1:
-            return -1
-
-        if self.score == 'silhouette':
-            return self.interface.silhouette(
-                points, labels, metric=self.metric_clu)
-        elif self.score == 'dunn':
-            return self.interface.dunn(points, labels, metric=self.metric_clu)
-
-        sys.exit('ERROR: score not recognized')
+    #def calc_score(self, points, labels):
+    #    """ Select and calculate scoring function for optimization.
+    #
+    #    Args:
+    #        points (dataframe or matrix): points coordinates.
+    #        labels (series or matrix): clusters assignment.
+    #
+    #    Returns:
+    #        (float): clustering score.
+    #
+    #    """
+    #
+    #    if len(self.interface.set(labels)) > len(points)-1:
+    #        return -1
+    #
+    #    if self.score == 'silhouette':
+    #        return self.interface.silhouette(
+    #            points, labels, metric=self.metric_clu)
+    #    elif self.score == 'dunn':
+    #        return self.interface.dunn(points, labels, metric=self.metric_clu)
+    #
+    #    sys.exit('ERROR: score not recognized')
 
     def _find_clusters(self, pj, cparm, cse=None, algorithm=None):
         """ Runs the selected density-based clusters identification algorithm.
@@ -1052,8 +1052,7 @@ class RecursiveClustering:
                     y=functions.loc_cat(
                         DataGlobal.labels,
                         untransf.index,
-                        self.supervised)),
-                index=untransf.index)
+                        self.supervised)))
             # cudf workaround
             pj.index = untransf.index
 
@@ -1065,8 +1064,7 @@ class RecursiveClustering:
                     y=functions.loc_cat(
                         DataGlobal.labels,
                         data_cut.index,
-                        self.supervised)),
-                index=data_cut.index)
+                        self.supervised)))
             # cudf workaround
             pj.index = data_cut.index
 
@@ -1135,7 +1133,8 @@ class RecursiveClustering:
                 
                 #could be stricter/looser
                 if len(compset) > 1 and ratio<=.3:
-                    sil = self.calc_score(pj, labs)
+                    sil = functions.calc_score(pj, labs,
+                        self.score, self.metric_clu, self.interface)
                 else:
                     if ratio<=.3:
                         logging.log(DEBUG_R,
@@ -1269,21 +1268,19 @@ class RecursiveClustering:
                             y=functions.loc_cat(
                                 DataGlobal.labels,
                                 untransf.index,
-                                self.supervised)),
-                        index=untransf.index)
+                                self.supervised)))
                     # cudf workaround
                     pj.index = untransf.index
 
                 else:
-
+                    
                     pj = self.interface.df.DataFrame(
                         mapping.fit_transform(
                             data_cut,
                             y=functions.loc_cat(
                                 DataGlobal.labels,
                                 data_cut.index,
-                                self.supervised)),
-                        index=data_cut.index)
+                                self.supervised)))
                     # cudf workaround
                     pj.index = data_cut.index
 
@@ -1354,7 +1351,8 @@ class RecursiveClustering:
 
                         #could be stricter/looser
                         if len(compset) > 1 and ratio<=.3:
-                            sil = self.calc_score(pj, labs)
+                            sil = functions.calc_score(pj, labs,
+                                self.score, self.metric_clu, self.interface)
                         else:
                             if ratio<=.3:
                                 logging.log(DEBUG_R,
@@ -1392,7 +1390,7 @@ class RecursiveClustering:
                cparm_opt, nei_opt, pj_opt, cut_opt, map_opt, keepfeat, decomp_opt,\
                scoreslist
 
-    def _KNN(self, nei_opt, pj_opt, labs_opt, cutoff=None):
+    def _local_KNN(self, nei_opt, pj_opt, labs_opt, cutoff=None):
         """ KNN classifier (REDUNDANT, TO REMOVE),
             updates membership assignment for transform-only data.
 
@@ -1408,9 +1406,9 @@ class RecursiveClustering:
 
         """
 
-        missing = [i for i, x in enumerate(pj_opt.index)
+        missing = [i for i, x in enumerate(self.interface.get_value(pj_opt.index))
                    if x not in labs_opt.index]
-
+        
         mparams = {}
         if self.metric_clu == 'mahalanobis':
             try:
@@ -1427,20 +1425,34 @@ class RecursiveClustering:
             metric=self.metric_map,
             metric_params=mparams,
             n_jobs=-1)
+        
         neigh.fit(pj_opt)
 
         kn = neigh.kneighbors(pj_opt.iloc[missing], return_distance=True)
         kn = self.interface.num.array([[x, y] for x, y in zip(kn[0], kn[1])])
-        mask = ~self.interface.num.isin(kn[:, 1], missing)
+        mask = ~self.interface.num.isin(kn[:, 1], self.interface.num.array(missing))
         # TODO: make prettier
         newk = [[kn[i, 0][mask[i]][1:nei_opt + 1], kn[i, 1]
                  [mask[i]][1:nei_opt + 1]] for i in range(len(kn))]
 
-        clus_tmp = self._one_hot_encode(labs_opt)
+        clus_tmp = functions.one_hot_encode(labs_opt, self.minclusize, self._name,
+                    self.interface)
 
         valals = []
+        print(type(self.interface.get_value(
+                        newk[0][1])))
+        print(self.interface.get_value(
+                        newk[0][1]))
+        print(type(self.interface.get_value(
+                        pj_opt.iloc[self.interface.get_value(
+                                        newk[0][1])].index)))
+        print(self.interface.get_value(
+                        pj_opt.iloc[self.interface.get_value(
+                                        newk[0][1])].index))
         for k in self.interface.num.arange(len(newk)):
-            vals = clus_tmp.loc[pj_opt.iloc[newk[k][1]].index].apply(
+            vals = clus_tmp.loc[self.interface.get_value(
+                pj_opt.iloc[self.interface.get_value(
+                newk[k][1])].index)].apply(
                 lambda x: x / newk[k][0], axis=0)[1:]
             valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
 
@@ -1598,16 +1610,22 @@ class RecursiveClustering:
                 elif self.filterfeat == 'tSVD':
                     transdata = decomp_opt.transform(
                         DataGlobal.dataset.loc[self.transform])
+                
+                #pj_t=self.interface.df.DataFrame(map_opt.transform(transdata),
+                #    index=self.transform)
+                #cudf workaround
+                pj_t=self.interface.df.DataFrame(map_opt.transform(transdata))
+                pj_t.index = self.transform
 
-                pj_opt = self.interface.df.concat([pj_opt, self.interface.df.DataFrame(
-                    map_opt.transform(transdata), index=self.transform)], axis=0)
+                pj_opt = self.interface.df.concat([pj_opt, pj_t],
+                    axis=0)
 
                 logging.log(DEBUG_R, 
                     'Transform-only data found at this level: membership will be assigned with KNN')
 
                 """ Assign cluster membership with k-nearest neighbors. """
-
-                labs_opt = self._KNN(nei_opt, pj_opt, labs_opt)
+                
+                labs_opt = self._local_KNN(nei_opt, pj_opt, labs_opt)
         
 
 
@@ -1627,7 +1645,7 @@ class RecursiveClustering:
                 labs_out = labs_opt[labs_opt != -1]
                 reassigned = (
                     labs_opt.shape[0] - labs_out.shape[0]) * 1.0 / labs_opt.shape[0]
-                labs_opt = self._KNN(nei_opt, pj_opt, labs_out,
+                labs_opt = self._local_KNN(nei_opt, pj_opt, labs_out,
                                     cutoff=.5).loc[labs_opt.index]
 
         num_clus_opt = len(self.interface.set(labs_opt)) - \
@@ -1708,8 +1726,10 @@ class RecursiveClustering:
         """ Binarize data. """
 
         #TEST REMOVE IF CREATES ISSUES
+        
         clus_tmp = clus_tmp.astype(int)
-        clus_tmp = self._one_hot_encode(clus_tmp)
+        clus_tmp = functions.one_hot_encode(clus_tmp, self.minclusize, self._name,
+                    self.interface)
 
         """ Checkpoint. """
 
@@ -1727,6 +1747,7 @@ class RecursiveClustering:
         for l in list(clus_tmp.columns):
 
             sel_new = DataGlobal.dataset.loc[self.data_ix].loc[clus_tmp[clus_tmp[l] == 1].index]
+
 
             logging.info('Going deeper within Cluster # ' +
                          str(l) + ' [depth: {:d}'.format(self._depth+1) + ']')
@@ -1786,16 +1807,12 @@ class RecursiveClustering:
 
                 # for now join not available in cudf
                 #clus_tmp = self.interface.df.concat([clus_tmp, deep.clus_opt], axis=1, join='outer')
-                deep.clus_opt = deep.clus_opt.reindex(clus_tmp.index)
+                
                 clus_tmp = self.interface.df.concat(
                     [clus_tmp, deep.clus_opt], axis=1)
 
-                clus_tmp = clus_tmp.fillna(0)
-
-                cols = list(clus_tmp.columns.values)
-                for col in cols:
-                    clus_tmp[col] = clus_tmp[col].astype(int)
-
+                clus_tmp = clus_tmp.fillna(0).astype(int)
+                
         self.clus_opt = clus_tmp
 
 if __name__ == "__main__":

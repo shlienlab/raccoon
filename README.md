@@ -2,7 +2,7 @@
 
 
 ## Recursive Algorithm for Coarse-to-fine Clusters OptimizatiON
-### v 0.3.2
+### v 0.4
 
 `raccoon` is a python 3 package for recursive clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set as to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
@@ -73,7 +73,7 @@ automatically set up a recursive clusters search with just some basic options.
 
     import raccoon as rc
 
-    cluster_membership, tree = rc.run(input, dim=2, popcut=25,
+    cluster_membership, tree = rc.cluster(input, dim=2, popcut=25,
                                      optimizer='auto', dynmesh=True,
                                      metric_clu='cosine', metric_map='cosine',
                                      savemap=True, chk=True,

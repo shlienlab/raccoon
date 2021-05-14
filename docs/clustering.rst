@@ -4,7 +4,7 @@ Clustering
 ====================
 
 
-A wrapper function (:code:`run`) is available for the user's convenience,
+A wrapper function (:code:`cluster`) is available for the user's convenience,
 it takes all arguments available to the clustering object and will output the
 membership assignment.
 
@@ -300,7 +300,7 @@ Resuming a run and checkpoints
 ==============================
 
 It is possible to resume a previously interrupted run (or one which completed succesfully in case you want to deepen the hierarchy), 
-with the wrapper function :code:`resume`. This takes the same inputs as :code:`run`, with the exception of :code:`outpath` which is ignored.
+with the wrapper function :code:`resume`. This takes the same inputs as :code:`cluster`, with the exception of :code:`outpath` which is ignored.
 :code:`chkpath` is needed in its place. This should point to the folder where the instance to be resumed was run.
 Please note the parent folder to :code:`raccoon_data` needs to be provided.
 
@@ -318,7 +318,7 @@ larger jobs to avoid losing all progress if something were to go wrong.
 
 When resuming a run, all new data will be saved in the original directory tree.
 
-:code:`resume` takes most of the same arguments as :code:`run`, you are free to change them,  
+:code:`resume` takes most of the same arguments as :code:`cluster`, you are free to change them,  
 e.g to allow for a finer or deeper search by decreasing :code:`popcut` or increasing :code:`maxdepth`. The algorithm will automatically search for all
 candidate classes and extend the search. This includes classes higher up in the hierarchy that fell below the population threshold. 
 Classes that were discarded as noise by the clustering algorithm or were below the :code:`minclusize` cutoff

@@ -10,8 +10,8 @@ sys.path.append(r'/hpf/largeprojects/adam/projects/raccoon')
 import pandas as pd
 import raccoon as rc
 
-def knn_test(data, ori_data, reftab, refpath, gpu=False):
-    """ k-NN classification test, euclidean grid.
+def update_test(data, ori_data, reftab, refpath, gpu=False):
+    """ Update clustering test, euclidean grid.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
@@ -22,12 +22,15 @@ def knn_test(data, ori_data, reftab, refpath, gpu=False):
             refpath (string): path to reference files.
             gpu (bool): if True use gpu implementation.
     """
-   
-
-    new_membership = rc.classify(data, ori_data,
-        pd.read_hdf(reftab),
+    
+    new_membership = rc.update(data, ori_data,
+        pd.read_hdf(reftab), tolerance=1e-2,
         refpath=os.path.join(refpath,'raccoon_data'),
-        outpath='./out_test_knn',
+        dim=2, filterfeat='variance', optimizer='grid', 
+        metric_clu='euclidean', metric_map='cosine',
+        dynmesh=True, maxmesh=3, minmesh=3, chk=True,
+        maxdepth=None, popcut=10, minclusize=5,
+        outpath='./out_test_update', savemap=True, debug=True, 
         gpu=gpu)
 
 if __name__ == "__main__":

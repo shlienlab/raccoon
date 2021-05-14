@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import seaborn as sns
 
+import pandas as pd
+
 mpl.use('Agg')
 
 sns.set_style("darkgrid")
@@ -245,6 +247,59 @@ def plot_map(df, labels, name='./projection.png', path=""):
     frame1 = plt.gca()
     frame1.axes.xaxis.set_ticklabels([])
     frame1.axes.yaxis.set_ticklabels([])
+
+    if not name.endswith('.png'):
+        name = name + '.png'
+
+    plt.savefig(os.path.join(path, 'raccoon_plots/' + name),
+        dpi=600, bbox_inches='tight')
+    plt.close()
+
+
+def plot_homogeneity(df1, df2, name='./homogeneity.png', path=""):
+    """ Plot a heatmap of the homogeneity score between two sets 
+        of clusters.
+
+    Args:
+        df1 (pandas dataframe): first one-hot-encoded clusters 
+            membership table.
+        df2 (pandas dataframe): second one-hot-encoded clusters 
+            membership table.
+        name (string): name of output plot .png file.
+        path (string): path where output pictures should be saved.
+    """
+
+    dfs = pd.concat([df1,df2], axis=1).fillna(0)
+
+    hs=[]
+    for i in dfs.columns:
+        hs.append([])
+        for j in dfs.columns:
+            numerator = len(set(dfs[dfs[i]==1].index).intersection(dfs[dfs[j]==1].index))
+            denominator = dfs[i].sum()
+             
+            if denominator == 0 or numerator == 0:
+                hs[-1].append(0)
+            else:
+                hs[-1].append(len(set(dfs[dfs[i]==1].index).intersection(dfs[dfs[j]==1].index))/dfs[i].sum())
+                
+
+    hs=pd.DataFrame(hs, index=dfs.columns, columns=dfs.columns)
+    mask=hs.applymap(lambda x: False if x>=0.01 else True)
+    hs=hs.applymap(lambda x: int(x*100))
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.set_facecolor('white')
+    
+    sns.heatmap(hs, annot=True, 
+        cmap=Palettes.midpalmap, cbar=False,  
+        annot_kws={"size": 20},fmt='d', mask=mask, linewidths=.5)
+
+    ax.tick_params(labelsize=20, length=0)
+    plt.yticks(rotation=0)
+    plt.xticks(rotation=90)
+    plt.title('Homogeneity Score %\n(%samples from row found in col)', fontsize=25, pad=10)
+    ax.set_aspect('equal')
 
     if not name.endswith('.png'):
         name = name + '.png'

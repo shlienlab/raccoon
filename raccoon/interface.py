@@ -11,6 +11,7 @@ class Interface:
 
     def __init__(self):
 
+        self.gpu = False
         self.num = None
         self.df = None
 
@@ -318,6 +319,8 @@ class InterfaceGPU(Interface):
         # silhouette score GPU not availablei in cuml 0.17a (memory issues)
         #from cuml.metrics.cluster import silhouette_score
         from sklearn.metrics import silhouette_score
+
+        self.gpu = True
 
         self.num = cupy
         self.df = cudf
