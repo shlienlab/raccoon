@@ -21,12 +21,12 @@ This will set up the necessary folders and run the update automatically.
   import raccoon as rc
 
   updated_membership  = rc.update(new_df, original_df, cluster_membership, tolerance=1e-2,
-  							probcut=.2, refpath=r'original_clusters/raccoon_data',
-					        dim=2, filterfeat='variance', optimizer='auto',
-					        metric_clu='euclidean', metric_map='cosine',
-					        dynmesh=True, chk=True, outpath=r'./',
-					        maxdepth=-1,savemap=True, debug=True,
-					        gpu=gpu)
+                            probcut=.2, refpath=r'original_clusters/raccoon_data',
+                            dim=2, filterfeat='variance', optimizer='auto',
+                            metric_clu='euclidean', metric_map='cosine',
+                            dynmesh=True, chk=True, outpath=r'./',
+                            maxdepth=-1,savemap=True, debug=True,
+                            gpu=gpu)
 
 This tool will first project the new samples on the old hierarchy, identify their closest
 matching classes with k-NN and re-evaluate their clustering score including the new data.

@@ -35,6 +35,7 @@ import raccoon.utils.plots as plotting
 import raccoon.utils.functions as functions
 import raccoon.utils.trees as trees
 import raccoon.utils.de as de
+from raccoon.classification import local_KNN
 from raccoon.utils.option import OptionalImports
 import raccoon.interface as interface
 
@@ -706,9 +707,11 @@ class RecursiveClustering:
         """ Plot the same 2-dimensional umap with transform only data if provided. """
 
         if self.transform is not None:
+           
             transflab = self.interface.df.Series(
-                'fit-transform', index=proj.index)
+                ['fit-transform']*proj.shape[0], index=proj.index)
             transflab.loc[self.transform] = 'transform'
+
             plotting.plot_map(
                 self.interface.get_value(proj,pandas=True),
                 self.interface.get_value(transflab,pandas=True),
@@ -1390,8 +1393,8 @@ class RecursiveClustering:
                cparm_opt, nei_opt, pj_opt, cut_opt, map_opt, keepfeat, decomp_opt,\
                scoreslist
 
-    def _local_KNN(self, nei_opt, pj_opt, labs_opt, cutoff=None):
-        """ KNN classifier (REDUNDANT, TO REMOVE),
+    """def _KNN(self, nei_opt, pj_opt, labs_opt, cutoff=None):
+        """""" KNN classifier (REDUNDANT, TO REMOVE),
             updates membership assignment for transform-only data.
 
         Args:
@@ -1404,7 +1407,7 @@ class RecursiveClustering:
             (pandas series): Series with the updated cluster membership identified
                 for each sample.
 
-        """
+        """"""
 
         missing = [i for i, x in enumerate(self.interface.get_value(pj_opt.index))
                    if x not in labs_opt.index]
@@ -1466,6 +1469,7 @@ class RecursiveClustering:
         labs_new = knnlabs.idxmax(axis=1)
 
         return self.interface.df.concat([labs_opt, labs_new], axis=0)
+        """
 
     def _optimize_params(self):
         """ Wrapper function for the parameters optimization.
@@ -1599,9 +1603,9 @@ class RecursiveClustering:
 
             #if no clustering was found
             if len(keepfeat) == 0:
-               labs_new=self.interface.df.Series([0]*len(self.transform),
+               labs_new = self.interface.df.Series([0]*len(self.transform),
                     index=self.transform)
-               labs_opt=self.interface.df.concat([labs_opt,labs_new], axis=0)
+               #labs_opt=self.interface.df.concat([labs_opt,labs_new], axis=0)
 
             else:
                 # A bit redundant, try to clean up
@@ -1614,7 +1618,7 @@ class RecursiveClustering:
                 #pj_t=self.interface.df.DataFrame(map_opt.transform(transdata),
                 #    index=self.transform)
                 #cudf workaround
-                pj_t=self.interface.df.DataFrame(map_opt.transform(transdata))
+                pj_t = self.interface.df.DataFrame(map_opt.transform(transdata))
                 pj_t.index = self.transform
 
                 pj_opt = self.interface.df.concat([pj_opt, pj_t],
@@ -1624,10 +1628,22 @@ class RecursiveClustering:
                     'Transform-only data found at this level: membership will be assigned with KNN')
 
                 """ Assign cluster membership with k-nearest neighbors. """
-                
-                labs_opt = self._local_KNN(nei_opt, pj_opt, labs_opt)
-        
+                 
+                labs_new = local_KNN(pj_opt, 
+                    functions.one_hot_encode(labs_opt, self.minclusize, self._name,
+                    self.interface),
+                    nei_opt, self.metric_clu, 
+                    self.interface, as_series=True)
 
+                #labs_new = self.interface.df.Series(
+                #    local_KNN(pj_opt, 
+                #    functions.one_hot_encode(labs_opt, self.minclusize, self._name,
+                #    self.interface),
+                #    nei_opt, self.metric_clu, 
+                #    self.interface, as_series=True),
+                #    index=self.transform)
+
+            labs_opt = self.interface.df.concat([labs_opt,labs_new], axis=0)
 
         """ Dealing with discarded points if outliers!='ignore'
             applies only if there's more than one cluster identified
@@ -1645,8 +1661,15 @@ class RecursiveClustering:
                 labs_out = labs_opt[labs_opt != -1]
                 reassigned = (
                     labs_opt.shape[0] - labs_out.shape[0]) * 1.0 / labs_opt.shape[0]
-                labs_opt = self._local_KNN(nei_opt, pj_opt, labs_out,
-                                    cutoff=.5).loc[labs_opt.index]
+                #labs_opt = self._KNN(nei_opt, pj_opt, labs_out,
+                #                    cutoff=.5).loc[labs_opt.index]
+                labs_new = local_KNN(pj_opt, 
+                    functions.one_hot_encode(labs_out, self.minclusize, self._name,
+                    self.interface),
+                    nei_opt, self.metric_clu, 
+                    self.interface, as_series=True) 
+                                    
+                labs_opt = self.interface.df.concat([labs_out,labs_new], axis=0)
 
         num_clus_opt = len(self.interface.set(labs_opt)) - \
             (1 if -1 in labs_opt else 0)
@@ -1752,13 +1775,11 @@ class RecursiveClustering:
             logging.info('Going deeper within Cluster # ' +
                          str(l) + ' [depth: {:d}'.format(self._depth+1) + ']')
 
+            to_transform = None
             if self.transform is not None:
-                indices = list(sel_new.index.values)
-                to_transform = [x for x in indices if x in self.transform]
-                if not to_transform:
+                to_transform = [x for x in self.transform if x in sel_new.index]
+                if len(to_transform) == 0:
                     to_transform = None
-            else:
-                to_transform = None
            
             #if you got a class of just transforms (weird! shouldn't happen!) check this!
             if to_transform is not None and len(to_transform)==len(sel_new.index):

@@ -136,16 +136,6 @@ class UpdateClusters:
 
         """ Setup logging. """
 
-        #logname = 'raccoon_updt_' + str(os.getpid()) + '.log'
-        #print('Log information will be saved to ' + logname)
-
-        #logging.basicConfig(
-        #    level=logging.INFO,
-        #    filename=os.path.join(outpath, logname),
-        #    filemode="a+",
-        #    format="%(asctime)-15s %(levelname)-8s %(message)s")
-        #logging.getLogger('matplotlib.font_manager').disabled = True
-
         if self.debug:
             logging.addLevelName(DEBUG_R, 'DEBUG_R')
             logging.getLogger().setLevel(DEBUG_R)

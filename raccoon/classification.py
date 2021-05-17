@@ -23,6 +23,94 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 import raccoon.interface as interface
 import raccoon.utils.plots as plotting
 
+
+def local_KNN(proj, labs, nnei, metric, interface, as_series=False):
+        
+    """ Performs a k-nearest neighbours search and assigns a single-level
+        clusters memebership based on the neighbours
+
+    Args:
+        proj (dataframe): data projection onto which nearest neighbours
+            will be searched. Must include all data, original plus
+            the new datapoints to be searched.
+        labs (dataframe): class assignment for the original data only.
+        nnei (int): number of nearest neighbours to consuder.
+        metric (string): metric to measure neighbours distances.
+        interface (obj): CPU/GPU numeric functions interface.
+        as_series (bool): if true, return result as series, else
+            return as one-hot-encoded matrix (default, False)
+
+    Returns:
+        (array or matrix): class assignment for the new data of the data.
+    """
+           
+    """ Use the difference between projection and class assignment to 
+        identify old and new data."""
+
+    #missing = [i for i, x in enumerate(interface.get_value(proj.index))
+    #                   if x not in labs.index]
+    
+    missing = proj.index.difference(labs.index)
+    
+    #no StringIndex union in cudf
+    #proj = proj.loc[missing.union(labs.index)]
+    proj = proj.loc[list(interface.get_value(missing))+
+                    list(interface.get_value(labs.index))]
+
+    """ Set up nearest neighbours. """
+
+    neigh = interface.n_neighbor(
+        n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj)
+    kn = neigh.kneighbors(
+        proj,
+        n_neighbors=proj.shape[0],
+        return_distance=True)
+   
+    if interface.gpu:
+        kn = (kn[0].T, kn[1].T)
+
+    """ Select only the relevant data. """
+
+    newk = []
+    for i in range(missing.shape[0]):
+        newk.append([[], []])
+        tupl = [(x, y)
+                for x, y in zip(interface.get_value(kn[0][i]), 
+                                interface.get_value(kn[1][i]))
+                if y in range(missing.shape[0], proj.shape[0])]
+        for t in tupl:
+            newk[-1][0].append(t[0])
+            newk[-1][1].append(t[1])
+
+    for k in range(len(newk)):
+        newk[k] = [newk[k][0][:nnei], newk[k][1][:nnei]]
+    
+    """ Build the class assignment. """
+
+    valals = []
+    for k in range(len(newk)):
+        #apply not available in cudf...
+        #vals = next_clust.loc[proj_all.iloc[newk[k][1]].index].apply(
+        #    lambda x: x / newk[k][0], axis=0)[1:]
+        
+        tmp = labs.loc[proj.iloc[newk[k][1]].index]
+
+        if not interface.gpu:
+            vals = tmp.div(newk[k][0],axis=0)
+        else:
+            tmp.reset_index(drop=True, inplace=True)
+            vals = tmp.T.div(newk[k][0]).T
+
+        valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
+     
+    valals = interface.num.stack(valals)
+    
+    if as_series:
+        valals = interface.num.argmax(valals,axis=1)
+        return interface.df.Series(valals, index=missing) 
+
+    return interface.df.DataFrame(valals, columns=labs.columns, index=missing)
+
 class KNN:
 
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
@@ -304,16 +392,6 @@ class KNN:
 
                 proj_all = self.interface.df.concat([proj, proj_ref], axis=0)
                 
-                neigh = self.interface.n_neighbor(
-                    n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj_all)
-                kn = neigh.kneighbors(
-                    proj_all,
-                    n_neighbors=len(proj_all),
-                    return_distance=True)
-               
-                if self.gpu:
-                    kn = (kn[0].T, kn[1].T)
-
                 """ Save projection to disk. """
 
                 proj_all.to_hdf(
@@ -369,6 +447,16 @@ class KNN:
                     self.outpath)
 
                 """ Assign clusters membership. """
+                
+                """ neigh = self.interface.n_neighbor(
+                    n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj_all)
+                kn = neigh.kneighbors(
+                    proj_all,
+                    n_neighbors=len(proj_all),
+                    return_distance=True)
+               
+                if self.gpu:
+                    kn = (kn[0].T, kn[1].T)
 
                 newk = []
                 for i in range(len(proj)):
@@ -403,11 +491,15 @@ class KNN:
                     valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
                
                 valals=self.interface.num.stack(valals)
+                """
 
-                self.membership.append(
-                    self.interface.df.DataFrame(valals,
-                        index=self.interface.get_value(proj.index),
-                        columns=next_clust.columns))
+                valals = local_KNN(proj_all, next_clust, nnei, metric, self.interface)
+
+                #self.membership.append(
+                #    self.interface.df.DataFrame(valals,
+                #        index=self.interface.get_value(proj.index),
+                #        columns=next_clust.columns))
+                self.membership.append(valals)
 
         if len(names) > 0:
 
