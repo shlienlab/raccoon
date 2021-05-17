@@ -3,7 +3,7 @@
 Release History
 ===============
 
-Version 0.3.2
+Version 0.4
 ===============
 
 Features
@@ -18,7 +18,7 @@ Features
    - k-Nearest Neighbours classification
    - Parameters range selection can be automatic, for large jobs
      the mesh can be dynamically adapted 
-   - Old runs can be resumed or extended for a finer search. 
+   - Old runs can be resumed or extended for a finer search 
    - A short tutorial with the MNIST dataset is available
 
 

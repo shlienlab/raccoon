@@ -16,6 +16,7 @@ from sklearn.datasets import make_blobs
 
 from clustering import *
 from classification import *
+from update import *
 
 def colored_bak(string,color):
     return string
@@ -58,15 +59,33 @@ def _create_dataset():
 
     """
 
-    x, y = make_blobs(n_samples=100, centers=3, n_features=16,
+
+    x, y = make_blobs(n_samples=100, centers=5, n_features=16,
             random_state=32, cluster_std=1.0)
 
     x2, y2 = make_blobs(n_samples=50, centers=1, n_features=16,
-            random_state=64, cluster_std=2.5, center_box=(10, 10))
+            random_state=64, cluster_std=2.5, center_box=(-10, -10))
 
-    return pd.DataFrame(np.concatenate([x, x2])), pd.Series(
-            np.concatenate([y, np.where(y2 == 0, 3, y2)]))
+    x3, y3 = make_blobs(n_samples=50, centers=1, n_features=16,
+            random_state=128, cluster_std=5)
 
+    x4, y4 = make_blobs(n_samples=25, centers=1, n_features=16,
+            random_state=0, cluster_std=.5, center_box=(5,5))
+    x5, y5 = make_blobs(n_samples=25, centers=1, n_features=16,
+            random_state=1, cluster_std=.25, center_box=(6, 6))
+    x6, y6 = make_blobs(n_samples=25, centers=1, n_features=16,
+            random_state=2, cluster_std=.25, center_box=(5.5, 5.5))
+
+    
+    return pd.DataFrame(np.concatenate([x, x2, x4, x5, x6]),
+                index=[str(x)+'_o' for x in np.arange(x.shape[0]+x2.shape[0]+\
+                    x4.shape[0]+x5.shape[0]+x6.shape[0])]),\
+            pd.Series(np.concatenate([y, np.where(y2 == 0, 3, y2), np.where(y4 == 0, 4, y4),
+                    np.where(y5 == 0, 5, y5), np.where(y6 == 0, 6, y6)]),
+                index=[str(x)+'_o' for x in np.arange(x.shape[0]+x2.shape[0]+\
+                    x4.shape[0]+x5.shape[0]+x6.shape[0])]),\
+            pd.DataFrame(x3, 
+                index=[str(x)+'_u' for x in np.arange(x3.shape[0])])
 
 if __name__ == "__main__":
 
@@ -94,11 +113,11 @@ if __name__ == "__main__":
 
     print('Running Tests...')
 
-    xx, yy = _create_dataset()
+    xx, yy, xu = _create_dataset()
 
     if to_run['grid'] == False and (
             to_run['knn'] == True or to_run['resume'] == True):
-        print('Warning: k-NN and Load test can\'t be run without Grid test')
+        print('Warning: k-NN and Resume test can\'t be run without Grid test')
         #to_run['knn'] = False
         #to_run['resume'] = False
 
@@ -164,10 +183,10 @@ if __name__ == "__main__":
         try:
             #with HidePrints():
             resume_test(xx, './out_test_grid', labels=yy, gpu=to_run['gpu'])
-            print('Load Test:\t\t\t'+colored('PASSED', 'green'))
+            print('Resume Test:\t\t\t'+colored('PASSED', 'green'))
             colored('PASSED', 'green')
         except Exception as e:
-            print('Load Test:\t\t\t'+colored('FAILED', 'red'))
+            print('Resume Test:\t\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
@@ -248,16 +267,24 @@ if __name__ == "__main__":
     if to_run['knn']:
         try:
             #with HidePrints():
-
-            if to_run['resume']:
-                reftab='./out_test_grid/raccoon_data/clusters_resumed_final.h5'
-            else:
-                reftab='./out_test_grid/raccoon_data/clusters_final.h5'
-
-            knn_test(xx, reftab, './out_test_grid', gpu=to_run['gpu'])
+            reftab='./out_test_grid/raccoon_data/clusters_final.h5'
+            knn_test(xu, xx, reftab, './out_test_grid', gpu=to_run['gpu'])
             print('k-NN Test:\t\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('k-NN Test:\t\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))        
+            traceback.print_exc()
+    
+    """ Test k-NN. """
+
+    if to_run['update']:
+        try:
+            #with HidePrints():
+            reftab='./out_test_grid/raccoon_data/clusters_final.h5'
+            update_test(xu, xx, reftab, './out_test_grid', gpu=to_run['gpu'])
+            print('Update Test:\t\t\t'+colored('PASSED', 'green'))
+        except Exception as e:
+            print('Update Test:\t\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))        
             traceback.print_exc()
 
@@ -271,12 +298,14 @@ if __name__ == "__main__":
         remove_dir('./out_test_mahalanobis')
         remove_dir('./out_test_snn')
         remove_dir('./out_test_louvain')
-        #remove_dir('./out_test_resume')
+        remove_dir('./out_test_resume')
         remove_dir('./out_test_de')
         remove_dir('./out_test_auto')
         remove_dir('./out_test_tsvd')
         remove_dir('./out_test_high')
         remove_dir('./out_test_super')
         remove_dir('./out_test_trans')
+        remove_dir('./out_test_knn')
+        remove_dir('./out_test_update')
 
     print('All done!')

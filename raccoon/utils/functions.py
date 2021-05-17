@@ -57,6 +57,9 @@ def _near_zero_var_drop(data, interface, thresh=0.99, type='variance'):
 
     # check if order of columns matters
     keep = cs[cs <= cs.iloc[-1] * thresh].index
+    if len(keep) == 0:
+        keep = [cs.index[0]]
+
     # temorary workaround to cuDF bug
     # where we cannot slice with index (not iterable error)
     return data.iloc[:, interface.get_value(keep)]
@@ -139,6 +142,8 @@ def _drop_min_KDE(data, interface, type='variance'):
     if cutoff is not None:
         cs = interface.df.Series(v_val, index=data.columns)
         remove = cs[cs < cutoff].index.values
+        if len(remove) == 0:
+            remove = [cs.index[0]]
         data = data.drop(remove, axis=1)
 
     return data
@@ -220,14 +225,15 @@ def _calc_RPD(mh, labs, interface, plot=True, name='rpd', path=""):
     return vals
 
 
-def setup_log (outpath):
+def setup_log (outpath, suffix=''):
     """ Set up logging.
 
     Args:
         outpath (string): path where output files will be saved.
+        suffix (string): suffix to add to the log file
     """
 
-    logname = 'raccoon_' + str(os.getpid()) + '.log'
+    logname = 'raccoon_' + str(os.getpid()) + suffix + '.log'
     print('Log information will be saved to ' + logname)
 
     logging.basicConfig(
@@ -240,17 +246,20 @@ def setup_log (outpath):
     logging.getLogger('matplotlib.font_manager').disabled = True
 
 
-def setup(outpath=None, chk=False, RPD=False, delete=True):
+def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=True):
     """ Set up folders that are written to during clustering,
     as well as a log file where all standard output is sent.
         If such folders are already present in the path, delete them.
 
     Args:
         outpath (string): path where output files will be saved.
+        paramdata (bool): if true create parameters csv table
+            (default True).
         chk (bool): if true create checkpoints subdirectory
             (default False).
         RPD (bool): deprecated, if true created RPD distributions base pickle
             (default False).
+        suffix (string): suffix to add to the log file
         delete (bool): if true delete folders if already present,
             user confirmation will always be required before deleting folders
             (default True).
@@ -304,25 +313,27 @@ def setup(outpath=None, chk=False, RPD=False, delete=True):
     """ Generate empty optimal paramaters table,
         to be written to at each iteration. """
 
-    vals = ['name', 'n_samples', 'n_clusters',
-        'dim', 'obj_function_score', 'n_neighbours',
-        'cluster_parm', 'features_cutoff', 'metric_map',
-        'metric_clust', 'norm', 'reassigned', 'seed']
-   
-    if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
-       shutil.copyfile(os.path.join(outpath, 'raccoon_data/paramdata.csv'),\
-                  os.path.join(outpath, 'raccoon_data/paramdata.BAK_' + str(os.getpid()) + '.csv'))
-    
-    if not os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
-        with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
-            writer = csv.writer(file)
-            writer.writerow(vals)
-            file.close()
-
-    """ Generate empty calc_RPD distributions pickle,
-        to be written to at each iteration. TO REMOVE """
+    if paramdata:
+        
+        vals = ['name', 'n_samples', 'n_clusters',
+            'dim', 'obj_function_score', 'n_neighbours',
+            'cluster_parm', 'features_cutoff', 'metric_map',
+            'metric_clust', 'norm', 'reassigned', 'seed']
+       
+        if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
+           shutil.copyfile(os.path.join(outpath, 'raccoon_data/paramdata.csv'),\
+                      os.path.join(outpath, 'raccoon_data/paramdata.BAK_' + str(os.getpid()) + '.csv'))
+        
+        if not os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
+            with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
+                writer = csv.writer(file)
+                writer.writerow(vals)
+                file.close()
 
     if RPD:
+    
+        """ Generate empty calc_RPD distributions pickle,
+            to be written to at each iteration. TO REMOVE """
     
         if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/rpd.pkl')):
             os.rename(os.path.join(outpath, 'raccoon_data/rpd.pkl'),\
@@ -335,7 +346,7 @@ def setup(outpath=None, chk=False, RPD=False, delete=True):
 
     """ Configure log. """
 
-    setup_log(outpath)
+    setup_log(outpath, suffix)
 
 
 def sigmoid(x, interface, a=0, b=1):
@@ -371,3 +382,153 @@ def loc_cat(labels, indices, supervised):
         except BaseException:
             warnings.warn("Failed to subset labels.")
     return None
+
+
+def calc_score(points, labels, score, metric_clu, interface):
+    """ Select and calculate scoring function for optimization.
+
+    Args:
+        points (dataframe or matrix): points coordinates.
+        labels (series or matrix): clusters assignment.
+        score (str): score type.
+        metric_clu (str): metric to use in the scoring functions.
+        interface (obj): CPU/GPU numeric functions interface.
+
+    Returns:
+        (float): clustering score.
+
+    """
+
+    if len(interface.set(labels)) > len(points)-1:
+        return -1
+
+    if score == 'silhouette':
+        return interface.silhouette(
+            points, labels, metric=metric_clu)
+    elif score == 'dunn':
+        return interface.dunn(points, labels, metric=metric_clu)
+
+    sys.exit('ERROR: score not recognized')
+
+
+def one_hot_encode(labs_opt, minpop, name, interface, rename=True):
+    """ Build and return a one-hot-encoded clusters membership dataframe.
+
+    Args:
+        labs_opt (pandas series): cluster membership series or list.
+        minpop (int): population threshold for clusters.
+        name (str): parent cluster name.
+        interface (obj): CPU/GPU numeric functions interface.
+        rename (bool): rename columns expanding the parent cluster
+            name (default True).
+
+    Returns:
+        tmplab (pandas dataframe): one-hot-encoded cluster membership dataframe.
+
+    """
+
+    tmpix = None
+    if isinstance(labs_opt, interface.df.Series):
+        tmpix = labs_opt.index
+    
+    if not isinstance(labs_opt, interface.df.DataFrame):
+        labs_opt = interface.df.DataFrame(labs_opt)
+        #ugly workaround for cudf
+        if tmpix is not None:
+            labs_opt.index = tmpix
+
+    # cuml no sparse yet, bug inherited by cupy
+    ohe = interface.one_hot(sparse=False)
+    ohe.fit(labs_opt)
+
+    tmplab = interface.df.DataFrame(
+        ohe.transform(labs_opt),
+        columns=interface.get_value(
+            ohe.categories_[0])).astype(int)
+
+    """ Discard clusters that have less than minpop of population. """
+
+    tmplab.drop(tmplab.columns[interface.get_value(
+        tmplab.sum() < minpop)], axis=1, inplace=True)
+    
+    # not_implemented_error: String Arrays is not yet implemented in cudf
+    #tmplab = tmplab.set_index(DataGlobal.dataset.loc[data_ix].index.values)
+    tmplab = tmplab.set_index(interface.get_value(
+        #attempt to fix error for transform data
+        #DataGlobal.dataset.loc[data_ix].index))
+        labs_opt.index))
+
+    tmplab.index = labs_opt.index
+
+    """ Discard unassigned labels. """
+
+    if -1 in tmplab.columns:
+        tmplab.drop(-1,axis=1,inplace=True)
+
+
+    if rename:
+        """ Rename columns. """
+        
+        tmplab.columns = [name + "_" + str(x)
+                          for x in range(len(tmplab.columns.values))]
+
+    return tmplab
+
+
+def unique_assignment(tab, root, interface):
+    """ Assigns samples to their maximum probability class-path along the hierarchy.
+        Starting from a probability matrix.
+
+    Args:
+        tab (pandas dataframe): original cluster membership probabilities table.
+        root (str): name of the root class.
+        interface (obj): CPU/GPU numeric functions interface.
+
+    Returns:
+        tab (pandas dataframe): one-hot-encoded cluster membership dataframe.
+
+    """
+
+    for cl in [root]+list(tab.columns):
+
+       children = [x for x in tab.columns if
+            x.startswith(cl) and 
+            x.count('_') == cl.count('_')+1 ]
+
+       if len(children)>0:
+
+          #knn already sorts this out by itself
+          #if cl != root:
+          #  tab[children] = tab[children].mul(tab[cl], axis=0)
+          
+          noise = tab[children][tab[children].sum(axis=1) == 0].index
+          #assign_vec = tab[children].idxmax(axis=1)
+          #cudf workaround
+          tmp_tab = tab[children]
+         
+          #ridicolous cudf workaround
+          assign_vec = interface.df.Series(tmp_tab.columns[
+                interface.get_value(
+                interface.num.argmax(
+                interface.get_value(tmp_tab),axis=1))])
+          #cudf workaround
+          assign_vec.index = tmp_tab.index
+          assign_vec.loc[noise] = -1
+
+          #temporarily let's leave it like this, it won't work if the names
+          #of the clusters have been changed with suffixes
+          if interface.gpu:
+            assign_vec = interface.df.Series([x.split('_')[-1] for x in interface.get_value(assign_vec)],
+                index = assign_vec.index).astype(int)
+            #assign_vec = assign_vec.astype(str).applymap(lambda x: x.split('_')[-1]).astype(int)
+          else:
+            assign_vec = assign_vec.astype(str).apply(lambda x: x.split('_')[-1]).astype(int)
+          
+          ohe = one_hot_encode(assign_vec, 0, cl,
+                        interface, rename=False)
+          ohe.columns=[cl+'_'+str(c) for c in ohe.columns]
+          ohe[[x for x in children if x not in ohe.columns]]=0
+
+          tab[children] = ohe[children]
+
+    return tab.astype(int)

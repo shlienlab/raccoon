@@ -15,10 +15,101 @@ DEBUG_R = 15
 import time
 import psutil
 
+import random
+
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import raccoon.interface as interface
+import raccoon.utils.plots as plotting
+
+
+def local_KNN(proj, labs, nnei, metric, interface, as_series=False):
+        
+    """ Performs a k-nearest neighbours search and assigns a single-level
+        clusters memebership based on the neighbours
+
+    Args:
+        proj (dataframe): data projection onto which nearest neighbours
+            will be searched. Must include all data, original plus
+            the new datapoints to be searched.
+        labs (dataframe): class assignment for the original data only.
+        nnei (int): number of nearest neighbours to consuder.
+        metric (string): metric to measure neighbours distances.
+        interface (obj): CPU/GPU numeric functions interface.
+        as_series (bool): if true, return result as series, else
+            return as one-hot-encoded matrix (default, False)
+
+    Returns:
+        (array or matrix): class assignment for the new data of the data.
+    """
+           
+    """ Use the difference between projection and class assignment to 
+        identify old and new data."""
+
+    #missing = [i for i, x in enumerate(interface.get_value(proj.index))
+    #                   if x not in labs.index]
+    
+    missing = proj.index.difference(labs.index)
+    
+    #no StringIndex union in cudf
+    #proj = proj.loc[missing.union(labs.index)]
+    proj = proj.loc[list(interface.get_value(missing))+
+                    list(interface.get_value(labs.index))]
+
+    """ Set up nearest neighbours. """
+
+    neigh = interface.n_neighbor(
+        n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj)
+    kn = neigh.kneighbors(
+        proj,
+        n_neighbors=proj.shape[0],
+        return_distance=True)
+   
+    if interface.gpu:
+        kn = (kn[0].T, kn[1].T)
+
+    """ Select only the relevant data. """
+
+    newk = []
+    for i in range(missing.shape[0]):
+        newk.append([[], []])
+        tupl = [(x, y)
+                for x, y in zip(interface.get_value(kn[0][i]), 
+                                interface.get_value(kn[1][i]))
+                if y in range(missing.shape[0], proj.shape[0])]
+        for t in tupl:
+            newk[-1][0].append(t[0])
+            newk[-1][1].append(t[1])
+
+    for k in range(len(newk)):
+        newk[k] = [newk[k][0][:nnei], newk[k][1][:nnei]]
+    
+    """ Build the class assignment. """
+
+    valals = []
+    for k in range(len(newk)):
+        #apply not available in cudf...
+        #vals = next_clust.loc[proj_all.iloc[newk[k][1]].index].apply(
+        #    lambda x: x / newk[k][0], axis=0)[1:]
+        
+        tmp = labs.loc[proj.iloc[newk[k][1]].index]
+
+        if not interface.gpu:
+            vals = tmp.div(newk[k][0],axis=0)
+        else:
+            tmp.reset_index(drop=True, inplace=True)
+            vals = tmp.T.div(newk[k][0]).T
+
+        valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
+     
+    valals = interface.num.stack(valals)
+    
+    if as_series:
+        valals = interface.num.argmax(valals,axis=1)
+        return interface.df.Series(valals, index=missing) 
+
+    return interface.df.DataFrame(valals, columns=labs.columns, index=missing)
 
 class KNN:
 
@@ -42,7 +133,7 @@ class KNN:
             outpath (string): path to the location where outputs will be saved
                 (default save to the current folder).
             root (string): name of the root node, parent of all the classes within the first
-                clustering leve. Needed to identify the appropriate pkl file (default 0).
+                clustering level. Needed to identify the appropriate pkl file (default '0').
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
             gpu (bool): activate GPU version (requires RAPIDS).
         """
@@ -68,8 +159,8 @@ class KNN:
                 data = self.interface.df.DataFrame(data)
             except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
-                print('Input data should be in a format that can be translated \
-                       to pandas dataframe!')
+                print('Input data should be in a format that can be translated'+\
+                       'to pandas dataframe!')
                 raise
 
         if not isinstance(ori_data, self.interface.df.DataFrame):
@@ -77,8 +168,8 @@ class KNN:
                 ori_data = self.interface.df.DataFrame(ori_data)
             except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
-                print('Input data (original) should be in a format that can be \
-                       translated to pandas dataframe!')
+                print('Input data (original) should be in a format that can be'+\
+                       'translated to pandas dataframe!')
                 raise
 
         if not isinstance(ori_clust, self.interface.df.DataFrame):
@@ -86,13 +177,13 @@ class KNN:
                 ori_clust = self.interface.df.DataFrame(ori_clust)
             except BaseException:
                 print('Unexpected error: ', sys.exc_info()[0])
-                print('Input data (clusters) should be in a format that can be \
-                       translated to pandas dataframe!')
+                print('Input data (clusters) should be in a format that can be'+\
+                       'translated to pandas dataframe!')
                 raise
 
         self.ori_data = ori_data.astype(self.interface.num.float)
         self.data = data[self.ori_data.columns].astype(self.interface.num.float)
-        self.ori_clust = ori_clust
+        self.ori_clust = ori_clust.loc[self.ori_data.index]
         self.refpath = refpath
         self.outpath = outpath
         self.root = root
@@ -106,25 +197,28 @@ class KNN:
 
         """ Configure log. """
 
-        logname = 'raccoon_knn_' + str(os.getpid()) + '.log'
-        print('Log information will be saved to ' + logname)
+        #logname = 'raccoon_knn_' + str(os.getpid()) + '.log'
+        #print('Log information will be saved to ' + logname)
 
-        logging.basicConfig(
-            level=logging.INFO,
-            filename=os.path.join(outpath, logname),
-            filemode="a+",
-            format="%(asctime)-15s %(levelname)-8s %(message)s")
-        logging.getLogger('matplotlib.font_manager').disabled = True
+        #logging.basicConfig(
+        #    level=logging.INFO,
+        #    filename=os.path.join(outpath, logname),
+        #    filemode="a+",
+        #    format="%(asctime)-15s %(levelname)-8s %(message)s")
+        #logging.getLogger('matplotlib.font_manager').disabled = True
 
         if self.debug:
-            #logging.getLogger().setLevel(logging.DEBUG)
             logging.addLevelName(DEBUG_R, 'DEBUG_R')
             logging.getLogger().setLevel(DEBUG_R)
-            self._umap_rs = 32
+            self._seed = 32
         else:
             logging.getLogger().setLevel(logging.INFO)
-            self._umap_rs = None
+            self._seed = random.randint(0,999999)
 
+        self._umap_rs = self._seed
+        logging.info(
+            "Random seed is: {:d}".format(int(self._seed)))
+    
     def _build_hierarchy(self):
         """ Builds a dictionary with information on the classess hierarchy. """
 
@@ -179,7 +273,7 @@ class KNN:
 
         paramdata = self.interface.df.read_csv(
             os.path.join(self.refpath, 'paramdata.csv'))
-        paramdata['name'] = paramdata['name'].str.strip('cluster ')
+        paramdata['name'] = paramdata['name'].astype(str)
         paramdata = paramdata.set_index('name', drop=True)
         
         for f in os.listdir(self.refpath):
@@ -221,9 +315,9 @@ class KNN:
                     # sparse_mat=csr_matrix(self.data.values)
                     #df_cut=self.interface.df.DataFrame(genecut.transform(sparse_mat),
                     #iidex=self.data.index)
-                    df_cut = self.interface.df.DataFrame(genecut.transform(self.data.values),
-                            index=self.data.index)
-
+                    df_cut = self.interface.df.DataFrame(genecut.transform(self.data.values))
+                    #cudf workaround
+                    df_cut.index = self.data.index
                 try:
                 #if not self.interface.num.isnan(norm):
 
@@ -231,16 +325,19 @@ class KNN:
 
                     """ Normalize data. """
 
-                    df_cut = self.interface.df.DataFrame(normalize(df_cut, norm=norm),
-                        index=df_cut.index,
-                        columns=df_cut.columns)
-                
+                    dfcutcol = df_cut.columns
+
+                    df_cut = self.interface.df.DataFrame(normalize(df_cut, norm=norm))
+                    #cudf workaround
+                    df_cut.index = self.data.index
+                    df_cut.columns = dfcutcol
+
                 except:
 
                     pass
 
-                proj = self.interface.df.DataFrame(mapping.transform(df_cut.values),
-                    index=df_cut.index)
+                proj = self.interface.df.DataFrame(
+                    mapping.transform(df_cut.values))
                 # cudf workaround
                 proj.index = df_cut.index
 
@@ -258,7 +355,7 @@ class KNN:
 
                     """ low information filter. """
 
-                    df_cut = ref_df[genecut]
+                    ref_df_cut = ref_df[genecut]
 
                 except:
 
@@ -266,22 +363,100 @@ class KNN:
                     # sparse_mat=csr_matrix(ref_df.values)
                     #df_cut=self.interface.df.DataFrame(genecut.transform(sparse_mat),
                     #      index=ref_df.index)
-                    df_cut = self.interface.df.DataFrame(
-                        genecut.transform(ref_df.values), index=ref_df.index)
+                    ref_df_cut = self.interface.df.DataFrame(
+                        genecut.transform(ref_df.values))
+                    #cudf workaround
+                    ref_df_cut.index = ref_df.index
+                
+                try:
+
+                    logging.log(DEBUG_R, 'Norm: ' + norm)
+
+                    """ Normalize data. """
+
+                    refcutcol = ref_df_cut.columns
+
+                    ref_df_cut = self.interface.df.DataFrame(normalize(ref_df_cut, norm=norm))
+                    #cudf workaround
+                    ref_df_cut.index = self.ori_data.index
+                    ref_df_cut.columns = dfcutcol
+
+                except:
+
+                    pass
 
                 proj_ref = self.interface.df.DataFrame(
-                    mapping.transform(df_cut.values), index=df_cut.index)
+                    mapping.transform(ref_df_cut.values))
                 # cudf workaround
-                proj_ref.index = df_cut.index
+                proj_ref.index = ref_df_cut.index
 
                 proj_all = self.interface.df.concat([proj, proj_ref], axis=0)
+                
+                """ Save projection to disk. """
 
-                neigh = self.interface.n_neighbor(
+                proj_all.to_hdf(
+                os.path.join(self.outpath,
+                    'raccoon_data/' + names[-1] + '_knn.h5'),
+                    key='proj')
+
+                """ Save a 2d projection to disk if needed. """
+
+                if mapping.n_components != 2:
+
+                    with open(os.path.join(self.refpath, names[-1]+'_2d.pkl'), 'rb') as file:
+                        loader = pickle.load(file)
+                        mapping2d = loader[1]
+                
+                    proj2d = self.interface.df.DataFrame(
+                        mapping.transform(df_cut.values))
+                    # cudf workaround
+                    proj2d.index = df_cut.index
+                    
+                    proj_ref2d = self.interface.df.DataFrame(
+                        mapping2d.transform(ref_df_cut.values))
+                    # cudf workaround
+                    proj_ref2d.index = ref_df_cut.index
+                    
+                    proj2d = self.interface.df.concat([proj2d, proj_ref2d], axis=0)
+                
+                    proj2d.to_hdf(
+                    os.path.join(self.outpath,
+                        'raccoon_data/' + names[-1] + '_2d_knn.h5'),
+                        key='proj')
+
+                else:
+                    
+                    proj2d = proj_all
+
+                """ Plot 2-dimensional umap with the new data by group. """
+
+                group = self.interface.df.Series(['update']*proj2d.shape[0])
+                #cudf workaround
+                group.index = proj2d.index
+                group.loc[ref_df.index] = 'original'
+
+                plotting.plot_map(
+                    self.interface.get_value(
+                        proj2d,
+                        pandas=True),
+                    self.interface.get_value(
+                        group,
+                        pandas=True),
+                    'proj_knn_datasets' +
+                    names[-1],
+                    self.outpath)
+
+                """ Assign clusters membership. """
+                
+                """ neigh = self.interface.n_neighbor(
                     n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj_all)
                 kn = neigh.kneighbors(
                     proj_all,
                     n_neighbors=len(proj_all),
                     return_distance=True)
+               
+                if self.gpu:
+                    kn = (kn[0].T, kn[1].T)
 
                 newk = []
                 for i in range(len(proj)):
@@ -296,7 +471,7 @@ class KNN:
 
                 for k in range(len(newk)):
                     newk[k] = [newk[k][0][:nnei], newk[k][1][:nnei]]
-
+                
                 valals = []
                 for k in range(len(newk)):
                     #apply not available in cudf...
@@ -316,11 +491,15 @@ class KNN:
                     valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
                
                 valals=self.interface.num.stack(valals)
+                """
 
-                self.membership.append(
-                    self.interface.df.DataFrame(valals,
-                        index=self.interface.get_value(proj.index),
-                        columns=next_clust.columns))
+                valals = local_KNN(proj_all, next_clust, nnei, metric, self.interface)
+
+                #self.membership.append(
+                #    self.interface.df.DataFrame(valals,
+                #        index=self.interface.get_value(proj.index),
+                #        columns=next_clust.columns))
+                self.membership.append(valals)
 
         if len(names) > 0:
 

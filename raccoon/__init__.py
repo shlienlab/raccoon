@@ -17,17 +17,19 @@ import warnings
 import csv
 
 import raccoon.utils.functions as functions
-from raccoon.clustering import *
 import raccoon.interface as interface
-from raccoon.classification import KNN
 
-def run(data, **kwargs):
+from raccoon.clustering import *
+from raccoon.classification import KNN
+from raccoon.update import UpdateClusters
+
+def cluster(data, **kwargs):
     """ Wrapper function to setup, create a RecursiveClustering object,
         run the recursion and logging.
 
         Args:
             data (pandas dataframe): dataframe with sampels as rows and features as columns.
-            **kwargs: keyword arguments for RecursiveClustering.
+            kwargs (dict): keyword arguments for RecursiveClustering. 
 
         Returns:
             clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
@@ -46,7 +48,7 @@ def run(data, **kwargs):
 
     """ Setup folders and files, remove old data if present. """
 
-    functions.setup(kwargs['outpath'], kwargs['chk'], kwargs['RPD'])
+    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'])
 
     logging.info('Starting a new clustering run')
     
@@ -83,15 +85,17 @@ def run(data, **kwargs):
     return obj.clus_opt, tree
 
 
-def resume(data, chkpath, **kwargs):
+def resume(data, refpath, lab=None, **kwargs):
 
     """ Wrapper function to resume a RecursiveClustering run 
         from checkpoint files.
 
         Args:
             data (pandas dataframe): dataframe with sampels as rows and features as columns.
-            chkpath (string): path to checkpoint files parent folder.
-            **kwargs: keyword arguments for RecursiveClustering.
+            refpath (string): path to checkpoint files parent folder.
+            lab (list, array or pandas series): list of labels corresponding to each sample
+                                                (for plotting only).
+            kwargs (dict): keyword arguments for KNN and RecursiveClustering. 
 
         Returns:
             new_clus (pandas dataframe): one-hot-encoded clusters membership of the 
@@ -101,10 +105,10 @@ def resume(data, chkpath, **kwargs):
     """
 
     start_time = time.time()
+    
 
-    if 'outpath' in kwargs:
-        warnings.warn('outpath is incompatible with resume, it will be ignored and chkpath will be used instead.')
-    kwargs['outpath'] = chkpath
+    if 'outpath' not in kwargs or kwargs['outpath'] is None:
+        kwargs['outpath'] = os.getcwd()
     if 'RPD' not in kwargs:
         kwargs['RPD'] = False
     if 'popcut' not in kwargs:
@@ -131,7 +135,7 @@ def resume(data, chkpath, **kwargs):
     """ Load parameters file. """
 
     try:
-        oldparams = intf.df.read_csv(os.path.join(kwargs['outpath'],'raccoon_data/paramdata.csv'))
+        oldparams = intf.df.read_csv(os.path.join(refpath,'raccoon_data/paramdata.csv'))
     except:
         sys.exit('ERROR: there was a problem loading the paramdata.csv, make sure the file path is correct.')    
         
@@ -141,8 +145,8 @@ def resume(data, chkpath, **kwargs):
     """ Load clustering files and join them. """    
 
     old_clus=[]
-    for filename in os.listdir(os.path.join(kwargs['outpath'],'raccoon_data/chk')):
-         old_clus.append(intf.df.read_hdf(os.path.join(kwargs['outpath'],'raccoon_data/chk',filename))\
+    for filename in os.listdir(os.path.join(refpath,'raccoon_data/chk')):
+         old_clus.append(intf.df.read_hdf(os.path.join(refpath,'raccoon_data/chk',filename))\
             .reindex(data.index))
     
     if len(old_clus) == 0:
@@ -164,7 +168,7 @@ def resume(data, chkpath, **kwargs):
 
     """ Setup logging."""
 
-    functions.setup(kwargs['outpath'], kwargs['chk'], kwargs['RPD'], delete=False)
+    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'], delete=False)
 
     logging.info('Resuming clustering run.')
 
@@ -199,8 +203,12 @@ def resume(data, chkpath, **kwargs):
             logging.info('Resuming cluster: '+x)
             cludata = data[intf.get_value(old_clus[x]==1)]
             clulevel = x.count('_')
+            
+            clulab = None
+            if lab is not None:
+                clulab = lab.loc[cludata.index]
 
-            obj = RecursiveClustering(cludata, depth=clulevel, name=x, **kwargs)
+            obj = RecursiveClustering(cludata, lab=clulab, depth=clulevel, name=x, **kwargs)
             obj.recurse()
             
             if obj.clus_opt is not None:
@@ -246,7 +254,7 @@ def resume(data, chkpath, **kwargs):
 
 def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs):
     """ Wrapper function to classify new data with KNN on
-        a previous RecursiveClustering output,
+        a previous RecursiveClustering output.
 
        Args:
             new_data (matrix or pandas dataframe): data to classify in 
@@ -257,7 +265,7 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
                 table from the original run. 
             refpath (string): path to the location where trained umap files (pkl) are 
                 stored (default subdirectory racoon_data of current folder).
-            **kwargs: keyword arguments for KNN. 
+            kwargs (dict): keyword arguments for KNN.
 
         Returns:
             (pandas dataframe): one-hot-encoded clusters membership of the 
@@ -268,6 +276,11 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
 
     if 'outpath' not in kwargs or kwargs['outpath'] is None:
         kwargs['outpath'] = os.getcwd()
+
+    """ Setup logging."""
+
+    functions.setup(kwargs['outpath'], False, False, False, suffix='_knn',
+        delete=False)
 
     """ Run classifier. """
 
@@ -291,6 +304,77 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
 
     return obj.membership
 
+
+def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath='./raccoon_data', 
+            outpath='./', **kwargs):
+    """ Wrapper function to update
+        a previous RecursiveClustering output with new data.
+        Runs KNN furst on the new data points to identify the closest matching
+        clusters. These points are then added to each cluster along the heirarchy
+        and the objective function is recalculated. If this score is lowered
+        beyond the given threshold, the cluster under scrutiny is scrapped, 
+        together with its offspring, and re-built from scrach.
+
+       Args:
+            new_data (matrix or pandas dataframe): data to classify in
+                dataframe-compatible format.
+            old_data (matrix or pandas dataframe): reference data on which the
+                hierarchy was built.
+            membership (matrix or pandas dataframe): one-hot-encoded clusters assignment
+                table from the original run.
+            tolerance (float): objective score change threshold, beyond which
+                clusters will have to be recalculated.
+            probcut (float): prubability cutoff, when running the KNN, samples
+                with less than this value of probability to any assigned class will be
+                treated as noise and won't impact the clusters score review.
+            refpath (string): path to the location where trained umap files (pkl) are
+                stored (default subdirectory racoon_data of current folder).
+            outpath (string): path to the location where output files will be saved
+                (default current folder).
+            kwargs (dict): keyword arguments for KNN and RecursiveClustering.
+
+        Returns:
+            (pandas dataframe): one-hot-encoded perturbed clusters membership.
+    """
+
+    start_time = time.time()
+
+    if 'RPD' not in kwargs:
+        kwargs['RPD'] = False
+    if 'chk' not in kwargs:
+        kwargs['chk'] = False
+
+    """ Setup logging."""
+
+    functions.setup(outpath, True, kwargs['chk'], kwargs['RPD'], suffix='_upt',
+        delete=False)
+
+    logging.info('Starting clusters perturbation run.')
+
+    obj = UpdateClusters(new_data, old_data, membership, refpath=refpath, 
+        outpath=outpath, tolerance=tolerance, probcut=probcut, **kwargs)
+    obj.find_and_update()
+
+    """ Save the assignment to disk and buil tree. """
+
+    tree = None
+    if obj.new_clus is not None:
+        obj.new_clus.to_hdf(
+            os.path.join(
+                outpath, 'raccoon_data/clusters_updated_final.h5'),
+            key='df')
+        tree = trees.build_tree(
+            obj.new_clus, outpath=os.path.join(
+                outpath, 'raccoon_data/tree_updated_final.json'))
+
+    """ Log the total runtime and memory usage. """
+
+    logging.info(
+        'Total time of the operation: {:.3f} seconds'.format(
+            (time.time() - start_time)))
+    logging.info(psutil.virtual_memory())
+
+    return obj.new_clus
 
 if __name__ == "__main__":
 
