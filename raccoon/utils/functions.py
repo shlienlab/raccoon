@@ -1,4 +1,3 @@
-
 """
 Utility functions for RACCOON
 (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
@@ -19,7 +18,7 @@ from scipy.stats import gaussian_kde
 from scipy.stats import median_absolute_deviation as mad
 from scipy.signal import argrelextrema
 
-from raccoon.utils.plots import plot_violin
+from utils.plots import plot_violin
 
 def sort_len_num(lista):
     """ Sort elements of a list by length first, then by numbers.
@@ -248,8 +247,8 @@ def setup_log (outpath, suffix=''):
 
 def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=True):
     """ Set up folders that are written to during clustering,
-    as well as a log file where all standard output is sent.
-        If such folders are already present in the path, delete them.
+    	as well as a log file where all standard output is sent.
+    	If such folders are already present in the path, delete them.
 
     Args:
         outpath (string): path where output files will be saved.

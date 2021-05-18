@@ -8,8 +8,8 @@ A wrapper function (:code:`cluster`) is available for the user's convenience,
 it takes all arguments available to the clustering object and will output the
 membership assignment.
 
-To have more control on the algorithm, one can initialize the clustering object
-and call the recursion by themeslves.
+To have more control over the algorithm, one can initialize the clustering object
+and call the recursion by themselves.
 
 .. code-block:: python
 
@@ -17,12 +17,12 @@ and call the recursion by themeslves.
   obj.recurse()
   
 :code:`recursiveClustering` takes an initial matrix-like object 
-(rows as samples, columns as features), and a number of optional flags,
+(rows as samples, columns as features), and some optional flags,
 including a matching list of labels 
 for plotting (:code:`labs`).
 
 It contains information on the chosen clustering options
-and a one-hot-encoded pandas dataframe containing structure
+and a one-hot-encoded pandas data frame containing structure
 and assignment of the hierarchy of identified classes.  
 
 .. code-block:: python
@@ -44,16 +44,15 @@ Among these we find
                   will be stored
 ================  =================================================================
 
-For the full list of available options and their use, see api_.
+For the full list of available options and their use, see :ref:`api`.
 
 
 Normalization
 ==============
 
-As a first step in the clustering analysis, the data can by activating the
+As a first step in the clustering analysis, the data can be normalized by activating the
 :code:`norm` flag in the recursive clustering object. It takes default :code:`sklearn`
-norms, and is set by default at :code:`'l2'`. If :code:`None`, no normalization will be applied prior
-to the features removal step.
+norms, and is set by default at :code:`'l2'`. If :code:`None`, no normalization will be applied before the features removal step.
 
 
 Optimizers
@@ -66,18 +65,18 @@ There are currently two available optimizers, to be set with the :code:`optimize
                  the tool will evaluate all possible combinations
                  on the defined mesh
 :code:`'de'`     **Differential Evolution**: a simple evolutionary algorithm,
-                 it requires to set a number of candidates for the parametric 
+                 it requires setting a number of candidates for the parametric 
                  space search and a number of maximum iterations [Storn1997]_
 ===============  ============================================================
 
-While Grid Search requires to define the exact set of points to explore, either directly
+While Grid Search requires defining the exact set of points to explore, either directly
 or indirectly by setting the explorable ranges and steps for each parameter (see the next sections), 
-Differential Evolution requires a number of candidate points to be set with :code:`depop`
+Differential Evolution requires some candidate points to be set with :code:`depop`
 and maximum iterations :code:`deiter` which will stop the optimization unless a solutions 
-improvment tolerance limit (set by default) is hit. 
+improvement tolerance limit (set by default) is hit. 
 
-*Warning*: These two flags will override the parameters selection flags specific of each of the 
-downstream steps. It will only keep information on their ranges (if set), to define the boundaries.
+*Warning*: These two flags will override the parameters selection flags specific to each of the downstream steps. 
+It will only keep information on their ranges (if set), to define the boundaries.
 
 While Differential Evolution is in principle more efficient than Grid Search, it is not guaranteed
 to find the absolute minimum, and the results heavily depend on how extensive the search is.
@@ -105,21 +104,21 @@ Objective Function
 To drive the optimization, different clustering evaluation scores can be used
 
 ====================  ============================================================  
-:code:`'silhouette'`  **Silhouette Score**: mesures the ratio of the intra-cluster 
-                      and inter-cluster distances, it ranges between 1 for an optimal
+:code:`'silhouette'`  **Silhouette Score**: measures the ratio of the intra-cluster 
+                      and inter-cluster distances, it ranges between 1 for optimal
                       separation and -1 for ill-defined clusters. [Rousseeuw1987]_
 :code:`'dunn'`        **Dunn Index**: is the ratio of the minimum inter-cluster 
                       distance and the maximum cluster diameter. It ranges from 0
                       to infinity. [Dunn1973]_
 ====================  ============================================================
 
-These scores require to measure the distances between points and/or clusters
+These scores require measuring the distances between points and/or clusters
 in the embedded space. With :code:`metricC`, one can select which metric to use.
 Standard measures, as implemented in :code:`sklearn` 
 (e.g. :code:`'euclidean'` or :code:`'cosine'`) are available.
 
 When :code:`'silhouette'` is selected, its mean value on all data points is maximized. 
-To assure quality in the library's outputs, set of parameters
+To assure quality in the library's outputs, sets of parameters
 generating a negative score are automatically discarded.
 
 *Warning*: the current implementation of the Dunn Index is not
@@ -130,7 +129,7 @@ Population Cutoff
 
 The recursion will be terminated under two conditions: if the optimization found a 
 single cluster as the best outcome or if the population lower bound is met.
-The latter can be set with :code:`popcut` and should be kept as high as possible as to avoid
+The latter can be set with :code:`popcut` and should be kept as high as possible to avoid
 atomization of the clusters, but low enough to allow for the identification of subclasses.
 (depending on the dataset, the suggested values are between 10 and 50).
 
@@ -169,10 +168,10 @@ MAD with 25 mesh points.
 Dimensionality Reduction
 ========================
 
-Following the low-information features removal is the dimensionality reduction by means of UMAP.
-Here there are a number of flags that one could set, mostly inherited by UMAP itself, the
+Following the low-information features removal is the dimensionality reduction through UMAP.
+Here there are several flags that one could set, mostly inherited by UMAP itself, the
 most important being :code:`dim`, the dimensionality of the target space.
-One should take particular care in chosing this number, as it can affect both
+One should take particular care in choosing this number, as it can affect both
 the results and the efficiency of the algorithm. The choice of metric for the objective 
 function will also depend on this value, as :code:`'euclidean'` distances are only viable in two 
 dimensions.
@@ -182,12 +181,12 @@ and learning rate (:code:`lr`), to their default values unless you know what you
 
 Finally, as in the case of the features removal step, the number of nearest neighbours,
 which defines the scale at which the dimensionality reduction is performed, is left as tunable
-by the optimizer. You can chose range and number of points (if Grid Search is active) with
+by the optimizer. You can choose the range and the number of points (if Grid Search is active) with
 :code:`neirange` and :code:`neipoints` respectively.
 If the range is left to be guessed automatically, for example as a logarithmic
 space based on the population (:code:`'logspace'`), a factor can be set to reduce the 
 value proportionally (:code:`neifactor`) in the presence of particularly large datasets,
-as high values of this parameters can impact the performance considerably.
+as high values of these parameters can impact the performance considerably.
 
 
 Clusters Identification
@@ -197,8 +196,8 @@ The clusters identification tool is chosen with the :code:`clusterer` flag
 
 =================  ================================================================  
 :code:`'DBSCAN'`   **Density-Based Spatial Clustering of Applications with Noise**: 
-                   density based clustering, requires an :math:`$\epsilon$` 
-                   distance to define clusters neighborhood [Ester1996]_
+                   density-based clustering, requires an :math:`$\epsilon$` 
+                   distance to define clusters neighbourhood [Ester1996]_
 :code:`'HDBSCAN'`  **Hierarchical DBSCAN**: based on DBSCAN, it attempts to remove
                    the dependency on :math:`$\epsilon$` but is still affected by 
                    the choice of minimum cluster population [Campello2013]_
@@ -215,23 +214,23 @@ The clusters identification tool is chosen with the :code:`clusterer` flag
 
 Depending on which method has been chosen, different parameters are set as tunable for 
 the optimizer (e.g. :math:`$\epsilon$` for DBSCAN or minimum population for HDBSCAN).
-By means of :code:`cparmrange` one can set the range to be explored. By default this is set
+With :code:`cparmrange` one can set the range to be explored. By default, this is set
 as :code:`guess` which allows the algorithm to find an ideal range based on the elbow method.
 
-If :code:`'DBSCAN'` is chosen as clusterer, its minimum value of cluster size can also be set
+If :code:`'DBSCAN'` is chosen as clustering algorithm, its minimum value of cluster size can also be set
 with :code:`minclusize`.
 
 This step is also affected by the choice of :code:`metricC` as distances need to be measured
 in the embedded space.
 
-For those clustering algorithm that allow to discard points at noise, the :code:`outliers`
+For those clustering algorithms that allow discarding points as noise, the :code:`outliers`
 flag allows the user to chose what to do with these points:
 
 ==================  ================================================================  
-:code:`'ignore`     points marked as noise will be left as such and discared at the 
+:code:`'ignore`     points marked as noise will be left as such and discarded at the 
                     next iteration.
 :code:`'reassign'`  attempts to force the assignment of a cluster membership to all 
-                    the points marked as noise by means ofnearest neighbours.
+                    the points marked as noise by means of nearest neighbours.
 ==================  ================================================================
 
 Given that this step is in most cases considerably less expensive than the other two, 
@@ -246,7 +245,7 @@ Occasionally you may want to train your clusters only on a subset of the data, w
 use them to classify some held-out set.
 
 By setting :code:`transform` you can ask the algorithm to run each one of the clustering steps
-recursively only on a given subset, while still forcing the membership assignment by means of k-NN 
+recursively only on a given subset, while still forcing the membership assignment with k-NN 
 to the rest of the data.
 
 The full dataset has to be given as input, including the data to project, but not used in the training.
@@ -254,20 +253,20 @@ The full dataset has to be given as input, including the data to project, but no
 for the training.
 
 Activating this function will produce extra plots at each iteration, of projection maps 
-color coded according to which points were used for the training and which transformed only.
+colour-coded according to which points were used for the training and which transformed only.
 
 
 Supervised clustering
 =====================
 
 The :code:`supervised` boolean flag activates supervised dimensionality reduction with UMAP. When this flag is active, class labels need to be provided in :code:`labs`
-and are used to guide the training of the lower dimensionality spaces. You can tune how much the supervised information will affect the training with :code:`supervised_weight`, which correspondes to the :code:`target_weight` flag in UMAP. This is to be set to 0.0 to ignore the labels, or 1.0 to fully rely on them. By default it is set as 0.5.
+and are used to guide the training of the lower dimensionality spaces. You can tune how much the supervised information will affect the training with :code:`supervised_weight`, which corresponds to the :code:`target_weight` flag in UMAP. This is to be set to 0.0 to ignore the labels, or 1.0 to fully rely on them. By default, it is set as 0.5.
 
 
 Saving hierarchy information
 ============================
 
-The resulting clustering membership will be stored as a one-hot-encoded pandas dataframe in the :code:`obj.clusOpt` variable.
+The resulting clustering membership will be stored as a one-hot-encoded pandas data frame in the :code:`obj.clusOpt` variable.
 However, auxiliary functions are available to store the hierarchy information as an :code:`anytree` object as well.
 
 .. code-block:: python
@@ -277,20 +276,20 @@ However, auxiliary functions are available to store the hierarchy information as
   tree = trees.buildTree(obj.clusOpt)
 
 :code:`buildTree` requires the membership assignment table as input and optionally a path to where to save the tree in :code:`json` format.
-By default it will be saved in the home directory of the run.
-To load a tree from the :code:`json` foile :code:`loadTree` only requires its path.
+By default, it will be saved in the home directory of the run.
+To load a tree from the :code:`json` file :code:`loadTree` only requires its path.
 
 Plotting
 ========
 
 Each run will produce a series of plots, which can be found in the :code:`raccoon_plots` folder.
-These will include 2d UMAP projections of the subset selected at each iteration, color-coded by class and by label (if provided).
+These will include 2d UMAP projections of the subset selected at each iteration, colour-coded by class and by label (if provided).
 
 .. image:: figs/proj_sample.png
   :width: 500
 
-And an optimization surface build from the explored sets of parameters. This plot shows a color map of the objective function best score
-as a function of number of neighbours and the feature filters parameter value. Each set of parameters tested is a dot, the chosen
+And an optimization surface built from the explored sets of parameters. This plot shows a colour map of the objective function best score
+as a function of the number of neighbours and the feature filters parameter value. Each set of parameters tested is a dot, the chosen
 optimal set is circled in black.
 
 .. image:: figs/opt_sample.png
@@ -299,10 +298,9 @@ optimal set is circled in black.
 Resuming a run and checkpoints
 ==============================
 
-It is possible to resume a previously interrupted run (or one which completed succesfully in case you want to deepen the hierarchy), 
-with the wrapper function :code:`resume`. This takes the same inputs as :code:`cluster`, with the exception of :code:`outpath` which is ignored.
-:code:`chkpath` is needed in its place. This should point to the folder where the instance to be resumed was run.
-Please note the parent folder to :code:`raccoon_data` needs to be provided.
+It is possible to resume a previously interrupted run (or one which completed successfully in case you want to deepen the hierarchy), 
+with the wrapper function :code:`resume`. This takes the same inputs as :code:`cluster`.
+:code:`chkpath` is needed in its place. This should point to the :code:`raccoon_data` folder where the instance to be resumed was run.
 
 .. code-block:: python
   
@@ -312,8 +310,8 @@ Please note the parent folder to :code:`raccoon_data` needs to be provided.
                                      chkpath='path_to_original_run', savemap=True)
 
 To resume, the original run needs checkpoint files. To create them, activate the :code:`chk` boolean flag during your original run. 
-This will automatically build a :code:`chk`  subdirectory in the data folder and populate it temporary class assignments. 
-While saving checkpoints may affect the efficiency of the run, it is reccomended for
+This will automatically build a :code:`chk`  subdirectory in the data folder and populate it with temporary class assignments. 
+While saving checkpoints may affect the efficiency of the run, it is recommended for
 larger jobs to avoid losing all progress if something were to go wrong. 
 
 When resuming a run, all new data will be saved in the original directory tree.

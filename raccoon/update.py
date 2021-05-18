@@ -1,8 +1,6 @@
-
 """
-Basic k-nearest neighbours classifier for RACCOON
-(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
-F. Comitani     @2020
+To update previous RACCOON clustering runs with new data.
+F. Comitani     @2021
 """
 
 import os
@@ -20,12 +18,12 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import raccoon.utils.functions as functions
-import raccoon.interface as interface
-import raccoon.utils.plots as plotting
+import utils.functions as functions
+import interface as interface
+import utils.plots as plotting
 
-from raccoon.clustering import *
-from raccoon.classification import KNN
+from clustering import *
+from classification import KNN
 
 
 

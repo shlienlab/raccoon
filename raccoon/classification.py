@@ -1,8 +1,6 @@
-
 """
 Basic k-nearest neighbours classifier for RACCOON
-(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
-F. Comitani     @2020
+F. Comitani     @2020-2021
 """
 
 import os
@@ -20,8 +18,8 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import raccoon.interface as interface
-import raccoon.utils.plots as plotting
+import interface as interface
+import utils.plots as plotting
 
 
 def local_KNN(proj, labs, nnei, metric, interface, as_series=False):
@@ -448,51 +446,6 @@ class KNN:
 
                 """ Assign clusters membership. """
                 
-                """ neigh = self.interface.n_neighbor(
-                    n_neighbors=nnei, metric=metric, n_jobs=-1).fit(proj_all)
-                kn = neigh.kneighbors(
-                    proj_all,
-                    n_neighbors=len(proj_all),
-                    return_distance=True)
-               
-                if self.gpu:
-                    kn = (kn[0].T, kn[1].T)
-
-                newk = []
-                for i in range(len(proj)):
-                    newk.append([[], []])
-                    tupl = [(x, y)
-                            for x, y in zip(self.interface.get_value(kn[0][i]), 
-                                            self.interface.get_value(kn[1][i]))
-                            if y in range(len(proj), len(proj_ref) + len(proj))]
-                    for t in tupl:
-                        newk[-1][0].append(t[0])
-                        newk[-1][1].append(t[1])
-
-                for k in range(len(newk)):
-                    newk[k] = [newk[k][0][:nnei], newk[k][1][:nnei]]
-                
-                valals = []
-                for k in range(len(newk)):
-                    #apply not available in cudf...
-                    #vals = next_clust.loc[proj_all.iloc[newk[k][1]].index].apply(
-                    #    lambda x: x / newk[k][0], axis=0)[1:]
-                    
-                    tmp = next_clust.loc[proj_all.iloc[newk[k][1]].index]
-
-                    if not self.gpu:
-
-                        vals = tmp.div(newk[k][0],axis=0)
-
-                    else:
-                        tmp.reset_index(drop=True, inplace=True)
-                        vals = tmp.T.div(newk[k][0]).T
-
-                    valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
-               
-                valals=self.interface.num.stack(valals)
-                """
-
                 valals = local_KNN(proj_all, next_clust, nnei, metric, self.interface)
 
                 #self.membership.append(

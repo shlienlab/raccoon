@@ -6,6 +6,7 @@ raccoon can be easily installed through python standard
 package managers without worrying about dependencies. 
 
 With pip
+
 .. code-block:: bash
 
 	pip install raccoon
@@ -16,7 +17,6 @@ or conda
 
 	conda install raccoon
 
-|
 
 Alternatively, to install the latest (unreleased) version 
 you can download it from our GitHub repository by running 
@@ -27,8 +27,6 @@ you can download it from our GitHub repository by running
    cd raccoon
    python setup.py install
 
-
-|
 
 The current version requires the following 
 packages and their inherited dependencies:

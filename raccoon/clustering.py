@@ -1,6 +1,5 @@
-
 """
-RACCOON (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+Recursive clustering classes and functions for RACCOON
 F. Comitani     @2018-2021
 A. Maheshwari   @2019
 """
@@ -31,13 +30,14 @@ warnings.filterwarnings(
 from math import nan
 import random
 
-import raccoon.utils.plots as plotting
-import raccoon.utils.functions as functions
-import raccoon.utils.trees as trees
-import raccoon.utils.de as de
-from raccoon.classification import local_KNN
-from raccoon.utils.option import OptionalImports
-import raccoon.interface as interface
+import interface as interface
+from classification import local_KNN
+
+import utils.plots as plotting
+import utils.functions as functions
+import utils.trees as trees
+import utils.de as de
+from utils.option import OptionalImports
 
 """ Search for optional libraries.  """
 
@@ -718,52 +718,6 @@ class RecursiveClustering:
                 'proj_trans_' + self._name,
                 self.outpath)
 
-    #def _one_hot_encode(self, labs_opt, minpop=10):
-    #    """ Construct and return a one-hot-encoded clusters membership dataframe.
-    #
-    #    Args:
-    #        labs_opt (pandas series): cluster membership series or list.
-    #
-    #    Returns:
-    #        tmplab (pandas dataframe): one-hot-encoded cluster membership dataframe.
-    #
-    #    """
-    #
-    #    if not isinstance(labs_opt, self.interface.df.DataFrame):
-    #        labs_opt = self.interface.df.DataFrame(labs_opt)
-    #
-    #    # cuml no sparse yet, bug inherited by cupy
-    #    ohe = self.interface.one_hot(sparse=False)
-    #    ohe.fit(labs_opt)
-    #
-    #    tmplab = self.interface.df.DataFrame(
-    #        ohe.transform(labs_opt),
-    #        columns=self.interface.get_value(
-    #            ohe.categories_[0])).astype(int)
-    #
-    #    """ Discard clusters that have less than minpop of population. """
-    #
-    #    tmplab.drop(tmplab.columns[self.interface.get_value(
-    #        tmplab.sum() < minpop)], axis=1, inplace=True)
-    #    # not_implemented_error: String Arrays is not yet implemented in cudf
-    #    #tmplab = tmplab.set_index(DataGlobal.dataset.loc[self.data_ix].index.values)
-    #    tmplab = tmplab.set_index(self.interface.get_value(
-    #        #attempt to fix error for transform data
-    #        #DataGlobal.dataset.loc[self.data_ix].index))
-    #        labs_opt.index))
-    #    
-    #    """ Discard unassigned labels. """
-    #
-    #    if -1 in tmplab.columns:
-    #        tmplab.drop(-1,axis=1,inplace=True)
-    #
-    #    """ Rename columns. """
-    #
-    #    tmplab.columns = [self._name + "_" + str(x)
-    #                      for x in range(len(tmplab.columns.values))]
-    #
-    #    return tmplab
-
     def _elbow(self, pj):
         """ Estimates the point of flex of a pairwise distances plot.
 
@@ -904,29 +858,6 @@ class RecursiveClustering:
         else:
             neighlist = [self.interface.set(x[1:]) for x in allnei]
         return 1-self.interface.num.asarray([[len(i.intersection(j))/num_neigh for j in neighlist] for i in neighlist])
-
-    #def calc_score(self, points, labels):
-    #    """ Select and calculate scoring function for optimization.
-    #
-    #    Args:
-    #        points (dataframe or matrix): points coordinates.
-    #        labels (series or matrix): clusters assignment.
-    #
-    #    Returns:
-    #        (float): clustering score.
-    #
-    #    """
-    #
-    #    if len(self.interface.set(labels)) > len(points)-1:
-    #        return -1
-    #
-    #    if self.score == 'silhouette':
-    #        return self.interface.silhouette(
-    #            points, labels, metric=self.metric_clu)
-    #    elif self.score == 'dunn':
-    #        return self.interface.dunn(points, labels, metric=self.metric_clu)
-    #
-    #    sys.exit('ERROR: score not recognized')
 
     def _find_clusters(self, pj, cparm, cse=None, algorithm=None):
         """ Runs the selected density-based clusters identification algorithm.
@@ -1392,84 +1323,6 @@ class RecursiveClustering:
         return sil_opt, labs_opt,\
                cparm_opt, nei_opt, pj_opt, cut_opt, map_opt, keepfeat, decomp_opt,\
                scoreslist
-
-    """def _KNN(self, nei_opt, pj_opt, labs_opt, cutoff=None):
-        """""" KNN classifier (REDUNDANT, TO REMOVE),
-            updates membership assignment for transform-only data.
-
-        Args:
-            labs_opt (pandas series): series with the cluster membership identified
-                for each sample.
-            nei_opt (int): optimal number of nearest neighbors used with UMAP.
-            pj_opt (pandas dataframe): low dimensionality data projection from UMAP.
-
-        Returns:
-            (pandas series): Series with the updated cluster membership identified
-                for each sample.
-
-        """"""
-
-        missing = [i for i, x in enumerate(self.interface.get_value(pj_opt.index))
-                   if x not in labs_opt.index]
-        
-        mparams = {}
-        if self.metric_clu == 'mahalanobis':
-            try:
-                mparams = {
-                    'VI': self.interface.num.linalg.inv(
-                        self.interface.num.cov(pj_opt.T))}
-            except BaseException:
-                mparams = {
-                    'VI': self.interface.num.linalg.pinv(
-                        self.interface.num.cov(pj_opt.T))}
-
-        neigh = self.interface.n_neighbor(
-            n_neighbors=len(missing) + nei_opt,
-            metric=self.metric_map,
-            metric_params=mparams,
-            n_jobs=-1)
-        
-        neigh.fit(pj_opt)
-
-        kn = neigh.kneighbors(pj_opt.iloc[missing], return_distance=True)
-        kn = self.interface.num.array([[x, y] for x, y in zip(kn[0], kn[1])])
-        mask = ~self.interface.num.isin(kn[:, 1], self.interface.num.array(missing))
-        # TODO: make prettier
-        newk = [[kn[i, 0][mask[i]][1:nei_opt + 1], kn[i, 1]
-                 [mask[i]][1:nei_opt + 1]] for i in range(len(kn))]
-
-        clus_tmp = functions.one_hot_encode(labs_opt, self.minclusize, self._name,
-                    self.interface)
-
-        valals = []
-        print(type(self.interface.get_value(
-                        newk[0][1])))
-        print(self.interface.get_value(
-                        newk[0][1]))
-        print(type(self.interface.get_value(
-                        pj_opt.iloc[self.interface.get_value(
-                                        newk[0][1])].index)))
-        print(self.interface.get_value(
-                        pj_opt.iloc[self.interface.get_value(
-                                        newk[0][1])].index))
-        for k in self.interface.num.arange(len(newk)):
-            vals = clus_tmp.loc[self.interface.get_value(
-                pj_opt.iloc[self.interface.get_value(
-                newk[k][1])].index)].apply(
-                lambda x: x / newk[k][0], axis=0)[1:]
-            valals.append((vals.sum(axis=0) / vals.sum().sum()).values)
-
-        knnlabs = self.interface.df.DataFrame(
-            valals, index=pj_opt.index[missing], columns=clus_tmp.columns)
-
-        if cutoff is not None:
-            knnlabs[knnlabs < cutoff] == 0
-            knnlabs[-1] = cutoff - .00001
-
-        labs_new = knnlabs.idxmax(axis=1)
-
-        return self.interface.df.concat([labs_opt, labs_new], axis=0)
-        """
 
     def _optimize_params(self):
         """ Wrapper function for the parameters optimization.

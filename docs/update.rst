@@ -1,16 +1,16 @@
 
-=======
-Update
-=======
+===============
+Clusters Update
+===============
 
 It is possible to update a hierarchy of clusters by adding
 new data after a recursive clustering run was concluded.
 
-Similarly to a k-NN run, this step requires the dataset do be added,
+Similarly to a k-NN run, this step requires the dataset to be added,
 the original dataset used to build the clusters, their membership
 table (as output by :code:`recursive_clustering`) 
 and the path to the reference folder (:code:`raccoon_data`) 
-containing the trained maps. It also takes an output folder, a debugging mode switch and a gpu switch.
+containing the trained maps. It also takes an output folder, a debugging mode switch and a GPU switch.
 
 As in the case of classification and clustering, a wrapper function is available.
 This will set up the necessary folders and run the update automatically.
@@ -32,7 +32,7 @@ This tool will first project the new samples on the old hierarchy, identify thei
 matching classes with k-NN and re-evaluate their clustering score including the new data.
 Recursively, if the score degrades beyond the given :code:`tolerance` the clusters 
 and those along the subsequent branch will be rebuild from scratch, but including the new data.
-The new class are marked with a 'u' suffix to original name at the point of rebuilding.
+The new classes are marked with a 'u' suffix to the original name at the point of rebuilding.
 A second flag, :code:`probcut`, defines a probability cutoff when assigning the best matching
 class at each level. Probabilities below this cutoff will be ignored, if a point doesn't reach
 any this threshold with any class it will be considered as noise.
@@ -47,7 +47,7 @@ Keywords arguments can be provided for the re-clustering step. These should idea
 original setup but don't have to. If you want to extend the search in this specific instance,
 for example, it may be worth changing some of these flags (e.g. :code:`maxdepth` or :code:`popcut`).
 
-Alternatively, the update object can be initialized and theprocess can be
+Alternatively, the update object can be initialized and the process can be
 called directly.
 
 .. code-block:: python

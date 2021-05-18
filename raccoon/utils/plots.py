@@ -1,4 +1,3 @@
-
 """
 Plotting functions for RACCOON
 (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)

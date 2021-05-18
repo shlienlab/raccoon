@@ -1,9 +1,7 @@
 """
-Interface for parallelizable functions for RACCOON
-(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+Parallelizable functions interface for RACCOON
 F. Comitani     @2020-2021
 """
-
 
 class Interface:
 

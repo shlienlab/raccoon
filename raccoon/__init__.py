@@ -1,4 +1,3 @@
-
 """
 RACCOON (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2018-2021
@@ -16,25 +15,25 @@ import warnings
 
 import csv
 
-import raccoon.utils.functions as functions
-import raccoon.interface as interface
+import utils.functions as functions
+import interface as interface
 
-from raccoon.clustering import *
-from raccoon.classification import KNN
-from raccoon.update import UpdateClusters
+from clustering import *
+from classification import KNN
+from update import UpdateClusters
 
 def cluster(data, **kwargs):
     """ Wrapper function to setup, create a RecursiveClustering object,
-        run the recursion and logging.
+	run the recursion and logging.
 
-        Args:
-            data (pandas dataframe): dataframe with sampels as rows and features as columns.
-            kwargs (dict): keyword arguments for RecursiveClustering. 
+    Args:
+	data (pandas dataframe): dataframe with sampels as rows and features as columns.
+	kwargs (dict): keyword arguments for RecursiveClustering. 
 
-        Returns:
-            clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
-            tree (anytree object): anytree structure with information on the clusters
-                                   hierarchy.
+    Returns:
+        clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
+        tree (anytree object): anytree structure with information on the clusters
+	       	               hierarchy.
     """
 
     start_time = time.time()
@@ -85,23 +84,24 @@ def cluster(data, **kwargs):
     return obj.clus_opt, tree
 
 
-def resume(data, refpath, lab=None, **kwargs):
+def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
 
     """ Wrapper function to resume a RecursiveClustering run 
         from checkpoint files.
 
-        Args:
-            data (pandas dataframe): dataframe with sampels as rows and features as columns.
-            refpath (string): path to checkpoint files parent folder.
-            lab (list, array or pandas series): list of labels corresponding to each sample
-                                                (for plotting only).
-            kwargs (dict): keyword arguments for KNN and RecursiveClustering. 
+    Args:
+        data (pandas dataframe): dataframe with sampels as rows and features as columns.
+        refpath (string): path to checkpoint files parent folder
+                          (default subdirectory racoon_data of current folder).
+        lab (list, array or pandas series): list of labels corresponding to each sample
+                                            (for plotting only).
+        kwargs (dict): keyword arguments for KNN and RecursiveClustering. 
 
-        Returns:
-            new_clus (pandas dataframe): one-hot-encoded clusters membership of the 
-                                        whole data.
-            tree (anytree object): anytree structure with information on the clusters
-                                   hierarchy.
+    Returns:
+        new_clus (pandas dataframe): one-hot-encoded clusters membership of the 
+                                     whole data.
+        tree (anytree object): anytree structure with information on the clusters
+                               hierarchy.
     """
 
     start_time = time.time()
@@ -135,7 +135,7 @@ def resume(data, refpath, lab=None, **kwargs):
     """ Load parameters file. """
 
     try:
-        oldparams = intf.df.read_csv(os.path.join(refpath,'raccoon_data/paramdata.csv'))
+        oldparams = intf.df.read_csv(os.path.join(refpath,'paramdata.csv'))
     except:
         sys.exit('ERROR: there was a problem loading the paramdata.csv, make sure the file path is correct.')    
         
@@ -145,8 +145,8 @@ def resume(data, refpath, lab=None, **kwargs):
     """ Load clustering files and join them. """    
 
     old_clus=[]
-    for filename in os.listdir(os.path.join(refpath,'raccoon_data/chk')):
-         old_clus.append(intf.df.read_hdf(os.path.join(refpath,'raccoon_data/chk',filename))\
+    for filename in os.listdir(os.path.join(refpath,'chk')):
+         old_clus.append(intf.df.read_hdf(os.path.join(refpath,'chk',filename))\
             .reindex(data.index))
     
     if len(old_clus) == 0:
@@ -256,20 +256,20 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
     """ Wrapper function to classify new data with KNN on
         a previous RecursiveClustering output.
 
-       Args:
-            new_data (matrix or pandas dataframe): data to classify in 
-                dataframe-compatible format.
-            old_data (matrix or pandas dataframe): reference data on which the 
-                hierarchy was built.
-            membership (matrix or pandas dataframe): one-hot-encoded clusters assignment 
-                table from the original run. 
-            refpath (string): path to the location where trained umap files (pkl) are 
-                stored (default subdirectory racoon_data of current folder).
-            kwargs (dict): keyword arguments for KNN.
+    Args:
+        new_data (matrix or pandas dataframe): data to classify in 
+            dataframe-compatible format.
+        old_data (matrix or pandas dataframe): reference data on which the 
+            hierarchy was built.
+        membership (matrix or pandas dataframe): one-hot-encoded clusters assignment 
+            table from the original run. 
+        refpath (string): path to the location where trained umap files (pkl) are 
+            stored (default subdirectory racoon_data of current folder).
+        kwargs (dict): keyword arguments for KNN.
 
-        Returns:
-            (pandas dataframe): one-hot-encoded clusters membership of the 
-                                         projected data.
+    Returns:
+        (pandas dataframe): one-hot-encoded clusters membership of the 
+                            projected data.
     """
 
     start_time = time.time()
@@ -315,26 +315,26 @@ def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath=
         beyond the given threshold, the cluster under scrutiny is scrapped, 
         together with its offspring, and re-built from scrach.
 
-       Args:
-            new_data (matrix or pandas dataframe): data to classify in
-                dataframe-compatible format.
-            old_data (matrix or pandas dataframe): reference data on which the
-                hierarchy was built.
-            membership (matrix or pandas dataframe): one-hot-encoded clusters assignment
-                table from the original run.
-            tolerance (float): objective score change threshold, beyond which
-                clusters will have to be recalculated.
-            probcut (float): prubability cutoff, when running the KNN, samples
-                with less than this value of probability to any assigned class will be
-                treated as noise and won't impact the clusters score review.
-            refpath (string): path to the location where trained umap files (pkl) are
-                stored (default subdirectory racoon_data of current folder).
-            outpath (string): path to the location where output files will be saved
-                (default current folder).
-            kwargs (dict): keyword arguments for KNN and RecursiveClustering.
+    Args:
+        new_data (matrix or pandas dataframe): data to classify in
+            dataframe-compatible format.
+        old_data (matrix or pandas dataframe): reference data on which the
+            hierarchy was built.
+        membership (matrix or pandas dataframe): one-hot-encoded clusters assignment
+            table from the original run.
+        tolerance (float): objective score change threshold, beyond which
+            clusters will have to be recalculated.
+        probcut (float): prubability cutoff, when running the KNN, samples
+            with less than this value of probability to any assigned class will be
+            treated as noise and won't impact the clusters score review.
+        refpath (string): path to the location where trained umap files (pkl) are
+            stored (default subdirectory racoon_data of current folder).
+        outpath (string): path to the location where output files will be saved
+            (default current folder).
+        kwargs (dict): keyword arguments for KNN and RecursiveClustering.
 
-        Returns:
-            (pandas dataframe): one-hot-encoded perturbed clusters membership.
+    Returns:
+        (pandas dataframe): one-hot-encoded perturbed clusters membership.
     """
 
     start_time = time.time()
