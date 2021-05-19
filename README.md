@@ -4,9 +4,12 @@
 ## Recursive Algorithm for Coarse-to-fine Clusters OptimizatiON
 ### v 0.4
 
-[![Documentation Status](https://readthedocs.org/projects/raccoon-cluster/badge/?version=latest&style=flat-square)](https://raccoon-cluster.readthedocs.io/en/latest/?badge=latest)
+[![Licence](https://img.shields.io/github/license/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/blob/main/LICENSE)
+[![GitHub top language](https://img.shields.io/github/languages/top/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/search?l=python)
+[![Build Status](https://img.shields.io/travis/com/fcomitani/raccoon/main?style=flat-square)](https://travis-ci.com/fcomitani/raccoon)
+[![Documentation Status](https://readthedocs.org/projects/coon/badge/?version=latest&style=flat-square)](https://coon.readthedocs.io/en/latest/?badge=latest)
 
-`raccoon` is a python 3 package for recursive clustering automatization. 
+`raccoon` (shortened as `coon`) is a python 3 package for recursive clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
 
 This library includes
@@ -17,7 +20,7 @@ This library includes
 * k-NN classification
 * GPU implementation with RAPIDS
 
-Detailed documentation, API references and tutorials can be found at this [link](http://raccoon.readthedocs.org/en/latest/).
+Detailed documentation, API references and tutorials can be found at this [link](https://coon.readthedocs.io/en/latest/).
 
 ### Why recursion?
 
@@ -61,10 +64,10 @@ If these do not affect your analysis, we strongly suggest activating the GPU opt
 
 ### Installation
 
-raccoon can be easily installed through python standard package managers, 
-`pip install raccoon` or `conda install raccoon`. 
+raccoon releases can be easily installed through the python standard package manager  
+`pip install coon`.
 
-Alternatively, to install the latest (unreleased) version you can download it from this repository by running 
+To install the latest (unreleased) version you can download it from this repository by running 
  
     git clone https://github.com/fcomitani/raccoon
     cd raccoon
@@ -75,15 +78,13 @@ Alternatively, to install the latest (unreleased) version you can download it fr
 Given an `input` dataset in pandas-like format (samples X features), the `run` function will
 automatically set up a recursive clusters search with just some basic options. 
 
-    import raccoon as rc
+    import coon
 
-    cluster_membership, tree = rc.cluster(input, dim=2, popcut=25,
+    cluster_membership, tree = coon.cluster(input, dim=2, popcut=25,
                                      optimizer='auto', dynmesh=True,
                                      metric_clu='cosine', metric_map='cosine',
                                      savemap=True, chk=True,
                                      outpath='./output', gpu=False)
-
-For more details on how to customize your run, library API and tutorials, please see the [documentation](https://raccoon-cluster.readthedocs.io/en/latest/).
 
 ### Citation
 

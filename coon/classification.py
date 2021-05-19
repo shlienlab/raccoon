@@ -18,8 +18,8 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import interface as interface
-import utils.plots as plotting
+import coon.interface as interface
+import coon.utils.plots as plotting
 
 
 def local_KNN(proj, labs, nnei, metric, interface, as_series=False):

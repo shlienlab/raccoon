@@ -1,6 +1,6 @@
 """
 Set of standardized tests for RACCOON
-F. Comitani     @2020
+F. Comitani     @2020-2021
 """
 
 

@@ -15,12 +15,11 @@ import warnings
 
 import csv
 
-import utils.functions as functions
-import interface as interface
-
-from clustering import *
-from classification import KNN
-from update import UpdateClusters
+from coon.clustering import RecursiveClustering, DataGlobal
+from coon.classification import KNN
+from coon.update import UpdateClusters
+import coon.interface as interface
+import coon.utils.functions as functions
 
 def cluster(data, **kwargs):
     """ Wrapper function to setup, create a RecursiveClustering object,

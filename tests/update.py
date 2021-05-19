@@ -1,14 +1,11 @@
 """
-Set of standardized tests for the clustering function of RACCOON
-F. Comitani     @2020
+Set of standardized tests for the update function of RACCOON
+F. Comitani     @2020-2021
 """
 import os
-import sys
-# tmp workarond
-sys.path.append(r'/hpf/largeprojects/adam/projects/raccoon')
-
 import pandas as pd
-import raccoon as rc
+
+import coon
 
 def update_test(data, ori_data, reftab, refpath, gpu=False):
     """ Update clustering test, euclidean grid.
@@ -23,7 +20,7 @@ def update_test(data, ori_data, reftab, refpath, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
     
-    new_membership = rc.update(data, ori_data,
+    new_membership = coon.update(data, ori_data,
         pd.read_hdf(reftab), tolerance=1e-2,
         refpath=os.path.join(refpath,'raccoon_data'),
         dim=2, filterfeat='variance', optimizer='grid', 

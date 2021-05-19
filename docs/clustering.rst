@@ -271,7 +271,7 @@ However, auxiliary functions are available to store the hierarchy information as
 
 .. code-block:: python
   
-  import raccoon.utils.trees as trees
+  import coon.utils.trees as trees
 
   tree = trees.buildTree(obj.clusOpt)
 

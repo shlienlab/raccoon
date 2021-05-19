@@ -1,9 +1,11 @@
 #general
+numpy==1.20.2
 scikit-learn>=0.22.2.post1
 scikit-network>=0.20.0
 umap-learn==0.4.5
 
 #plotting
+matplotlib>=3.3.3
 seaborn>=0.11.0
 
 #documentation

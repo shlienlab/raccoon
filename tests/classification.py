@@ -1,14 +1,11 @@
 """
 Set of standardized tests for the clustering function of RACCOON
-F. Comitani     @2020
+F. Comitani     @2020-2021
 """
 import os
-import sys
-# tmp workarond
-sys.path.append(r'/hpf/largeprojects/adam/projects/raccoon')
-
 import pandas as pd
-import raccoon as rc
+
+import coon
 
 def knn_test(data, ori_data, reftab, refpath, gpu=False):
     """ k-NN classification test, euclidean grid.
@@ -24,7 +21,7 @@ def knn_test(data, ori_data, reftab, refpath, gpu=False):
     """
    
 
-    new_membership = rc.classify(data, ori_data,
+    new_membership = coon.classify(data, ori_data,
         pd.read_hdf(reftab),
         refpath=os.path.join(refpath,'raccoon_data'),
         outpath='./out_test_knn',

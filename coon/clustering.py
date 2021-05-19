@@ -30,14 +30,14 @@ warnings.filterwarnings(
 from math import nan
 import random
 
-import interface as interface
-from classification import local_KNN
+from coon import interface
+from coon.classification import local_KNN
 
-import utils.plots as plotting
-import utils.functions as functions
-import utils.trees as trees
-import utils.de as de
-from utils.option import OptionalImports
+import coon.utils.plots as plotting
+import coon.utils.functions as functions
+import coon.utils.trees as trees
+import coon.utils.de as de 
+from coon.utils.option import OptionalImports
 
 """ Search for optional libraries.  """
 

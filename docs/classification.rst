@@ -20,9 +20,9 @@ A wrapper function is available
 
 .. code-block:: python
   
-  import raccoon as rc
+  import coon
 
-  projected_membership  = rc.classify(df_to_predict, original_df, cluster_membership, 
+  projected_membership  = coon.classify(df_to_predict, original_df, cluster_membership, 
                                       refpath=r'./raccoon_data', outpath=r'./')
 
 Alternatively, the k-NN object can be initialized and the classification can be
@@ -30,7 +30,7 @@ called directly.
 
 .. code-block:: python
   
-  from raccoon.utils.classification import KNN
+  from coon.utils.classification import KNN
 
   obj = KNN(df_to_predict, original_df, cluster_membership, 
             refpath=r'./raccoon_data', outpath=r'./',

@@ -18,12 +18,12 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import utils.functions as functions
-import interface as interface
-import utils.plots as plotting
+from coon.clustering import RecursiveClustering
+from coon.classification import KNN
+import coon.interface as interface
+import coon.utils.functions as functions
+import coon.utils.plots as plotting
 
-from clustering import *
-from classification import KNN
 
 
 

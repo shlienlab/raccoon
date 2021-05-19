@@ -9,16 +9,9 @@ With pip
 
 .. code-block:: bash
 
-	pip install raccoon
-   
-or conda
+   pip install coon
 
-.. code-block:: bash
-
-	conda install raccoon
-
-
-Alternatively, to install the latest (unreleased) version 
+To install the latest (unreleased) version 
 you can download it from our GitHub repository by running 
 
 .. code-block:: bash

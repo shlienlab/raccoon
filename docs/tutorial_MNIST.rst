@@ -44,9 +44,9 @@ here we select some default values as explained in the following paragraphs.
 
 .. code-block:: python
 
-  import raccoon as rc 
+  import coon
 
-  cluster_membership, tree = rc.run(input_df, lab=labels, dim=2, popcut=50, 
+  cluster_membership, tree = coon.run(input_df, lab=labels, dim=2, popcut=50, 
                       filterfeat='t_sVD', optimizer='de', depop=25, deiter=25,  
                       neifactor=0.5, metric_clu='euclidean', metric_map='cosine',  
                       outpath='./raccoon_outputs/', savemap=True) 
@@ -161,7 +161,7 @@ A json file containing an :code:`anytree` object is also saved in output and can
 
 .. code-block:: python
 
-  import raccoon.trees as trees
+  import coon.trees as trees
   nodes = trees.load_tree('racccoon_data/tree.json')
 
 
@@ -287,7 +287,7 @@ The results will be stored in the :code:`membership` attribute.
 
 .. code-block:: python
 
-  from raccoon.utils.classification import KNN
+  from coon.utils.classification import KNN
 
   rcknn=KNN(df_to_predict, df, cluster_membership, refpath=r'./raccoon_data', outpath=r'./')
   rcknn.assign_membership()
