@@ -5,6 +5,7 @@ A. Maheshwari   @2019
 """
 
 import os
+import sys
 
 import logging
 DEBUG_R = 15
@@ -20,6 +21,7 @@ from coon.classification import KNN
 from coon.update import UpdateClusters
 import coon.interface as interface
 import coon.utils.functions as functions
+import coon.utils.trees as trees
 
 def cluster(data, **kwargs):
     """ Wrapper function to setup, create a RecursiveClustering object,

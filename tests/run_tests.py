@@ -60,20 +60,20 @@ def _create_dataset():
     """
 
 
-    x, y = make_blobs(n_samples=100, centers=5, n_features=16,
+    x, y = make_blobs(n_samples=50, centers=4, n_features=16,
             random_state=32, cluster_std=1.0)
 
-    x2, y2 = make_blobs(n_samples=50, centers=1, n_features=16,
+    x2, y2 = make_blobs(n_samples=25, centers=1, n_features=16,
             random_state=64, cluster_std=2.5, center_box=(-10, -10))
 
-    x3, y3 = make_blobs(n_samples=50, centers=1, n_features=16,
+    x3, y3 = make_blobs(n_samples=25, centers=1, n_features=16,
             random_state=128, cluster_std=5)
 
-    x4, y4 = make_blobs(n_samples=25, centers=1, n_features=16,
+    x4, y4 = make_blobs(n_samples=10, centers=1, n_features=16,
             random_state=0, cluster_std=.5, center_box=(5,5))
-    x5, y5 = make_blobs(n_samples=25, centers=1, n_features=16,
+    x5, y5 = make_blobs(n_samples=10, centers=1, n_features=16,
             random_state=1, cluster_std=.25, center_box=(6, 6))
-    x6, y6 = make_blobs(n_samples=25, centers=1, n_features=16,
+    x6, y6 = make_blobs(n_samples=10, centers=1, n_features=16,
             random_state=2, cluster_std=.25, center_box=(5.5, 5.5))
 
     
@@ -117,13 +117,8 @@ if __name__ == "__main__":
 
     if to_run['grid'] == False and (
             to_run['knn'] == True or to_run['resume'] == True):
-        print('Warning: k-NN and Resume test can\'t be run without Grid test')
-        #to_run['knn'] = False
-        #to_run['resume'] = False
-
-    #if to_run['gpu'] == False and (to_run['knn_gpu'] == True):
-    #    print('Warning: k-NN GPU can\'t be run without GPU test')
-    #    to_run['knn_gpu'] = False
+        print('Warning: k-NN and Resume test can\'t be run without Grid test.\n'+\
+		'Make sure the outputs from a past Grid test are available.')
 
     """ Test Grid. """
 
@@ -182,7 +177,7 @@ if __name__ == "__main__":
     if to_run['resume']:
         try:
             #with HidePrints():
-            resume_test(xx, './out_test_grid', labels=yy, gpu=to_run['gpu'])
+            resume_test(xx, './out_test_grid/raccoon_data', labels=yy, gpu=to_run['gpu'])
             print('Resume Test:\t\t\t'+colored('PASSED', 'green'))
             colored('PASSED', 'green')
         except Exception as e:

@@ -1,9 +1,9 @@
 {
     "grid":     true,
-    "mahal":     true,
+    "mahal":    true,
     "snn":      true,
     "louvain":  true,
-    "resume":     true,
+    "resume":   true,
     "de":       true,
     "auto":     true,
     "tsvd":     true,

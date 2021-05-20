@@ -64,8 +64,9 @@ If these do not affect your analysis, we strongly suggest activating the GPU opt
 
 ### Installation
 
-raccoon releases can be easily installed through the python standard package manager  
+<!--- raccoon releases can be easily installed through the python standard package manager  
 `pip install coon`.
+--->
 
 To install the latest (unreleased) version you can download it from this repository by running 
  

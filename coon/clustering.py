@@ -1134,9 +1134,11 @@ class RecursiveClustering:
         keepfeat = []
         decomp_opt = None
         labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
+        if self.transform is not None:
+            labs_opt = labs_opt[:len(labs_opt)-len(self.transform)]
         cparm_opt = self.interface.num.nan
         nei_opt = DataGlobal.dataset.loc[self.data_ix].shape[0]
-
+        
         if self.filterfeat in ['variance', 'MAD']:
             cut_opt = 1.0
         elif self.filterfeat == 'tSVD':
@@ -1189,8 +1191,6 @@ class RecursiveClustering:
 
                 """if data to be projected only is provided, calculate optimality
                    only on the fit data. """
-
-                # labs=None
 
                 if self.transform is not None:
 
@@ -1274,7 +1274,7 @@ class RecursiveClustering:
                         # will be added
                         compset = self.interface.set(labs)
                         compset.discard(-1)
-                        
+                                         
                         #if too many were discarded take another
                         labs = self.interface.df.Series(labs, index=pj.index)
                         ratio = labs.value_counts()
@@ -1282,7 +1282,7 @@ class RecursiveClustering:
                             ratio=ratio[-1]/labs.shape[0]
                         else:
                             ratio=0
-
+                         
                         #could be stricter/looser
                         if len(compset) > 1 and ratio<=.3:
                             sil = functions.calc_score(pj, labs,
@@ -1446,7 +1446,7 @@ class RecursiveClustering:
             
         else:
             sys.exit('ERROR: optimizer not recognized')
-           
+
         if not isinstance(labs_opt,self.interface.df.Series):
             labs_opt=self.interface.df.Series(labs_opt, index=pj_opt.index)
 
