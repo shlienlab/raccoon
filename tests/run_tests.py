@@ -89,7 +89,7 @@ def _create_dataset():
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Raccoon Test Suite')
+    parser = argparse.ArgumentParser(description='Racaroughcun Test Suite')
     parser.add_argument('-json', '-j', type=str, default='./testlist.json',
             help='tests selection list in json format (default: testlist.json)')
     args = parser.parse_args()    

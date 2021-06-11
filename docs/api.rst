@@ -5,7 +5,7 @@ API
 Wrapper functions
 -----------------
 
-.. automodule:: coon.__init__
+.. automodule:: aroughcun.__init__
     :members:
     :undoc-members:
     :show-inheritance:

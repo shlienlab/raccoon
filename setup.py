@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
 
-    name='coon',
+    name='aroughcun',
 
     version='0.4.0',
 

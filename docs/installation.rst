@@ -9,7 +9,7 @@ With pip
 
 .. code-block:: bash
 
-   pip install coon
+   pip install aroughcun
 
 To install the latest (unreleased) version 
 you can download it from our GitHub repository by running 

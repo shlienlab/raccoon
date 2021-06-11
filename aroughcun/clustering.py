@@ -30,14 +30,14 @@ warnings.filterwarnings(
 from math import nan
 import random
 
-from coon import interface
-from coon.classification import local_KNN
+from aroughcun import interface
+from aroughcun.classification import local_KNN
 
-import coon.utils.plots as plotting
-import coon.utils.functions as functions
-import coon.utils.trees as trees
-import coon.utils.de as de 
-from coon.utils.option import OptionalImports
+import aroughcun.utils.plots as plotting
+import aroughcun.utils.functions as functions
+import aroughcun.utils.trees as trees
+import aroughcun.utils.de as de 
+from aroughcun.utils.option import OptionalImports
 
 """ Search for optional libraries.  """
 

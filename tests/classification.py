@@ -5,7 +5,7 @@ F. Comitani     @2020-2021
 import os
 import pandas as pd
 
-import coon
+import aroughcun
 
 def knn_test(data, ori_data, reftab, refpath, gpu=False):
     """ k-NN classification test, euclidean grid.
@@ -21,7 +21,7 @@ def knn_test(data, ori_data, reftab, refpath, gpu=False):
     """
    
 
-    new_membership = coon.classify(data, ori_data,
+    new_membership = aroughcun.classify(data, ori_data,
         pd.read_hdf(reftab),
         refpath=os.path.join(refpath,'raccoon_data'),
         outpath='./out_test_knn',

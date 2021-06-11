@@ -13,6 +13,8 @@ and call the recursion by themselves.
 
 .. code-block:: python
 
+  from aroughcun.clustering import recursiveClustering
+  
   obj = recursiveClustering(data, **kwargs)
   obj.recurse()
   
@@ -271,7 +273,7 @@ However, auxiliary functions are available to store the hierarchy information as
 
 .. code-block:: python
   
-  import coon.utils.trees as trees
+  import aroughcun.utils.trees as trees
 
   tree = trees.buildTree(obj.clusOpt)
 
@@ -304,7 +306,7 @@ with the wrapper function :code:`resume`. This takes the same inputs as :code:`c
 
 .. code-block:: python
   
-  import raccoon as rc
+  import aroughcun as rc
 
   cluster_membership, tree = rc.resume(data, lab=labels, dim=2, popcut=20, maxdepth=3,
                                      chkpath='path_to_original_run', savemap=True)

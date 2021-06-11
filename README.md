@@ -9,7 +9,7 @@
 [![Build Status](https://img.shields.io/travis/com/fcomitani/raccoon/main?style=flat-square)](https://travis-ci.com/fcomitani/raccoon)
 [![Documentation Status](https://readthedocs.org/projects/coon/badge/?version=latest&style=flat-square)](https://coon.readthedocs.io/en/latest/?badge=latest)
 
-`raccoon` (shortened as `coon`) is a python 3 package for recursive clustering automatization. 
+RACCOON (`aroughcun` in Algonquinian) is a python 3 package for recursive clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
 
 This library includes
@@ -20,7 +20,7 @@ This library includes
 * k-NN classification
 * GPU implementation with RAPIDS
 
-Detailed documentation, API references and tutorials can be found at this [link](https://coon.readthedocs.io/en/latest/).
+Detailed documentation, API references and tutorials can be found at this [link](https://aroughcun.readthedocs.io/en/latest/).
 
 ### Why recursion?
 
@@ -65,7 +65,7 @@ If these do not affect your analysis, we strongly suggest activating the GPU opt
 ### Installation
 
 <!--- raccoon releases can be easily installed through the python standard package manager  
-`pip install coon`.
+`pip install aroughcun`.
 --->
 
 To install the latest (unreleased) version you can download it from this repository by running 
@@ -79,9 +79,9 @@ To install the latest (unreleased) version you can download it from this reposit
 Given an `input` dataset in pandas-like format (samples X features), the `run` function will
 automatically set up a recursive clusters search with just some basic options. 
 
-    import coon
+    import aroughcun as rc
 
-    cluster_membership, tree = coon.cluster(input, dim=2, popcut=25,
+    cluster_membership, tree = rc.cluster(input, dim=2, popcut=25,
                                      optimizer='auto', dynmesh=True,
                                      metric_clu='cosine', metric_map='cosine',
                                      savemap=True, chk=True,
