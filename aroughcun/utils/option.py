@@ -10,3 +10,4 @@ class OptionalImports:
         libraries and their imports """
 
     hdbscan = False
+    feather = False

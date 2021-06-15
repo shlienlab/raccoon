@@ -45,6 +45,7 @@ Optional dependencies include
 
 ```
 - hdbscan
+- feather
 - rapids (see below)
 ```
 
@@ -59,7 +60,7 @@ raccoon can be run on GPU by leveraging RAPIDS libraries. Since these libraries 
 - cugraph v0.18
 ```
 
-Currently, there are some major (hopefully temporary) limitations in this implementation. UMAP can only run with euclidean distance, DBSCAN is the only cluster identification algorithm available.
+Currently, there are some major (hopefully temporary) limitations in this implementation (e.g. UMAP can only run with euclidean distance).
 If these do not affect your analysis, we strongly suggest activating the GPU option, especially for larger datasets that could lead to exceptionally cumbersome runs. Alternatively, this option should be used for exploratory runs only.
 
 ### Installation

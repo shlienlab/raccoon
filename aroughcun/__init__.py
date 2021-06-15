@@ -147,8 +147,13 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
 
     old_clus=[]
     for filename in os.listdir(os.path.join(refpath,'chk')):
-         old_clus.append(intf.df.read_hdf(os.path.join(refpath,'chk',filename))\
-            .reindex(data.index))
+        try:
+            old_clus.append(intf.df.read_feather(os.path.join(refpath,'chk',filename))\
+		.set_index('index')\
+                .reindex(data.index))
+        except:	
+            old_clus.append(intf.df.read_hdf(os.path.join(refpath,'chk',filename))\
+                .reindex(data.index))
     
     if len(old_clus) == 0:
         sys.exit('ERROR: there was a problem loading the checkpoint files, make sure the file path is correct.\n'+\

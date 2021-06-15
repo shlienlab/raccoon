@@ -47,7 +47,13 @@ try:
 except ImportError:
     pass
 
-__version__ = "0.3.0"
+try:
+    import feather
+    OptionalImports.feather = True
+except ImportError:
+    pass
+
+__version__ = "0.4.0"
 
 class DataGlobal:
 
@@ -1612,11 +1618,15 @@ class RecursiveClustering:
         if self.chk:
             
             if clus_tmp is not None:
-                #change to feather
-                clus_tmp.to_hdf(
-                    os.path.join(
-                        self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.h5'),
-                    key='df')
+                if OptionalImports.feather:
+                    clus_tmp.reset_index().to_feather(
+                        os.path.join(
+                            self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.fe'))
+            else:
+                    clus_tmp.to_hdf(
+                        os.path.join(
+                            self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.h5'),
+                            key='df')
             
         """ Dig within each subcluster and repeat. """
 
