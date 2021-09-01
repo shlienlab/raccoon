@@ -1411,10 +1411,18 @@ class RecursiveClustering:
                 if not isinstance(nnrange, list):
                     nnrange = [nnrange]
 
-            if self.neirange != 'logspace' and self.neicap is not None:
+            #check 
+            logging.debug('neihgbours range:')
+            logging.debug(nnrange)
+
+            #if self.neirange != 'logspace' and self.neicap is not None:
+            if self.neicap is not None:
                 nnrange = sorted(list(self.interface.set(
                     [x if x <= self.neicap else self.neicap for x in nnrange])))
-
+                
+            nnrange = sorted(list(self.interface.set(
+                [x if x < numpoints else numpoints-1 for x in nnrange])))
+                
         else:
 
             nnrange = []

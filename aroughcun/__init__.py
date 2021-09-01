@@ -16,12 +16,14 @@ import warnings
 
 import csv
 
+from aroughcun._version import __version__
 from aroughcun.clustering import RecursiveClustering, DataGlobal
 from aroughcun.classification import KNN
 from aroughcun.update import UpdateClusters
 import aroughcun.interface as interface
 import aroughcun.utils.functions as functions
 import aroughcun.utils.trees as trees
+
 
 def cluster(data, **kwargs):
     """ Wrapper function to setup, create a RecursiveClustering object,

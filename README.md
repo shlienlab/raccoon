@@ -45,7 +45,7 @@ Optional dependencies include
 
 ```
 - hdbscan
-- feather
+- feather-format
 - rapids (see below)
 ```
 

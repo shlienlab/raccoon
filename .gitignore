@@ -141,5 +141,5 @@ backups/
 pylint*
 
 # Personal tests
-test_suite/cputest/
-test_suite/gputest/
+tests/cpu/
+tests/gpu/
