@@ -7,7 +7,7 @@
 [![Licence](https://img.shields.io/github/license/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/blob/main/LICENSE)
 [![GitHub top language](https://img.shields.io/github/languages/top/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/search?l=python)
 [![Build Status](https://img.shields.io/travis/com/fcomitani/raccoon/main?style=flat-square)](https://travis-ci.com/fcomitani/raccoon)
-[![Documentation Status](https://readthedocs.org/projects/coon/badge/?version=latest&style=flat-square)](https://coon.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest&style=flat-square)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
 
 RACCOON (`aroughcun` in Algonquinian) is a python 3 package for recursive clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
