@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../aroughcun/utils'))
 # -- Project information -----------------------------------------------------
 
 project = 'raccoon'
-copyright = '2021, Federico Comitani'
+copyright = '2019-2021, Federico Comitani'
 author = 'Federico Comitani'
 
 # The full version, including alpha/beta/rc tags

@@ -1,16 +1,16 @@
 <img src="docs/figs/logo_rc.png" width=400, padding=100>
 
 
-## Recursive Algorithm for Coarse-to-fine Clusters OptimizatiON
-### v 0.4
+## Robust Adaptive Coarse-to-fine Clusters OptimizatiON
+### v 0.4.1
 
 [![Licence](https://img.shields.io/github/license/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/blob/main/LICENSE)
 [![GitHub top language](https://img.shields.io/github/languages/top/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/search?l=python)
 [![Build Status](https://img.shields.io/travis/com/fcomitani/raccoon/main?style=flat-square)](https://travis-ci.com/fcomitani/raccoon)
 [![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest&style=flat-square)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
 
-RACCOON (`aroughcun` in Algonquinian) is a python 3 package for recursive clustering automatization. 
-It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated recursively within each cluster identified.
+RACCOON (`aroughcun` in Algonquinian) is a python 3 package for top-down clustering automatization. 
+It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated iteratively within each cluster identified.
 
 This library includes
 
@@ -22,13 +22,13 @@ This library includes
 
 Detailed documentation, API references and tutorials can be found at this [link](https://aroughcun.readthedocs.io/en/latest/).
 
-### Why recursion?
+### Why iterating the optimization?
 
 When working with complex high-dimensionality datasets, one may be interested in data relationships at different hierarchical levels. In a pet image recognition project, one may want to distinguish not only cats from dogs but also different breeds.
 While several hierarchical clustering methods are available, they generally tend to ignore the fact that optimal parameters in a typical clustering analysis are dependent on the subset of data being considered, and work instead on a single set space. 
 The optimal dimensionality for separating dog breeds may lay on a different lower-dimensionality manifold than the one that allows separating distinct species, while features that may be irrelevant in distinguishing a cat from a dog may hold considerable information at the breeds level. 
 For a proper hierarchal analysis, the choice of clustering parameters should be repeated at each iteration, accounting for the new range and shape of the data subsets.
-`raccoon` identifies the proper clustering parameters at each hierarchical level, by repeating the optimization recursively and independently for each identified cluster.  
+`raccoon` identifies the proper clustering parameters at each hierarchical level, by repeating the optimization independently for each identified cluster.  
 
 ### Dependencies
 
@@ -78,7 +78,7 @@ To install the latest (unreleased) version you can download it from this reposit
 ### Basic usage
 
 Given an `input` dataset in pandas-like format (samples X features), the `run` function will
-automatically set up a recursive clusters search with just some basic options. 
+automatically set up a clusters search with just some basic options. 
 
     import aroughcun as rc
 

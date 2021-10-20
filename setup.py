@@ -12,9 +12,9 @@ setup(
 
     name='aroughcun',
 
-    version=version
+    version=version,
 
-    description='Recursive clustering in Python',
+    description='Scale-adaptive clustering in Python',
     long_description=long_description,
 
     url='https://github.com/fcomitani/raccoon',
@@ -33,14 +33,14 @@ setup(
         'Programming Language :: Python :: 3.7'
 		],
 
-    keywords='clustering recursion dimension-reduction k-NN hiearchical-clustering optimal-clusters differential-evolution',
+    keywords='clustering scale-adaptive dimension-reduction k-NN hiearchical-clustering optimal-clusters differential-evolution',
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
     install_requires=['numpy>=1.19.5',
 		'pandas>=1.1.3',
 		'scikit-learn>=0.22.2.post1',
-		'scikit-network>=0.20.0',
+		'scikit-network==0.20.0',
         'numba>=0.52.0',
 		'umap-learn>=0.3.9',
 		'psutil>=5.7.3',

@@ -1,6 +1,6 @@
 """
 Utility functions for RACCOON
-(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+(Robust Adaptive Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2018-2021
 A. Maheshwari   @2019
 """
@@ -406,7 +406,13 @@ def calc_score(points, labels, score, metric_clu, interface):
             points, labels, metric=metric_clu)
     elif score == 'dunn':
         return interface.dunn(points, labels, metric=metric_clu)
-
+    else:
+        if hasattr(score, '__call__'):
+    
+            """ User defined scoring function. """
+            
+            return score(points, labels, metric=metric_clu)
+        
     sys.exit('ERROR: score not recognized')
 
 

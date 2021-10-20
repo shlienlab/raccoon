@@ -9,16 +9,16 @@ it takes all arguments available to the clustering object and will output the
 membership assignment.
 
 To have more control over the algorithm, one can initialize the clustering object
-and call the recursion by themselves.
+and call the iteration by themselves.
 
 .. code-block:: python
 
-  from aroughcun.clustering import recursiveClustering
+  from aroughcun.clustering import iterativeClustering
   
-  obj = recursiveClustering(data, **kwargs)
-  obj.recurse()
+  obj = IterativeClustering(data, **kwargs)
+  obj.iterate()
   
-:code:`recursiveClustering` takes an initial matrix-like object 
+:code:`IterativeClustering` takes an initial matrix-like object 
 (rows as samples, columns as features), and some optional flags,
 including a matching list of labels 
 for plotting (:code:`labs`).
@@ -31,15 +31,15 @@ and assignment of the hierarchy of identified classes.
 
   obj.clusOpt
 
-The numerous flags available to :code:`recursiveClustering` 
+The numerous flags available to :code:`IterativeClustering` 
 allows for great flexibility in the clustering analysis.
 
 Among these we find
 
 ================  ================================================================= 
 :code:`maxdepth`  sets the maximum depth at which the clustering is allowed to go,
-                  if :code:`None` (default) the recursion will proceed until other 
-                  conditions for its termination are met.
+                  if :code:`None` (default) the iterative process will proceed until 
+                  other conditions for its termination are met.
 :code:`savemap`   if active, trained maps, preprocessing status and feature filters 
                   will be saved to disk
 :code:`outpath`   set the path to a directory where all the plots and output data 
@@ -53,7 +53,7 @@ Normalization
 ==============
 
 As a first step in the clustering analysis, the data can be normalized by activating the
-:code:`norm` flag in the recursive clustering object. It takes default :code:`sklearn`
+:code:`norm` flag in the iterative clustering object. It takes default :code:`sklearn`
 norms, and is set by default at :code:`'l2'`. If :code:`None`, no normalization will be applied before the features removal step.
 
 
@@ -88,7 +88,7 @@ should be the default choice when resources for a detailed search are available.
 Dynamic Mesh
 ------------
 
-The recursion can easily become cumbersome with large datasets.
+The iterative search can easily become cumbersome with large datasets.
 Decreasing the number of explored points during the optimization, however, may hinder
 the convergence towards a point of absolute optimality and lead to the loss
 of important details.
@@ -126,10 +126,15 @@ generating a negative score are automatically discarded.
 *Warning*: the current implementation of the Dunn Index is not
 well optimized, avoid it unless necessary.
 
+Alternatively, a custom scoring function can be provided. It must have  compatible
+format, following that o of scikit-learn's :code: `silhouette_score`. It should
+take as inputs a feature array and an array-like list of labels for each sample. 
+It should also accept a scikit-compatible metric with the :code: `metric` flag.
+
 Population Cutoff
 -----------------
 
-The recursion will be terminated under two conditions: if the optimization found a 
+The iterative search will be terminated under two conditions: if the optimization found a 
 single cluster as the best outcome or if the population lower bound is met.
 The latter can be set with :code:`popcut` and should be kept as high as possible to avoid
 atomization of the clusters, but low enough to allow for the identification of subclasses.
@@ -247,7 +252,7 @@ Occasionally you may want to train your clusters only on a subset of the data, w
 use them to classify some held-out set.
 
 By setting :code:`transform` you can ask the algorithm to run each one of the clustering steps
-recursively only on a given subset, while still forcing the membership assignment with k-NN 
+iteratively only on a given subset, while still forcing the membership assignment with k-NN 
 to the rest of the data.
 
 The full dataset has to be given as input, including the data to project, but not used in the training.

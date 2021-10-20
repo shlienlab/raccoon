@@ -1,6 +1,6 @@
 """
 Plotting functions for RACCOON
-(Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+(Robust Adaptive Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2018-2021
 """
 

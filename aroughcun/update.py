@@ -18,7 +18,7 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from aroughcun.clustering import RecursiveClustering
+from aroughcun.clustering import IterativeClustering
 from aroughcun.classification import KNN
 import aroughcun.interface as interface
 import aroughcun.utils.functions as functions
@@ -70,7 +70,7 @@ class UpdateClusters:
                 clustering level (default '0').
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
             gpu (bool): activate GPU version (requires RAPIDS).
-            kwargs (dict): keyword arguments for RecursiveClustering.
+            kwargs (dict): keyword arguments for IterativeClustering.
         """
 
         self.start_time = time.time()
@@ -307,10 +307,10 @@ class UpdateClusters:
             logging.info('Clustering score deteriorates below tolerance, '+
                     'clusters will be rebuilt.')
 
-            obj = RecursiveClustering(self.interface.df.concat([self.ori_data.loc[ori_samples.index],self.data.loc[samples.index]]), 
+            obj = IterativeClustering(self.interface.df.concat([self.ori_data.loc[ori_samples.index],self.data.loc[samples.index]]), 
                 depth=clu_name.count('_'), name=clu_name+'u', score=self.score, metric_clu=self.metric_clu, 
                 outpath=self.outpath, debug=self.debug, gpu=self.gpu, **self.kwargs)
-            obj.recurse()
+            obj.iterate()
 
             return obj.clus_opt
        

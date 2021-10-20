@@ -1,5 +1,5 @@
 """
-Recursive clustering classes and functions for RACCOON
+Clustering classes and functions for RACCOON
 F. Comitani     @2018-2021
 A. Maheshwari   @2019
 """
@@ -64,9 +64,9 @@ class DataGlobal:
     labels = None
 
 
-class RecursiveClustering:
+class IterativeClustering:
 
-    """ To perform recursive clustering on a samples x features matrix. """
+    """ To perform top-down iterative  clustering on a samples x features matrix. """
 
     def __init__(self, data, lab=None, transform=None, supervised=False, 
                 supervised_weight=0.5, dim=2, epochs=5000,
@@ -84,7 +84,7 @@ class RecursiveClustering:
         Args:
             data (matrix, pandas dataframe or pandas index): if first call (_user==True), input data
                 in pandas dataframe-compatible format (samples as row, features as columns),
-                otherwise index of samples to carry downstream during the recursion calls.
+                otherwise index of samples to carry downstream during the iteration calls.
             lab (list, array or pandas series): list of labels corresponding to each sample
                 (for plotting only).
             transform (list of Pandas DataFrame indices): list of indices of the samples in the
@@ -153,8 +153,11 @@ class RecursiveClustering:
                 if list, each value will be subsequently used at the next iteration until
                 all values are exhausted
                 (works only with optimizer='de', default 10).
-            score (string): objective function of the optimization (currently only 'dunn'
-                and 'silhouette' are available, default 'silhouette').
+            score (string or function): objective function of the optimization, to be provided as
+                a string (currently only 'dunn' and 'silhouette' are available, default 'silhouette').
+                Alternatively, a scoring function can be provided, it must take a feature array,
+                an array-like list of labels and a metric, in the same format as 
+                sklearn.metrics.silhouette_score.
             norm (string): normalization factor before dimensionality reduction (default None),
                 not needed if metric_map is cosine
                 if None, don't normalize.
@@ -183,7 +186,7 @@ class RecursiveClustering:
             name (string): name of current clustering level (should be left as default, '0',
                 unless continuing from a previous run).
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
-            maxdepth (int): Specify the maximum number of recursion iterations, if None (default),
+            maxdepth (int): Specify the maximum number of search iterations, if None (default),
                 keep going while possible.
                 0 stops the algorithm immediately, 1 stops it after the first level.
             savemap (boolean): if active, saves the trained maps to disk (default is True).
@@ -192,11 +195,11 @@ class RecursiveClustering:
                 (default is False). Warning: this option is unstable and not reccomended.
             outpath (string): path to the location where outputs will be saved (default,
                 save to the current folder).
-            depth (integer): current depth of recursion (should be left as default
+            depth (integer): current depth of search (should be left as default
                 0, unless continuing from a previous run).
             chk (bool): save checkpoints (default False, reccomended for big jobs).
             gpu (bool): Activate GPU version (requires RAPIDS).
-            _user (bool): Boolean switch to distinguish initial user input versus recursion
+            _user (bool): Boolean switch to distinguish initial user input versus iteration
                 calls, do not change.
         """
 
@@ -453,6 +456,14 @@ class RecursiveClustering:
         logging.info(
             "Random seed is: {:d}".format(int(self._seed)))
 
+        if hasattr(self.score, '__call__'):
+            scorename = 'user defined'
+        else:
+            scorename = self.score
+
+        logging.info(
+            "Scoring function is: "+scorename)
+
 
     def _features_removal(self, cutoff):
         """ Either remove features with low variance/MAD, or high correlation
@@ -546,7 +557,7 @@ class RecursiveClustering:
                         is properly set.\nIf you see this error please contact us on GitHub!')
 
     def _level_check(self):
-        """ Stop the recursion if a given maxdepth parameter has been reached. """
+        """ Stop the iterative search if a given maxdepth parameter has been reached. """
 
         if self.maxdepth is not None:
             #self.maxdepth -= 1
@@ -558,8 +569,8 @@ class RecursiveClustering:
 
     def _plot(self, n_nei, proj, cut_opt,
               keepfeat, decomposer, clus_opt, scoreslist):
-        """ Produce a number of plots to visualize the clustering outcome at each stage of t
-        he recursion.
+        """ Produce a number of plots to visualize the clustering outcome at each stage of 
+        the iterative search.
 
         Args:
             n_nei (integer): optimal number of nearest neighbors (used in UMAP)
@@ -1554,8 +1565,8 @@ class RecursiveClustering:
         return sil_opt, labs_opt, cparm_opt, num_clus_opt, nei_opt, pj_opt,\
                cut_opt, map_opt, keepfeat, decomp_opt, reassigned, scoreslist
 
-    def recurse(self):
-        """ Recursively clusters the input data, by first optimizing the parameters,
+    def iterate(self):
+        """ Iteratively  clusters the input data, by first optimizing the parameters,
             binarizing the resulting labels, plotting and repeating. 
          """
 
@@ -1680,7 +1691,7 @@ class RecursiveClustering:
                 logging.info('Parameters granilarity change ' +
                              '[DE iterations: {:d}'.format(int(self.deiter[0])) + ']')
 
-            deep = RecursiveClustering(sel_new.index, lab=None, transform=to_transform,
+            deep = IterativeClustering(sel_new.index, lab=None, transform=to_transform,
                 dim=self.dim, epochs=self.epochs, lr=self.lr, neirange=self.neirange,
                 neipoints=self.neipoints, neicap=self.neicap, metric_map=self.metric_map,
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
@@ -1693,7 +1704,7 @@ class RecursiveClustering:
                 outpath=self.outpath, depth=self._depth+1, 
                 chk=self.chk, gpu=self.gpu, _user=False)
 
-            deep.recurse()
+            deep.iterate()
 
             if deep.clus_opt is not None:
 

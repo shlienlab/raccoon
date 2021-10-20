@@ -5,7 +5,7 @@ Classification
 
 raccoon provides an implementation of a 
 basic distance-weighted k-nearest neighbours classifier adapted to
-take as input the maps trained with our recursive clustering. 
+take as input the maps trained with our scale-adaptive clustering. 
 
 Each input datapoint follows the same preprocessing steps as 
 the original dataset and it's projected onto the embedded space 
@@ -41,9 +41,9 @@ called directly.
   
 The k-NN run requires the dataset to be predicted,
 the original dataset used to build the clusters, their membership
-table (as output by :code:`recursive_clustering`) 
+table (as output by :code:`cluster`) 
 and the path to the reference folder (:code:`raccoon_data`) 
 containing the trained maps. It also takes an output folder for logging purposes, a debugging mode switch and a GPU switch.
 
 The output is in the same one-hot-encoded matrix format
-(rows as samples, columns classes) as the recursive clustering output table.
+(rows as samples, columns classes) as the iterative clustering output table.

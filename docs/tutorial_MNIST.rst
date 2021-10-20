@@ -35,10 +35,10 @@ we reformat the input and its labels into :code:`pandas` object, the library can
 but :code:`pandas` data frames will make our life easier. We also fix the random state seed for debugging purposes.
 
 
-Recursive clustering
+Iterative Clustering
 --------------------
 
-As our input is ready to go, we can now use it to run our first recursive clustering instance. Details on all the flags available to the :code:`run` function can be found in the manual, 
+As our input is ready to go, we can now use it to run our first iterative clustering instance. Details on all the flags available to the :code:`run` function can be found in the manual, 
 here we select some default values as explained in the following paragraphs. 
 
 
@@ -46,7 +46,7 @@ here we select some default values as explained in the following paragraphs.
 
   import aroughcun as rc
 
-  cluster_membership, tree = rc.run(input_df, lab=labels, dim=2, popcut=50, 
+  cluster_membership, tree = rc.cluster(input_df, lab=labels, dim=2, popcut=50, 
                       filterfeat='t_sVD', optimizer='de', depop=25, deiter=25,  
                       neifactor=0.5, metric_clu='euclidean', metric_map='cosine',  
                       outpath='./raccoon_outputs/', savemap=True) 
@@ -86,11 +86,6 @@ output folder. Subdirectories will be automatically built to store plots and dat
 If :code:`outputpath` is not explicitly given, the directory where the script is run will be set as home.
 We also activate :code:`savemap`, asking the algorithm to save the trained UMAP objects. These can require quite a bit of disk space but will come in handy when we build the nearest-neighbour classifier.
 
-.. Manually running the clustering, to add in another section
-    obj = RecursiveClustering(data, **kwargs) 
-    obj.recurse()
-  obj.clus_opt
-
 A hierarchical tree object, :code:`tree`, will also be returned in the output. It is formatted 
 as a list of nodes with information on the hierarchy, the parent-child relationship
 between classes and a few extra useful properties.
@@ -126,14 +121,14 @@ Or occasionally
   2020-06-16 16:20:37,253 INFO     Going deeper within Cluster # 0_8 [depth: 0]
   2020-06-16 16:20:37,253 INFO     Population too small!
 
-if the algorithm met one of the conditions to stop the recursion; in this case, a too-small population.
+if the algorithm met one of the conditions to stop the search; in this case, a too-small population.
 To prevent the user from being inundated by information, most of this data produced by the optimization steps is set as debug only. 
 
 *Note* the :code:`debug` flag allows the script to be run in debug mode. This will fix the random seed for reproducibility and will add extra information to the log file.
 
 As the run proceeds, a comma-separated file :code:`paramdata.csv` should appear in the data folder and be periodically updated. 
 This file contains a table summarizing the optimized parameters, scores and other information
-regarding each recursion step.
+regarding each iteration.
 
 
 Outputs
@@ -165,11 +160,11 @@ A json file containing an :code:`anytree` object is also saved in output and can
   nodes = trees.load_tree('raccaroughcun_data/tree.json')
 
 
-In the plot folder, we find two-dimensional projections of our dataset at different steps of the recursion. They are colour-coded by cluster or by label (if provided). 
+In the plot folder, we find two-dimensional projections of our dataset at different steps of the search. They are colour-coded by cluster or by label (if provided). 
 Depending on which parameters were selected, you may also find other plots justifying the choice of clustering or feature filtering parameters.
 
 In the data folder, we find the trained UMAP embeddings and feature filter functions (in :code:`pickle` format), useful to resume or repeat parts of the process.
-And the coordinates of the data points in the reduced space as pandas data frame (in :code:`hdf5` format) for plotting purposes. One of each file is produced at each recursion step
+And the coordinates of the data points in the reduced space as pandas data frame (in :code:`hdf5` format) for plotting purposes. One of each file is produced at each iteration
 and the nomenclature follows that of the output membership assignment table: the prefix :code:`'0'` relates to embedding and files at the highest level of the hierarchy, 
 :code:`'0_0', '0_1', ...` to the data within its children. 
 
@@ -229,7 +224,7 @@ contain only a specific digit type, but are rather composite clusters.
 
 :code:`'0_1'` is made up of a group of sevens, and overlapping clouds of nines and fours, while :code:`'0_2'` contains threes, fives and eights.
 The commonality of their shapes (e.g. the latter are all characterized by a rounded stroke at the bottom)
-justifies their inclusion in a single class. However, the recursion allows us to dig deeper and see if they separate at the next level, highlighting the importance
+justifies their inclusion in a single class. However, the iterative search allows us to dig deeper and see if they separate at the next level, highlighting the importance
 of having a hierarchy of classes.
 
 For the sake of brevity, we will only focus on :code:`'0_2'`. At the next level, we see that eights (in yellow at the bottom) are gathered in

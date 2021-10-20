@@ -17,7 +17,7 @@ import warnings
 import csv
 
 from aroughcun._version import __version__
-from aroughcun.clustering import RecursiveClustering, DataGlobal
+from aroughcun.clustering import IterativeClustering, DataGlobal
 from aroughcun.classification import KNN
 from aroughcun.update import UpdateClusters
 import aroughcun.interface as interface
@@ -26,12 +26,12 @@ import aroughcun.utils.trees as trees
 
 
 def cluster(data, **kwargs):
-    """ Wrapper function to setup, create a RecursiveClustering object,
-	run the recursion and logging.
+    """ Wrapper function to setup, create a IterativeClustering object,
+	run the top-down iterations  and logging.
 
     Args:
 	data (pandas dataframe): dataframe with sampels as rows and features as columns.
-	kwargs (dict): keyword arguments for RecursiveClustering. 
+	kwargs (dict): keyword arguments for IterativeClustering. 
 
     Returns:
         clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
@@ -54,10 +54,10 @@ def cluster(data, **kwargs):
 
     logging.info('Starting a new clustering run')
     
-    """ Run recursive clustering algorithm. """
+    """ Run iterative clustering algorithm. """
 
-    obj = RecursiveClustering(data, **kwargs)
-    obj.recurse()
+    obj = IterativeClustering(data, **kwargs)
+    obj.iterate()
 
     """ Save the assignment to disk and buil tree. """
 
@@ -89,7 +89,7 @@ def cluster(data, **kwargs):
 
 def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
 
-    """ Wrapper function to resume a RecursiveClustering run 
+    """ Wrapper function to resume a IterativeClustering run 
         from checkpoint files.
 
     Args:
@@ -98,7 +98,7 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
                           (default subdirectory raaroughcun_data of current folder).
         lab (list, array or pandas series): list of labels corresponding to each sample
                                             (for plotting only).
-        kwargs (dict): keyword arguments for KNN and RecursiveClustering. 
+        kwargs (dict): keyword arguments for KNN and IterativeClustering. 
 
     Returns:
         new_clus (pandas dataframe): one-hot-encoded clusters membership of the 
@@ -205,7 +205,7 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
     
     else:
 
-        """ Run recursive clustering algorithm. """
+        """ Run iterative clustering algorithm. """
 
         for x in to_run:
             logging.info('Resuming cluster: '+x)
@@ -216,8 +216,8 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
             if lab is not None:
                 clulab = lab.loc[cludata.index]
 
-            obj = RecursiveClustering(cludata, lab=clulab, depth=clulevel, name=x, **kwargs)
-            obj.recurse()
+            obj = IterativeClustering(cludata, lab=clulab, depth=clulevel, name=x, **kwargs)
+            obj.iterate()
             
             if obj.clus_opt is not None:
                 new_clus.append(obj.clus_opt.astype(int))
@@ -262,7 +262,7 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
 
 def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs):
     """ Wrapper function to classify new data with KNN on
-        a previous RecursiveClustering output.
+        a previous IterativeClustering output.
 
     Args:
         new_data (matrix or pandas dataframe): data to classify in 
@@ -316,7 +316,7 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
 def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath='./raccoon_data', 
             outpath='./', **kwargs):
     """ Wrapper function to update
-        a previous RecursiveClustering output with new data.
+        a previous IterativeClustering output with new data.
         Runs KNN furst on the new data points to identify the closest matching
         clusters. These points are then added to each cluster along the heirarchy
         and the objective function is recalculated. If this score is lowered
@@ -339,7 +339,7 @@ def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath=
             stored (default subdirectory raaroughcun_data of current folder).
         outpath (string): path to the location where output files will be saved
             (default current folder).
-        kwargs (dict): keyword arguments for KNN and RecursiveClustering.
+        kwargs (dict): keyword arguments for KNN and IterativeClustering.
 
     Returns:
         (pandas dataframe): one-hot-encoded perturbed clusters membership.
