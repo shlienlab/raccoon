@@ -7,6 +7,7 @@ A. Maheshwari   @2019
 import os
 import sys
 
+import uuid
 import logging
 DEBUG_R = 15
 
@@ -23,7 +24,6 @@ from aroughcun.update import UpdateClusters
 import aroughcun.interface as interface
 import aroughcun.utils.functions as functions
 import aroughcun.utils.trees as trees
-
 
 def cluster(data, **kwargs):
     """ Wrapper function to setup, create a IterativeClustering object,
@@ -50,7 +50,7 @@ def cluster(data, **kwargs):
 
     """ Setup folders and files, remove old data if present. """
 
-    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'])
+    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'], suffix='_'+str(uuid.uuid1()))
 
     logging.info('Starting a new clustering run')
     
@@ -176,7 +176,8 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
 
     """ Setup logging."""
 
-    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'], delete=False)
+    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'], suffix='_res_'+str(uuid.uuid1()),
+        delete=False)
 
     logging.info('Resuming clustering run.')
 
@@ -287,7 +288,7 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
 
     """ Setup logging."""
 
-    functions.setup(kwargs['outpath'], False, False, False, suffix='_knn',
+    functions.setup(kwargs['outpath'], False, False, False, suffix='_knn_'+str(uuid.uuid1()),
         delete=False)
 
     """ Run classifier. """
@@ -354,7 +355,7 @@ def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath=
 
     """ Setup logging."""
 
-    functions.setup(outpath, True, kwargs['chk'], kwargs['RPD'], suffix='_upt',
+    functions.setup(outpath, True, kwargs['chk'], kwargs['RPD'], suffix='_upt_'+str(uuid.uuid1()),
         delete=False)
 
     logging.info('Starting clusters perturbation run.')

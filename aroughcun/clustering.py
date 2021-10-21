@@ -36,7 +36,8 @@ from aroughcun.classification import local_KNN
 import aroughcun.utils.plots as plotting
 import aroughcun.utils.functions as functions
 import aroughcun.utils.trees as trees
-import aroughcun.utils.de as de 
+import aroughcun.optim.de as de 
+import aroughcun.utils.classes as classes
 from aroughcun.utils.option import OptionalImports
 
 """ Search for optional libraries.  """
@@ -69,13 +70,15 @@ class IterativeClustering:
     """ To perform top-down iterative  clustering on a samples x features matrix. """
 
     def __init__(self, data, lab=None, transform=None, supervised=False, 
-                supervised_weight=0.5, dim=2, epochs=5000,
-                lr=0.05, neirange='logspace', neipoints=25, neifactor=1.0,
-                neicap=250, metric_map='cosine', metric_clu='euclidean', popcut=50,
+                supervised_weight=0.5, dim=2, epochs=5000, lr=0.05, 
+                neirange='logspace', neipoints=25, neifactor=1.0,
+                neicap=250, skip_equal_dim=True,
+                metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
                 optimizer='grid', depop=10, deiter=10, score='silhouette',
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
-                clusterer='DBSCAN', cparmrange='guess', minclusize=10, outliers='ignore',
+                clu_algo='SNN', cparmrange='guess', minclusize=10, 
+                outliers='ignore', noise_ratio=.3,
                 name='0', debug=False, maxdepth=None, savemap=True, RPD=False,
                 outpath="", depth=0, chk=False, 
                 gpu=False, _user=True):
@@ -97,8 +100,8 @@ class IterativeClustering:
             if true, use labels for supervised dimensionality reduction with
                 UMAP (default False, works only if lab !=None).
             dim (integer): number of dimensions of the target projection (default 2).
-            epochs (integer): number of UMAP epochs.
-            lr (float): UMAP learning rate.
+            epochs (integer): number of UMAP epochs (default 5000).
+            lr (float): UMAP learning rate (default 0.05).
             neirange (array, list of integers or string): list of nearest neighbors values to be
                 used in the search;
                 if 'logspace' take an adaptive range based on the dataset size at each iteration
@@ -113,6 +116,9 @@ class IterativeClustering:
             neifactor (float): scaling factor for 'logspace' and 'sqrt' selections in neirange
             neicap (int): maximum number of neighbours (reccomended with low-memory systems,
                 default 250).
+            skip_equal_dim (bool): if True, whenever the target dimensionality corresponds
+                to the dimensionality of the input data, the dimensionality reduction step will
+                be skipped (saves time, default True).
             metric_map (string): metric to be used in UMAP distance calculations (default cosine).
             metric_clu (string): metric to be used in clusters identification and clustering score
                 calculations (default euclidean)
@@ -168,9 +174,9 @@ class IterativeClustering:
             minmesh (int): minimum number of points for the dynmesh option (hit at 50 samples,
                 default 4, must be >3 if optimizer='de'),
                 this is a single dimension, the actuall mesh will contain n*n points.
-            clusterer (string): selects which algorithm to use for clusters identification.
-                Choose among 'DBSCAN' (default), 'SNN' (Shared Nearest Neighbours DBSCAN),  HDBSCAN,
-                or 'louvain' (Louvain community detection with SNN).
+            clu_algo (string): selects which algorithm to use for clusters identification.
+                Choose among 'DBSCAN', 'SNN' (Shared Nearest Neighbours DBSCAN, default),  
+                'HDBSCAN', or 'louvain' (Louvain community detection with SNN).
             cparmrange (array, list) or string: clusters identification parameter range to
                 be explored (default 'guess').
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it
@@ -183,6 +189,9 @@ class IterativeClustering:
                 if 'ignore' discard them
                 if 'reassign' try to assign them to other clusters with knn if more than 10%
                 of the total population was flagged.
+            noise_ratio (float): maximum percentage cutoff of samples that can be labelled as noise
+                 before discarding the result (relevant only for clustering algorithms that label border 
+                 points as noise, default .3).
             name (string): name of current clustering level (should be left as default, '0',
                 unless continuing from a previous run).
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
@@ -275,6 +284,7 @@ class IterativeClustering:
         self.neipoints = neipoints
         self.neifactor = neifactor
         self.neicap = neicap
+        self.skip_equal_dim = skip_equal_dim
         self.metric_map = metric_map
         self.metric_clu = metric_clu
         self.mparams = {}
@@ -298,20 +308,21 @@ class IterativeClustering:
         self.maxmesh = maxmesh
         self.minmesh = minmesh
 
-        self.clusterer = clusterer
+        self.clu_algo = clu_algo
         self.cparmrange = cparmrange
         self.minclusize = minclusize
         self.outliers = outliers
+        self.noise_ratio = noise_ratio
 
         self.chk = chk
 
         """ CPU vs GPU methods check. """
 
         if self.gpu:
-            if self.clusterer not in  ['DBSCAN', 'louvain']:
+            if self.clu_algo not in  ['DBSCAN', 'louvain']:
                 warnings.warn("Only DBSCAN or louvain are available with RAPIDS, "+\
-                               "setting clusterer as DBSCAN!")
-                self.clusterer = 'DBSCAN'
+                               "setting clu_algo as DBSCAN!")
+                self.clu_algo = 'DBSCAN'
 
             if self.metric_map != 'euclidean' or self.metric_clu != 'euclidean':
                 warnings.warn("Only euclidean is available with RAPIDS, setting metrics "+\
@@ -341,10 +352,10 @@ class IterativeClustering:
 
         """ Checks optional modules. """
 
-        if self.clusterer == 'HDBSCAN' and not OptionalImports.hdbscan:
+        if self.clu_algo == 'HDBSCAN' and not OptionalImports.hdbscan:
 
-            warnings.warn("HDBSCAN not found, setting clusterer as DBSCAN!")
-            self.clusterer = 'DBSCAN'
+            warnings.warn("HDBSCAN not found, setting clu_algo as DBSCAN!")
+            self.clu_algo = 'DBSCAN'
 
         """ Evaluate parameters granularity options. """
 
@@ -528,7 +539,7 @@ class IterativeClustering:
             if cutoff == 'kde':
                 new_data = functions._drop_min_KDE(
                     new_data, self.interface, type=self.filterfeat)
-            else:
+            elif cutoff < new_data.shape[1]:
                 new_data = functions._near_zero_var_drop(
                     new_data, self.interface, thresh=cutoff, type=self.filterfeat)
 
@@ -541,8 +552,9 @@ class IterativeClustering:
 
         elif self.filterfeat == 'correlation':
 
-            new_data = functions._drop_collinear(
-                new_data, self.interface, thresh=cutoff)
+            if cutoff < 1:
+                new_data = functions._drop_collinear(
+                    new_data, self.interface, thresh=cutoff)
 
             logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
                 DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
@@ -746,7 +758,7 @@ class IterativeClustering:
             (float): elbow value.
         """
 
-        if self.clusterer=='SNN':
+        if self.clu_algo=='SNN':
             
             mat=self.interface.num.copy(pj)
             self.interface.num.fill_diagonal(mat,self.interface.num.inf)
@@ -813,13 +825,13 @@ class IterativeClustering:
         """ Use pairwise knn distances elbow method for DBSCAN;
             Take the square root of the total population for HDBSCAN."""
 
-        if self.clusterer == 'louvain':
+        if self.clu_algo == 'louvain':
             logging.log(DEBUG_R, 
                 'Resolution range guess: [{:.5f},{:.5f}]'.format(
                     0, 5))
             return self.interface.num.linspace(0, 5, 6)
 
-        if self.clusterer  in ['DBSCAN', 'SNN']:
+        if self.clu_algo  in ['DBSCAN', 'SNN']:
             ref = self._elbow(pj)
             logging.log(DEBUG_R, 
                 'Epsilon range guess: [{:.5f},{:.5f}]'.format(
@@ -827,7 +839,7 @@ class IterativeClustering:
 
             return self.interface.num.linspace(ref / 50, ref * 1.5, 100)
 
-        elif self.clusterer == 'HDBSCAN':
+        elif self.clu_algo == 'HDBSCAN':
             minbound = self.interface.num.amax(
                 [self.minclusize, int(self.interface.num.sqrt(pj.shape[0] / 25))])
             maxbound = self.interface.num.amin(
@@ -889,7 +901,7 @@ class IterativeClustering:
             (list of int): list of assigned clusters. """
 
 
-        if self.clusterer == 'SNN':
+        if self.clu_algo == 'SNN':
             return self.interface.cluster(pj,
                 eps=cparm,
                 min_samples=self.minclusize,
@@ -897,11 +909,11 @@ class IterativeClustering:
                 n_jobs=-1,
                 leaf_size=15)
         
-        if self.clusterer == 'louvain':
+        if self.clu_algo == 'louvain':
             return self.interface.cluster_louvain(pj,
                 resolution=cparm)
 
-        if self.clusterer == 'DBSCAN':
+        if self.clu_algo == 'DBSCAN':
             #NOTE: distances should be pre-computed like in SNN
             #to speed up this search
             return self.interface.cluster(pj,
@@ -912,8 +924,8 @@ class IterativeClustering:
                 n_jobs=-1,
                 leaf_size=15)
             
-        if self.clusterer == 'HDBSCAN':
-            clusterer = HDBSCAN(
+        if self.clu_algo == 'HDBSCAN':
+            clu_algo = HDBSCAN(
                 algorithm=algorithm,
                 alpha=1.0,
                 approx_min_span_tree=True,
@@ -926,7 +938,7 @@ class IterativeClustering:
                 min_samples=int(cparm),
                 cluster_selection_epsilon=cse,
                 p=None).fit(pj)
-            return clusterer.labels_
+            return clu_algo.labels_
         
         sys.exit('ERROR: clustering algorithm not recognized')
 
@@ -985,13 +997,22 @@ class IterativeClustering:
 
         logging.log(DEBUG_R, 'Number of nearest neighbors: {:d}'.format(nn))
 
-        mapping = self.interface.dim_red(
-            metric=self.metric_map,
-            n_components=self.dim, min_dist=0.0, spread=1,
-            n_neighbors=nn, n_epochs=self.epochs,
-            learning_rate=self.lr, verbose=False,
-            target_weight=self.super_w,
-            random_state=self._umap_rs, init=init)
+
+        if self.dim == data_cut.shape[1] and self.skip_equal_dim:
+
+            """ If the embedding space dimensionality corresponds to the data
+                dimensionality, do not run the projection. """
+
+            mapping = classes.IdentityProjection()
+
+        else:
+            mapping = self.interface.dim_red(
+                metric=self.metric_map,
+                n_components=self.dim, min_dist=0.0, spread=1,
+                n_neighbors=nn, n_epochs=self.epochs,
+                learning_rate=self.lr, verbose=False,
+                target_weight=self.super_w,
+                random_state=self._umap_rs, init=init)
 
         if self.transform is not None:
 
@@ -1025,7 +1046,7 @@ class IterativeClustering:
 
             cse = None
             hdbalgo = 'best'
-            if self.clusterer == 'HDBSCAN':
+            if self.clu_algo == 'HDBSCAN':
                 cse = float(self._elbow(pj))
                 if self.metric_clu == 'cosine':
                     hdbalgo = 'generic'
@@ -1042,9 +1063,9 @@ class IterativeClustering:
                         'VI': self.interface.num.linalg.pinv(
                             self.interface.num.cov(pj.T))} 
  
-            if self.clusterer == 'SNN':
+            if self.clu_algo == 'SNN':
                 to_cluster=self.snn(pj,nn)
-            elif self.clusterer == 'louvain':
+            elif self.clu_algo == 'louvain':
                 to_cluster=1-self.snn(pj,nn)
                 if self.gpu:
                     to_cluster=self.interface.build_graph(to_cluster)
@@ -1147,6 +1168,8 @@ class IterativeClustering:
 
         """
 
+        # Note: this should be moved to optimizers.
+
         sil_opt = -0.0001
         keepfeat = []
         decomp_opt = None
@@ -1197,14 +1220,22 @@ class IterativeClustering:
 
                 logging.log(DEBUG_R, 'Number of nearest neighbors: {:d}'.format(nn))
 
-                mapping = self.interface.dim_red(
-                    metric=self.metric_map,
-                    n_components=self.dim,
-                    min_dist=0.0, spread=1, n_neighbors=nn,
-                    n_epochs=self.epochs, learning_rate=self.lr,
-                    target_weight=self.super_w,
-                    verbose=False, random_state=self._umap_rs,
-                    init=init)
+                if self.dim == data_cut.shape[1] and self.skip_equal_dim:
+
+                    """ If the embedding space dimensionality corresponds to the data
+                        dimensionality, do not run the projection. """
+
+                    mapping = classes.IdentityProjection()
+
+                else:
+                    mapping = self.interface.dim_red(
+                        metric=self.metric_map,
+                        n_components=self.dim,
+                        min_dist=0.0, spread=1, n_neighbors=nn,
+                        n_epochs=self.epochs, learning_rate=self.lr,
+                        target_weight=self.super_w,
+                        verbose=False, random_state=self._umap_rs,
+                        init=init)
 
                 """if data to be projected only is provided, calculate optimality
                    only on the fit data. """
@@ -1241,7 +1272,7 @@ class IterativeClustering:
 
                     cse = None
                     hdbalgo = 'best'
-                    if self.clusterer == 'HDBSCAN':
+                    if self.clu_algo == 'HDBSCAN':
                         cse = float(self._elbow(pj))
                         if self.metric_clu == 'cosine':
                             hdbalgo = 'generic'
@@ -1262,9 +1293,9 @@ class IterativeClustering:
                                 'VI': self.interface.num.linalg.pinv(
                                     self.interface.num.cov(pj.T))}
 
-                    if self.clusterer == 'SNN':
+                    if self.clu_algo == 'SNN':
                         to_cluster=self.snn(pj,nn)
-                    elif self.clusterer == 'louvain':
+                    elif self.clu_algo == 'louvain':
                         to_cluster=1-self.snn(pj,nn)
                         if self.gpu:
                             to_cluster=self.interface.build_graph(to_cluster)
@@ -1291,7 +1322,7 @@ class IterativeClustering:
                         # will be added
                         compset = self.interface.set(labs)
                         compset.discard(-1)
-                                         
+
                         #if too many were discarded take another
                         labs = self.interface.df.Series(labs, index=pj.index)
                         ratio = labs.value_counts()
@@ -1299,16 +1330,17 @@ class IterativeClustering:
                             ratio=ratio[-1]/labs.shape[0]
                         else:
                             ratio=0
-                         
+
                         #could be stricter/looser
-                        if len(compset) > 1 and ratio<=.3:
+                        if len(compset) > 1 and ratio<=self.noise_ratio:
                             sil = functions.calc_score(pj, labs,
                                 self.score, self.metric_clu, self.interface)
                         else:
-                            if ratio<=.3:
+                            if ratio<=self.noise_ratio:
                                 logging.log(DEBUG_R,
-                                    'Too many points discarded (>30%)!')
+                                    'Too many points discarded (>{:d}%)!'.format(ratio*10))
                             sil = -0.0001
+
 
                         logging.log(DEBUG_R, 'Clustering score: {:.3f}'.format(sil))
 
@@ -1693,15 +1725,16 @@ class IterativeClustering:
 
             deep = IterativeClustering(sel_new.index, lab=None, transform=to_transform,
                 dim=self.dim, epochs=self.epochs, lr=self.lr, neirange=self.neirange,
-                neipoints=self.neipoints, neicap=self.neicap, metric_map=self.metric_map,
+                neipoints=self.neipoints, neicap=self.neicap, 
+                skip_equal_dim=self.skip_equal_dim, metric_map=self.metric_map,
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
                 depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
-                clusterer=self.clusterer, cparmrange=self.cparmrange, minclusize=self.minclusize,
-                outliers=self.outliers, name=str(l), debug=self.debug,
-                maxdepth=self.maxdepth, savemap=self.savemap, RPD=self.RPD,
-                outpath=self.outpath, depth=self._depth+1, 
+                clu_algo=self.clu_algo, cparmrange=self.cparmrange, minclusize=self.minclusize,
+                outliers=self.outliers, noise_ratio=self.noise_ratio, 
+                name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, 
+                RPD=self.RPD, outpath=self.outpath, depth=self._depth+1, 
                 chk=self.chk, gpu=self.gpu, _user=False)
 
             deep.iterate()

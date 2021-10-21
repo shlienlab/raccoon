@@ -172,6 +172,14 @@ For example, setting
 will run the optimization on a logarithmic space between .3 and .9 in cumulative
 MAD with 25 mesh points.
 
+This step can be skipped by selecting 'variance' or 'MAD', while setting the percentage
+of cumulative variance to be kept at 100% as the only explorable point.
+
+.. code-block:: python
+
+  filterfeat = 'variance'
+  ffrange = [1]
+
 Dimensionality Reduction
 ========================
 
@@ -195,11 +203,18 @@ space based on the population (:code:`'logspace'`), a factor can be set to reduc
 value proportionally (:code:`neifactor`) in the presence of particularly large datasets,
 as high values of these parameters can impact the performance considerably.
 
+If the dimensionality of the target space corresponds to the dimensionality of the input space
+(after the low-information filter), this step will be skipped by default. This helps speeding 
+up the process by avoiding unnecessary calculations and it can be used in those cases where you 
+want to avoid running the dimensionality reduction step on your data. 
+If for any reason you still want to transform your data, you can set :code:`'skip_equal_dim'`
+to :code:`False`.
+
 
 Clusters Identification
 =======================
 
-The clusters identification tool is chosen with the :code:`clusterer` flag
+The clusters identification tool is chosen with the :code:`clu_algo` flag
 
 =================  ================================================================  
 :code:`'DBSCAN'`   **Density-Based Spatial Clustering of Applications with Noise**: 

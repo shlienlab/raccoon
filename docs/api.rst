@@ -42,6 +42,13 @@ Update
     :undoc-members:
     :show-inheritance:
 
+Optimizers
+--------------------------------
+
+.. automodule:: de
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Utils
 --------------------------------
@@ -51,12 +58,10 @@ Utils
     :undoc-members:
     :show-inheritance:
 
-
-.. automodule:: de
+.. automodule:: classes
     :members:
     :undoc-members:
     :show-inheritance:
-
 
 .. automodule:: plots
     :members:
