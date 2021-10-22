@@ -23,12 +23,13 @@ def build_tree(table, outpath=None):
     nodes = []
 
     def find_parent(name, lista=nodes):
-        parents = [l for l in lista if l.name == name[:-2]]
+        parents = [l for l in lista if l.name == name[:-name[::-1].find('_')-1]]
         parents.append(None)
         return parents[0]
 
     nodes.append(Node('0', population=int(table.shape[0]),
                       parent=None, level=None, leaf=None))
+
     for col in table.columns:
         nodes.append(Node(col,
                           population=int(table[col].sum()),
@@ -39,9 +40,10 @@ def build_tree(table, outpath=None):
     for n in nodes:
         n.leaf = len(n.children) == 0
 
-    exporter = JsonExporter(indent=2, sort_keys=True)
-    with open(outpath, 'w') as handle:
-        exporter.write(nodes[0], handle)
+    if outpath is not None:
+        exporter = JsonExporter(indent=2, sort_keys=True)
+        with open(outpath, 'w') as handle:
+            exporter.write(nodes[0], handle)
 
     return nodes
 
