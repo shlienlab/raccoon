@@ -496,6 +496,13 @@ class IterativeClustering:
 
         if self.filterfeat == 'tSVD':
 
+            if int(cutoff) >= DataGlobal.dataset.shape[1]:
+                logging.info(
+                    "{:d} features cutoff >= dimensionality of input data,"+\
+                    " t-SVD will be skipped".format(int(cutoff)))
+    
+                return DataGlobal.dataset.loc[self.data_ix], None
+
             logging.info(
                 "Applying t-SVD with {:d} features".format(int(cutoff)))
 
@@ -1440,8 +1447,8 @@ class IterativeClustering:
 
                 """ Hard limit. """
 
-                if minbound < 1:
-                    minbound = 1
+                if minbound <= 1:
+                    minbound = 2
 
                 nnrange = sorted([int(x) for x in self.interface.num.logspace(
                     minbound, maxbound, num=self.neipoints[0])])

@@ -349,7 +349,7 @@ class KNN:
                                 [self.children[names[-1]]]
 
                 try:
-                #if isinstance(genecut, self.interface.df.Index):
+                    #if isinstance(genecut, self.interface.df.Index):
 
                     """ low information filter. """
 
@@ -357,15 +357,21 @@ class KNN:
 
                 except:
 
-                    """ tSVD. """
-                    # sparse_mat=csr_matrix(ref_df.values)
-                    #df_cut=self.interface.df.DataFrame(genecut.transform(sparse_mat),
-                    #      index=ref_df.index)
-                    ref_df_cut = self.interface.df.DataFrame(
-                        genecut.transform(ref_df.values))
-                    #cudf workaround
-                    ref_df_cut.index = ref_df.index
-                
+                    try:
+                    
+                        """ tSVD. """
+                        # sparse_mat=csr_matrix(ref_df.values)
+                        #df_cut=self.interface.df.DataFrame(genecut.transform(sparse_mat),
+                        #      index=ref_df.index)
+                        ref_df_cut = self.interface.df.DataFrame(
+                            genecut.transform(ref_df.values))
+                        #cudf workaround
+                        ref_df_cut.index = ref_df.index
+
+                    except:
+
+                        ref_df_cut = ref_df
+
                 try:
 
                     logging.log(DEBUG_R, 'Norm: ' + norm)
