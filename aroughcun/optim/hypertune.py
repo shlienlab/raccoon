@@ -14,6 +14,7 @@ import random
 
 import logging
 
+import ray
 from ray import tune
 from ray.tune.stopper import CombinedStopper, MaximumIterationStopper, ExperimentPlateauStopper
 from ray.tune.suggest.hyperopt import HyperOptSearch
@@ -134,7 +135,7 @@ def _hyperparam_tune(obj_func_fun, hspace, dataset=None,
         searcher = HyperOptSearch(metric="score", mode="max")
 
     """ Run tuning. """
-
+    ray.init(include_dashboard=False)
     analysis = tune.run(
         tune.with_parameters(_htune_func, obj_func=obj_func_fun, dataset=dataset),
         mode                  = 'max',

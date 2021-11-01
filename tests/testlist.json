@@ -14,5 +14,5 @@
     "knn":      false,
     "update":   false,
     "clean":    false,
-    "gpu":      true
+    "gpu":      false
 }
