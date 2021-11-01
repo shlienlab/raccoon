@@ -2,7 +2,7 @@
 
 
 ## Robust Adaptive Coarse-to-fine Clusters OptimizatiON
-### v 0.4.1
+### v 0.5
 
 [![Licence](https://img.shields.io/github/license/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/blob/main/LICENSE)
 [![GitHub top language](https://img.shields.io/github/languages/top/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/search?l=python)
@@ -38,6 +38,8 @@ Besides basic scientific and plotting libraries, the current version requires
 - scikit-learn
 - scikit-network
 - umap-learn
+- ray
+- hyperopt
 - seaborn
 ```
 

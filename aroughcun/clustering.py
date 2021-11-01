@@ -37,6 +37,7 @@ import aroughcun.utils.plots as plotting
 import aroughcun.utils.functions as functions
 import aroughcun.utils.trees as trees
 import aroughcun.optim.de as de 
+import aroughcun.optim.hypertune as htune 
 import aroughcun.utils.classes as classes
 from aroughcun.utils.option import OptionalImports
 
@@ -72,10 +73,11 @@ class IterativeClustering:
     def __init__(self, data, lab=None, transform=None, supervised=False, 
                 supervised_weight=0.5, dim=2, epochs=5000, lr=0.05, 
                 neirange='logspace', neipoints=25, neifactor=1.0,
-                neicap=250, skip_equal_dim=True,
+                neicap=100, skip_equal_dim=True,
                 metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
-                optimizer='grid', depop=10, deiter=10, score='silhouette',
+                optimizer='grid', search_candid=10, search_iter=10, suggest=None,
+                score='silhouette',
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clu_algo='SNN', cparmrange='guess', minclusize=10, 
                 outliers='ignore', noise_ratio=.3,
@@ -115,7 +117,7 @@ class IterativeClustering:
                 (works only with neirange='logspace' default 25).
             neifactor (float): scaling factor for 'logspace' and 'sqrt' selections in neirange
             neicap (int): maximum number of neighbours (reccomended with low-memory systems,
-                default 250).
+                default 100).
             skip_equal_dim (bool): if True, whenever the target dimensionality corresponds
                 to the dimensionality of the input data, the dimensionality reduction step will
                 be skipped (saves time, default True).
@@ -124,8 +126,9 @@ class IterativeClustering:
                 calculations (default euclidean)
                 Warning: 'cosine' does not work with HDBSCAN, normalize to 'l2' and use 'euclidean'
                 instead.
-            popcut (integer): minimum number of samples for a cluster to be considered valid
-                (default 50).
+            popcut (integer): minimum number of samples for a cluster to be considered valid, if a
+                cluster is found with a lower population than this threshold, it will not be further
+                explored (default 50).
             filterfeat (string): set the method to filter features in preprocessing;
                 if 'variance' remove low variance genes
                 if 'MAD' remove low median absolute deviation genes
@@ -146,19 +149,21 @@ class IterativeClustering:
                 all values are exhausted,
                 (works only with ffrange='logspace', default 25).
             optimizer (string): choice of parameters optimizer, can be either 'grid' for grid search,
-                'de' for differential evolution, or 'auto' for automatic
-                (default is 'grid').
+                'de' for differential evolution, 'htune' for hyperparameters optimization with ray tune,
+                or 'auto' for automatic (default is 'grid').
                 Automatic will chose between grid search and DE depending on the number of
                 search points (de if >25), works only if dynmesh is True.
-            depop (int or list of int): size of the candidate solutions population in
-                differential evolution
-                if list, each value will be subsequently used at the next iteration until
-                all values are exhausted
-                (works only with optimizer='de', default 10).
-            deiter (int or list of int): maximum number of iterations of differential evolution
-                if list, each value will be subsequently used at the next iteration until
-                all values are exhausted
-                (works only with optimizer='de', default 10).
+            search_candid (int or list of int): size of the candidate solutions population in
+                differential evolution or hyperparameters optimization.
+                If list, each value will be subsequently used at the next iteration until
+                all values are exhausted (this last option works only with optimizer='de' and 'htune', default 10).
+            search_iter (int or list of int): maximum number of iterations of differential evolution.
+                If list, each value will be subsequently used at the next iteration until
+                all values are exhausted (works only with optimizer='de', default 10).
+            suggest (ray.tune.suggest object): the searcher algorithm to be used with ray tune for
+                the hyperparameters optimization. If None, Hyperopt will be used (please note it
+                requires the proper search algorithm library to be installed, see ray tune manual
+                for the available options, default is None).
             score (string or function): objective function of the optimization, to be provided as
                 a string (currently only 'dunn' and 'silhouette' are available, default 'silhouette').
                 Alternatively, a scoring function can be provided, it must take a feature array,
@@ -167,8 +172,9 @@ class IterativeClustering:
             norm (string): normalization factor before dimensionality reduction (default None),
                 not needed if metric_map is cosine
                 if None, don't normalize.
-            dynmesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE)
-                to the population, overrides neipoints, depop, deiter and ffpoints (default false).
+            dynmesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE, 
+                candidates in htune) to the population, overrides neipoints, search_candid, 
+                search_iter and ffpoints (default False).
             maxmesh (int): maximum number of points for the dynmesh option (hit at 10000 samples,
                 default 20), this is a single dimension, the actuall mesh will contain n*n points.
             minmesh (int): minimum number of points for the dynmesh option (hit at 50 samples,
@@ -296,8 +302,8 @@ class IterativeClustering:
         self.savemap = savemap
         self.maxdepth = maxdepth
         self.RPD = RPD
-        self.depop = depop
-        self.deiter = deiter
+        self.search_candid = search_candid
+        self.search_iter = search_iter
         self.outpath = outpath
         self.clus_opt = None
         self._name = name
@@ -332,9 +338,10 @@ class IterativeClustering:
 
         """ Checks on optimizer choice. """
 
-        if self.optimizer not in ['grid', 'de', 'auto']:
+        if self.optimizer not in ['grid', 'de', 'auto', 'htune']:
             sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search, \'de\' '+\
-                      'for Differential Evolution or \'auto\' for automatic selection.')
+                      'for Differential Evolution, \'htune\' for hyperparameters tuning with '+\
+                      'Ray or \'auto\' for automatic selection.')
 
         if self.optimizer == 'de' and self.ffrange == 'kde':
             sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is '+\
@@ -381,7 +388,7 @@ class IterativeClustering:
                 self.neipoints = meshpoints
                 self.ffpoints = meshpoints
 
-            elif self.optimizer == 'de':
+            elif self.optimizer in ['de', 'htune'] :
 
                 if self.minmesh <= 3:
                     self.minmesh = 4
@@ -394,8 +401,11 @@ class IterativeClustering:
                             b=1))) + (
                         self.minmesh)
 
-                self.depop = meshpoints
-                self.deiter = meshpoints
+                self.search_candid = meshpoints
+                self.search_iter = meshpoints
+                
+                if self.optimizer == 'htune':
+                    self.search_candid = self.search_candid**2
 
         try:
             if isinstance(self.neipoints, list):
@@ -406,22 +416,14 @@ class IterativeClustering:
             sys.exit('ERROR: neipoints must be an integer or a list of integers')
             raise
 
-        if self.optimizer == 'de':
+        if self.optimizer in ['de','htune']:
             try:
-                if isinstance(self.depop, list):
-                    self.depop = [int(x) for x in self.depop]
+                if isinstance(self.search_candid, list):
+                    self.search_candid = [int(x) for x in self.search_candid]
                 else:
-                    self.depop = [int(self.depop)]
+                    self.search_candid = [int(self.search_candid)]
             except BaseException:
-                sys.exit('ERROR: depop must be an integer or a list of integers')
-                raise
-            try:
-                if isinstance(self.deiter, list):
-                    self.deiter = [int(x) for x in self.deiter]
-                else:
-                    self.deiter = [int(self.deiter)]
-            except BaseException:
-                sys.exit('ERROR: deiter must be an integer or a list of integers')
+                sys.exit('ERROR: search_candid must be an integer or a list of integers')
                 raise
             if self.ffrange == 'logspace':
                 if self.filterfeat in ['variance', 'MAD', 'correlation']:
@@ -431,6 +433,16 @@ class IterativeClustering:
                                              DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.3])),
                                     int(DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9)]
 
+        if self.optimizer == 'de':
+            try:
+                if isinstance(self.search_iter, list):
+                    self.search_iter = [int(x) for x in self.search_iter]
+                else:
+                    self.search_iter = [int(self.search_iter)]
+            except BaseException:
+                sys.exit('ERROR: search_iter must be an integer or a list of integers')
+                raise
+            
         if self.optimizer == 'grid':
             try:
                 if isinstance(self.ffpoints, list):
@@ -475,11 +487,13 @@ class IterativeClustering:
         logging.info(
             "Scoring function is: "+scorename)
 
-
-    def _features_removal(self, cutoff):
+    def _features_removal(self, cutoff, dataset=None):
         """ Either remove features with low variance/MAD, or high correlation
             from dataset according to a specified threshold (cutoff)
             or apply truncated SVD to reduce features to a certain number (cutoff).
+            dataset (dataframe or np matrix): the dataset to be analyzed. 
+                Needed only by htune, all other methods will take the static 
+                dataset variable (default None). 
 
         Args:
              cutoff (string or float): if filterfeat=='variance'/'MAD'/'correlation',
@@ -494,14 +508,22 @@ class IterativeClustering:
 
         """
 
+        if dataset is None:
+            # This sort of defeats the purpose of having a static variable
+            # keeping track of the dataset, but it's the most basic way
+            # I could find to make sure ray tune works since it doesn't
+            # like static variables.
+            # Find a way around it.
+            dataset = DataGlobal.dataset.loc[self.data_ix]
+
         if self.filterfeat == 'tSVD':
 
-            if int(cutoff) >= DataGlobal.dataset.shape[1]:
+            if int(cutoff) >= dataset.shape[1]:
                 logging.info(
                     "{:d} features cutoff >= dimensionality of input data,"+\
                     " t-SVD will be skipped".format(int(cutoff)))
     
-                return DataGlobal.dataset.loc[self.data_ix], None
+                return dataset, None
 
             logging.info(
                 "Applying t-SVD with {:d} features".format(int(cutoff)))
@@ -521,25 +543,25 @@ class IterativeClustering:
             # index=DataGlobal.dataset.loc[self.data_ix].index), decomposer
 
             if self.transform is not None:
-                decomposer.fit(DataGlobal.dataset.loc[self.data_ix]
-                    [~DataGlobal.dataset.loc[self.data_ix].index.isin(
+                decomposer.fit(dataset
+                    [~dataset.index.isin(
                         self.transform)].values)
                 return self.interface.df.DataFrame(decomposer.transform(
-                    DataGlobal.dataset.loc[self.data_ix].values),
-                    index=DataGlobal.dataset.loc[self.data_ix].index), decomposer
+                    dataset.values),
+                    index=dataset.index), decomposer
 
             return self.interface.df.DataFrame(decomposer.fit_transform(
-                DataGlobal.dataset.loc[self.data_ix].values),
-                index=DataGlobal.dataset.loc[self.data_ix].index), decomposer
+                dataset.values),
+                index=dataset.index), decomposer
 
         """ Add conditional to apply the cut only on those samples used for training the map. """
 
         if self.transform is not None:
-            new_data = DataGlobal.dataset.loc[self.data_ix]\
-                [~DataGlobal.dataset.loc[self.data_ix].index.isin(
+            new_data = dataset\
+                [~dataset.index.isin(
                 self.transform)]
         else:
-            new_data = DataGlobal.dataset.loc[self.data_ix]
+            new_data = dataset
 
         if self.filterfeat in ['variance', 'MAD']:
 
@@ -551,11 +573,11 @@ class IterativeClustering:
                     new_data, self.interface, thresh=cutoff, type=self.filterfeat)
 
             logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
-                DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
+                dataset.shape[1] - new_data.shape[1]))
 
             # Extra passage needed in case the transform data cut was
             # applied
-            return DataGlobal.dataset.loc[self.data_ix][new_data.columns], None
+            return dataset[new_data.columns], None
 
         elif self.filterfeat == 'correlation':
 
@@ -564,17 +586,18 @@ class IterativeClustering:
                     new_data, self.interface, thresh=cutoff)
 
             logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
-                DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
+                dataset.shape[1] - new_data.shape[1]))
 
             # Extra passage needed in case the transform data cut was
             # applied
-            return DataGlobal.dataset.loc[self.data_ix][new_data.columns], None
+            return dataset[new_data.columns], None
 
         else:
 
             sys.exit('ERROR: Oops, something went really wrong! Make sure filterfeat \
                         is properly set.\nIf you see this error please contact us on GitHub!')
 
+    
     def _level_check(self):
         """ Stop the iterative search if a given maxdepth parameter has been reached. """
 
@@ -707,14 +730,14 @@ class IterativeClustering:
 
             if self.savemap:
                 with open(os.path.join(self.outpath,
-                        'raccoon_data/' + self._name + '_2d.pkl'), 'wb') as file:
+                        'rc_data/' + self._name + '_2d.pkl'), 'wb') as file:
                     # keepfeat and decompt already in the not 2d map
                     pickle.dump(mapping, file)
                     file.close()
 
                 proj.to_hdf(
                     os.path.join(self.outpath,
-                        'raccoon_data/' + self._name + '_2d.h5'),
+                        'rc_data/' + self._name + '_2d.h5'),
                     key='proj')
 
             del mapping
@@ -949,14 +972,16 @@ class IterativeClustering:
         
         sys.exit('ERROR: clustering algorithm not recognized')
 
-    def _run_single_instance(self, cutoff, nn):
+    def _run_single_instance(self, cutoff, nn, dataset=None):
         """ Run a single instance of clusters search for a given features cutoff and
         UMAP nearest neighbors number.
 
         Args:
             cutoff (float): features cutoff.
-            nn (int
-            from math import nan): UMAP nearest neighbors value.
+            nn (int): UMAP nearest neighbors value.
+            dataset (dataframe or np matrix): the dataset to be analyzed. 
+                Needed only by htune, all other methods will take the static 
+                dataset variable (default None). 
 
         Returns:
             sil_opt (float): silhoutte score corresponding to the best set of parameters.
@@ -968,13 +993,22 @@ class IterativeClustering:
 
         """
 
+        if dataset is None:
+            # This sort of defeats the purpose of having a static variable
+            # keeping track of the dataset, but it's the most basic way
+            # I could find to make sure ray tune works since it doesn't
+            # like static variables.
+            # Find a way around it.
+            dataset = DataGlobal.dataset.loc[self.data_ix]
+            
         sil_opt = -0.0001
-        labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
+
+        labs_opt = [0] * dataset.shape[0]
         cparm_opt = self.interface.num.nan
         keepfeat = self.interface.num.nan
 
         init = 'spectral'
-        if DataGlobal.dataset.loc[self.data_ix].shape[0] <= self.dim + 1:
+        if dataset.shape[0] <= self.dim + 1:
             init = 'random'
         logging.log(DEBUG_R, 'Initialization: ' + init)
 
@@ -982,7 +1016,10 @@ class IterativeClustering:
 
         logging.log(DEBUG_R, 'Features cutoff: {:.3f}'.format(cutoff))
 
-        data_cut, decomposer = self._features_removal(cutoff)
+        data_cut, decomposer = self._features_removal(cutoff, dataset = dataset)
+        
+        #Maybe this helps with the memory
+        del dataset
 
         if self.filterfeat in ['variance', 'MAD']:
             keepfeat = data_cut.columns
@@ -1128,12 +1165,15 @@ class IterativeClustering:
         return sil_opt, labs_opt,\
             cparm_opt, pj, mapping, keepfeat, decomposer
 
-    def _objective_function(self, params):
+    def _objective_function(self, params, dataset=None):
         """ Objective function for Differential Evolution.
 
         Args:
             params (list): a list containing a single feature cutoff and a
                 UMAP nearest neighbors parameter.
+            dataset (dataframe or np matrix): the dataset to be passed
+                to the objective function. Needed only by htune, all
+                other methods will take the static dataset variable (default None). 
         Returns:
             (float): loss value for the given set of parameters.
             labs (pandas series): series with the cluster membership identified
@@ -1148,7 +1188,7 @@ class IterativeClustering:
 
         sil_opt, labs, cparm_opt, pj, mapping, keepfeat,\
             decomposer = self._run_single_instance(
-            params[0], int(params[1]))
+            params[0], int(params[1]), dataset=dataset)
 
         return 1 - sil_opt, labs, cparm_opt, pj, mapping, keepfeat, decomposer
 
@@ -1160,19 +1200,13 @@ class IterativeClustering:
             nnrange (numpy range): UMAP nearest neighbors range.
 
         Returns:
-            sil_opt (float): Silhoutte score corresponding to the best set of parameters.
-            labs_opt (pandas series): series with the cluster membership identified
-                for each sample.
-            cparm_opt (float): optimal clustering parameter value found.
-            num_clus_opt (int):  total number of clusters determined by the search.
-            nei_opt (int): optimal number of nearest neighbors used with UMAP.
-            pj_opt (pandas dataframe): low dimensionality data projection from UMAP.
-            cut_opt (float): optimal cutoff value used for the feature removal step
-            keepfeat (pandas index): set of genes kept after low variance/MAD removal,
-                nan if tSVD.
-            decomp_opt (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
-            scoreslist (list of float): list of all scores evaluated and their parameters.
-
+            best_param (list of floats): list of best parameters.
+            best_res (list of objects): a list containing score, labels, clustering parameter,
+                projected points, trained maps, filtered features and
+                trained low-information filter from the best scoring model.
+            scores_list (list of floats): a matrix containing all the explored models' parameters
+                and their scores (useful for plotting the hyperspace).
+            
         """
 
         # Note: this should be moved to optimizers.
@@ -1376,8 +1410,8 @@ class IterativeClustering:
             pj_opt = pj
             map_opt = mapping
 
-        return sil_opt, labs_opt,\
-               cparm_opt, nei_opt, pj_opt, cut_opt, map_opt, keepfeat, decomp_opt,\
+        return [cut_opt, nei_opt] , [sil_opt, labs_opt,\
+               cparm_opt, pj_opt, map_opt, keepfeat, decomp_opt],\
                scoreslist
 
     def _optimize_params(self):
@@ -1413,7 +1447,7 @@ class IterativeClustering:
             if self.optimizer == 'de':
                 logging.info('Dynamic mesh active, number of candidates: {:d} \
                               and iterations: {:d}'.format(
-                        self.depop[0], self.deiter[0]))
+                        self.search_candid[0], self.search_iter[0]))
 
         if self.transform is not None:
             logging.info('Transform-only Samples #: {:d}'.format(
@@ -1483,10 +1517,10 @@ class IterativeClustering:
         if self.optimizer == 'grid':
 
             """ Grid Search. """
+
             logging.info('Running Grid Search...')
 
-            sil_opt, labs_opt, cparm_opt, nei_opt, pj_opt, cut_opt, map_opt,\
-            keepfeat, decomp_opt, scoreslist = self._run_grid_instances(
+            config_opt, results_opt, scoreslist = self._run_grid_instances(
                 nnrange)
 
             logging.info('Done!')
@@ -1501,15 +1535,34 @@ class IterativeClustering:
             # inefficient
             bounds = [(min(self.ffrange), max(self.ffrange)),
                       (min(nnrange), max(nnrange))]
-            sil_opt, labs_opt, cparm_opt, nei_opt, pj_opt, cut_opt, map_opt,\
-            keepfeat, decomp_opt, scoreslist = de._differential_evolution(
-                self._objective_function, bounds, maxiter=self.deiter[0],
-                popsize=self.depop[0], integers=[False, True], seed=self._seed)
+            config_opt, results_opt, scoreslist = de._differential_evolution(
+                self._objective_function, bounds, maxiter=self.search_iter[0],
+                n_candidates=self.search_candid[0], integers=[False, True], seed=self._seed)
+
+            logging.info('Done!')
+
+        elif self.optimizer == 'htune':
+
+            """ Other optimizers with RayTune. """
+
+            logging.info('Running hyperparameters tuning with Ray...')
+ 
+            hspace = { 'ffrange' : self.ffrange, 
+                       'nnrange' : nnrange}
+            config_opt, results_opt, scoreslist = htune._hyperparam_tune(
+                self._objective_function, hspace, dataset = DataGlobal.dataset.loc[self.data_ix], 
+                n_candidates=self.search_candid[0], seed=self._seed, outpath=os.path.join(self.outpath, 'rc_data/'))
 
             logging.info('Done!')
             
         else:
             sys.exit('ERROR: optimizer not recognized')
+
+        """ Split the output """
+
+        cut_opt, nei_opt = config_opt
+        sil_opt, labs_opt, cparm_opt, pj_opt, map_opt,\
+            keepfeat, decomp_opt = results_opt
 
         if not isinstance(labs_opt,self.interface.df.Series):
             labs_opt=self.interface.df.Series(labs_opt, index=pj_opt.index)
@@ -1631,7 +1684,7 @@ class IterativeClustering:
                 chosen, cut, self.metric_map,
                 self.metric_clu, self.norm, reassigned, self._seed]
 
-        with open(os.path.join(self.outpath, 'raccoon_data/paramdata.csv'), 'a') as file:
+        with open(os.path.join(self.outpath, 'rc_data/paramdata.csv'), 'a') as file:
             writer = csv.writer(file)
             writer.writerow(vals)
             file.close()
@@ -1641,7 +1694,7 @@ class IterativeClustering:
 
         if self.savemap:
             with open(os.path.join(self.outpath,
-                    'raccoon_data/' + self._name + '.pkl'), 'wb') as file:
+                    'rc_data/' + self._name + '.pkl'), 'wb') as file:
                 if self.filterfeat in ['variance', 'MAD', 'correlation']:
                     pickle.dump([keepfeat, chomap], file)
                 elif self.filterfeat == 'tSVD':
@@ -1649,7 +1702,7 @@ class IterativeClustering:
                 file.close()
             pj.to_hdf(
                 os.path.join(self.outpath,
-                    'raccoon_data/' + self._name + '.h5'),
+                    'rc_data/' + self._name + '.h5'),
                 key='proj')
 
         del chomap
@@ -1679,11 +1732,11 @@ class IterativeClustering:
                 if OptionalImports.feather:
                     clus_tmp.reset_index().to_feather(
                         os.path.join(
-                            self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.fe'))
+                            self.outpath, 'rc_data/chk/clusters_chk_'+self._name+'.fe'))
             else:
                     clus_tmp.to_hdf(
                         os.path.join(
-                            self.outpath, 'raccoon_data/chk/clusters_chk_'+self._name+'.h5'),
+                            self.outpath, 'rc_data/chk/clusters_chk_'+self._name+'.h5'),
                             key='df')
             
         """ Dig within each subcluster and repeat. """
@@ -1721,14 +1774,14 @@ class IterativeClustering:
                     'Parameters granilarity change ' +
                     '[nearest neighbours: {:d}'.format(
                         self.interface.get_value(self.neipoints[0])) + ']')
-            if self.optimizer == 'de' and len(self.depop) > 1:
-                self.depop = self.depop[1:]
+            if self.optimizer in ['de','htune'] and len(self.search_candid) > 1:
+                self.search_candid = self.search_candid[1:]
                 logging.info('Parameters granilarity change ' +
-                             '[DE population: {:d}'.format(int(self.depop[0])) + ']')
-            if self.optimizer == 'de' and len(self.deiter) > 1:
-                self.deiter = self.deiter[1:]
+                             '[Candidates population: {:d}'.format(int(self.search_candid[0])) + ']')
+            if self.optimizer == 'de' and len(self.search_iter) > 1:
+                self.search_iter = self.search_iter[1:]
                 logging.info('Parameters granilarity change ' +
-                             '[DE iterations: {:d}'.format(int(self.deiter[0])) + ']')
+                             '[DE iterations: {:d}'.format(int(self.search_iter[0])) + ']')
 
             deep = IterativeClustering(sel_new.index, lab=None, transform=to_transform,
                 dim=self.dim, epochs=self.epochs, lr=self.lr, neirange=self.neirange,
@@ -1736,7 +1789,7 @@ class IterativeClustering:
                 skip_equal_dim=self.skip_equal_dim, metric_map=self.metric_map,
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
-                depop=self.depop, deiter=self.deiter, score=self.score, norm=self.norm,
+                search_candid=self.search_candid, search_iter=self.search_iter, score=self.score, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                 clu_algo=self.clu_algo, cparmrange=self.cparmrange, minclusize=self.minclusize,
                 outliers=self.outliers, noise_ratio=self.noise_ratio, 

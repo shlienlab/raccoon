@@ -22,7 +22,7 @@ def update_test(data, ori_data, reftab, refpath, gpu=False):
     
     new_membership = aroughcun.update(data, ori_data,
         pd.read_hdf(reftab), tolerance=1e-2,
-        refpath=os.path.join(refpath,'raccoon_data'),
+        refpath=os.path.join(refpath,'rc_data'),
         dim=2, filterfeat='variance', optimizer='grid', 
         metric_clu='euclidean', metric_map='cosine',
         dynmesh=True, maxmesh=3, minmesh=3, chk=True,

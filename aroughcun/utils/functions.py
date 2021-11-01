@@ -206,7 +206,7 @@ def _calc_RPD(mh, labs, interface, plot=True, name='rpd', path=""):
             vals.append([x * 1.0 / coscen[i].loc[list(siblings)].min() for x in
                          matrix[interface.num.triu_indices(matrix.shape[0], k=1)]])
 
-    with open(os.path.join(path, 'raccoon_data/rinterface.df.pkl'), 'rb') as f:
+    with open(os.path.join(path, 'rc_data/rinterface.df.pkl'), 'rb') as f:
         try:
             cur_maps = pickle.load(f)
         except EOFError:
@@ -215,7 +215,7 @@ def _calc_RPD(mh, labs, interface, plot=True, name='rpd', path=""):
     for i in range(len(vals)):
         cur_maps.append([name + "_" + str(i), vals[i]])
 
-    with open(os.path.join(path, 'raccoon_data/rinterface.df.pkl'), 'wb') as f:
+    with open(os.path.join(path, 'rc_data/rinterface.df.pkl'), 'wb') as f:
         pickle.dump(cur_maps, f)
 
     if plot:
@@ -267,12 +267,12 @@ def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=
     """ Build folders and delete old data if present. """
 
     try:
-        os.makedirs(os.path.join(outpath, 'raccoon_data'))
+        os.makedirs(os.path.join(outpath, 'rc_data'))
         if chk:
-            os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
-        os.makedirs(os.path.join(outpath, 'raccoon_plots'))
+            os.makedirs(os.path.join(outpath, 'rc_data/chk'))
+        os.makedirs(os.path.join(outpath, 'rc_plots'))
     except FileExistsError:
-        warnings.warn('raccoon_data/raccoon_plots already found in path!')
+        warnings.warn('rc_data/rc_plots already found in path!')
         
         if delete:
             answer = None
@@ -280,14 +280,14 @@ def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=
                 answer = input(
                     "Do you want to delete the old folders? [Y/N]  ").lower()
             if answer.startswith('y'):
-                shutil.rmtree(os.path.join(outpath, 'raccoon_data'))
-                os.makedirs(os.path.join(outpath, 'raccoon_data'))
+                shutil.rmtree(os.path.join(outpath, 'rc_data'))
+                os.makedirs(os.path.join(outpath, 'rc_data'))
                 if chk:
-                    os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
-                shutil.rmtree(os.path.join(outpath, 'raccoon_plots'))
-                os.makedirs(os.path.join(outpath, 'raccoon_plots'))
+                    os.makedirs(os.path.join(outpath, 'rc_data/chk'))
+                shutil.rmtree(os.path.join(outpath, 'rc_plots'))
+                os.makedirs(os.path.join(outpath, 'rc_plots'))
             else:
-                print('Please remove raccoon_data/plots manually or \
+                print('Please remove rc_data/plots manually or \
                        change output directory before proceeding!')
                 sys.exit(1)
        
@@ -295,17 +295,17 @@ def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=
         
             #quite ugly, remember to clean up
             try:
-                os.makedirs(os.path.join(outpath, 'raccoon_data'))
+                os.makedirs(os.path.join(outpath, 'rc_data'))
             except:
                 pass
 
             if chk:
                 try:
-                    os.makedirs(os.path.join(outpath, 'raccoon_data/chk'))
+                    os.makedirs(os.path.join(outpath, 'rc_data/chk'))
                 except:
                     pass
             try:
-                os.makedirs(os.path.join(outpath, 'raccoon_plots'))
+                os.makedirs(os.path.join(outpath, 'rc_plots'))
             except:
                 pass
 
@@ -319,12 +319,12 @@ def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=
             'cluster_parm', 'features_cutoff', 'metric_map',
             'metric_clust', 'norm', 'reassigned', 'seed']
        
-        if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
-           shutil.copyfile(os.path.join(outpath, 'raccoon_data/paramdata.csv'),\
-                      os.path.join(outpath, 'raccoon_data/paramdata.BAK_' + str(os.getpid()) + '.csv'))
+        if not delete and os.path.isfile(os.path.join(outpath, 'rc_data/paramdata.csv')):
+           shutil.copyfile(os.path.join(outpath, 'rc_data/paramdata.csv'),\
+                      os.path.join(outpath, 'rc_data/paramdata.BAK_' + str(os.getpid()) + '.csv'))
         
-        if not os.path.isfile(os.path.join(outpath, 'raccoon_data/paramdata.csv')):
-            with open(os.path.join(outpath, 'raccoon_data/paramdata.csv'), 'w') as file:
+        if not os.path.isfile(os.path.join(outpath, 'rc_data/paramdata.csv')):
+            with open(os.path.join(outpath, 'rc_data/paramdata.csv'), 'w') as file:
                 writer = csv.writer(file)
                 writer.writerow(vals)
                 file.close()
@@ -334,11 +334,11 @@ def setup(outpath=None, paramdata=True, chk=False, RPD=False, suffix='', delete=
         """ Generate empty calc_RPD distributions pickle,
             to be written to at each iteration. TO REMOVE """
     
-        if not delete and os.path.isfile(os.path.join(outpath, 'raccoon_data/rpd.pkl')):
-            os.rename(os.path.join(outpath, 'raccoon_data/rpd.pkl'),\
-                      os.path.join(outpath, 'raccoon_data/rpd.BAK_' + str(os.getpid()) + '.pkl'))
+        if not delete and os.path.isfile(os.path.join(outpath, 'rc_data/rpd.pkl')):
+            os.rename(os.path.join(outpath, 'rc_data/rpd.pkl'),\
+                      os.path.join(outpath, 'rc_data/rpd.BAK_' + str(os.getpid()) + '.pkl'))
         
-        with open(os.path.join(outpath, 'raccoon_data/rpd.pkl'), 'wb') as file:
+        with open(os.path.join(outpath, 'rc_data/rpd.pkl'), 'wb') as file:
             empty = []
             pickle.dump(empty, file)
             file.close()

@@ -65,11 +65,11 @@ def cluster(data, **kwargs):
     if obj.clus_opt is not None:
         obj.clus_opt.to_hdf(
             os.path.join(
-                kwargs['outpath'], 'raccoon_data/clusters_final.h5'),
+                kwargs['outpath'], 'rc_data/clusters_final.h5'),
             key='df')
         tree = trees.build_tree(
             obj.clus_opt, outpath=os.path.join(
-                kwargs['outpath'], 'raccoon_data/tree_final.json'))
+                kwargs['outpath'], 'rc_data/tree_final.json'))
 
     """ Log the total runtime and memory usage. """
 
@@ -87,7 +87,7 @@ def cluster(data, **kwargs):
     return obj.clus_opt, tree
 
 
-def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
+def resume(data, refpath='./rc_data', lab=None, **kwargs):
 
     """ Wrapper function to resume a IterativeClustering run 
         from checkpoint files.
@@ -238,11 +238,11 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
     if new_clus is not None:
         new_clus.to_hdf(
             os.path.join(
-                kwargs['outpath'], 'raccoon_data/clusters_resumed_final.h5'),
+                kwargs['outpath'], 'rc_data/clusters_resumed_final.h5'),
             key='df')
         tree = trees.build_tree(
             new_clus, outpath=os.path.join(
-                kwargs['outpath'], 'raccoon_data/tree_resumed_final.json'))
+                kwargs['outpath'], 'rc_data/tree_resumed_final.json'))
 
     """ Log the total runtime and memory usage. """
 
@@ -261,7 +261,7 @@ def resume(data, refpath='./raccoon_data', lab=None, **kwargs):
     return new_clus, tree
 
 
-def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs):
+def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
     """ Wrapper function to classify new data with KNN on
         a previous IterativeClustering output.
 
@@ -301,7 +301,7 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
     if obj.membership is not None:
         obj.membership.to_hdf(
             os.path.join(
-                kwargs['outpath'], 'raccoon_data/classification_final.h5'),
+                kwargs['outpath'], 'rc_data/classification_final.h5'),
             key='df')
 
     """ Log the total runtime and memory usage. """
@@ -314,7 +314,7 @@ def classify(new_data, old_data, membership, refpath='./raccoon_data', **kwargs)
     return obj.membership
 
 
-def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath='./raccoon_data', 
+def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath='./rc_data', 
             outpath='./', **kwargs):
     """ Wrapper function to update
         a previous IterativeClustering output with new data.
@@ -370,11 +370,11 @@ def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath=
     if obj.new_clus is not None:
         obj.new_clus.to_hdf(
             os.path.join(
-                outpath, 'raccoon_data/clusters_updated_final.h5'),
+                outpath, 'rc_data/clusters_updated_final.h5'),
             key='df')
         tree = trees.build_tree(
             obj.new_clus, outpath=os.path.join(
-                outpath, 'raccoon_data/tree_updated_final.json'))
+                outpath, 'rc_data/tree_updated_final.json'))
 
     """ Log the total runtime and memory usage. """
 

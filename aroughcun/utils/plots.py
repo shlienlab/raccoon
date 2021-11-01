@@ -62,7 +62,7 @@ def _plot_score(scores, parm_opt, xlab, name='./scores.png', path=""):
 
     if not name.endswith('.png'):
         name = name + '.png'
-    plt.savefig(os.path.join(path, 'raccoon_plots/' + name), dpi=600)
+    plt.savefig(os.path.join(path, 'rc_plots/' + name), dpi=600)
     plt.close()
 
 
@@ -128,7 +128,7 @@ def _plot_score_surf(scores, parm_opt, name='./scores_surf.png', path=""):
 
     if not name.endswith('.png'):
         name = name + '.png'
-    plt.savefig(os.path.join(path, 'raccoon_plots/' + name), dpi=600)
+    plt.savefig(os.path.join(path, 'rc_plots/' + name), dpi=600)
     plt.close()
 
 
@@ -165,7 +165,7 @@ def _plot_cut(df, df_cut, name='./gene_cut.png', path=""):
 
     if not name.endswith('.png'):
         name = name + '.png'
-    plt.savefig(os.path.join(path, 'raccoon_plots/' + name), dpi=600)
+    plt.savefig(os.path.join(path, 'rc_plots/' + name), dpi=600)
     plt.close()
 
 
@@ -204,7 +204,7 @@ def plot_violin(vals, name='./rpdd.png', path=""):
 
     if not name.endswith('.png'):
         name = name + '.png'
-    plt.savefig(os.path.join(path, 'raccoon_plots/' + name), dpi=600)
+    plt.savefig(os.path.join(path, 'rc_plots/' + name), dpi=600)
     plt.close()
 
 
@@ -250,7 +250,7 @@ def plot_map(df, labels, name='./projection.png', path=""):
     if not name.endswith('.png'):
         name = name + '.png'
 
-    plt.savefig(os.path.join(path, 'raccoon_plots/' + name),
+    plt.savefig(os.path.join(path, 'rc_plots/' + name),
         dpi=600, bbox_inches='tight')
     plt.close()
 
@@ -303,6 +303,6 @@ def plot_homogeneity(df1, df2, name='./homogeneity.png', path=""):
     if not name.endswith('.png'):
         name = name + '.png'
 
-    plt.savefig(os.path.join(path, 'raccoon_plots/' + name),
+    plt.savefig(os.path.join(path, 'rc_plots/' + name),
         dpi=600, bbox_inches='tight')
     plt.close()

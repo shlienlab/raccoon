@@ -56,11 +56,12 @@ As a first step in the clustering analysis, the data can be normalized by activa
 :code:`norm` flag in the iterative clustering object. It takes default :code:`sklearn`
 norms, and is set by default at :code:`'l2'`. If :code:`None`, no normalization will be applied before the features removal step.
 
-
 Optimizers
 ==========
 
-There are currently two available optimizers, to be set with the :code:`optimizer` flag
+There are currently two native optimizers, to be set with the :code:`optimizer` flag.
+A third option, :code:`htune` allows you to use the hyperparameters optimization
+algorithms implemented in Ray Tune.
 
 ===============  ============================================================  
 :code:`'grid'`   **Grid Search**: given a set of parameters ranges and steps, 
@@ -69,12 +70,16 @@ There are currently two available optimizers, to be set with the :code:`optimize
 :code:`'de'`     **Differential Evolution**: a simple evolutionary algorithm,
                  it requires setting a number of candidates for the parametric 
                  space search and a number of maximum iterations [Storn1997]_
+:code:`'htune'`  **Hyperparameters Optimization**: this flag allows you to 
+	         to run a hyperparameters optimization with Tune_.
+                 It requires setting a number of candidates for the parametric 
+                 space search and a search algorithm.
 ===============  ============================================================
 
 While Grid Search requires defining the exact set of points to explore, either directly
 or indirectly by setting the explorable ranges and steps for each parameter (see the next sections), 
-Differential Evolution requires some candidate points to be set with :code:`depop`
-and maximum iterations :code:`deiter` which will stop the optimization unless a solutions 
+Differential Evolution requires some candidate points to be set with :code:`search_candid`
+and maximum iterations :code:`search_iter` which will stop the optimization unless a solutions 
 improvement tolerance limit (set by default) is hit. 
 
 *Warning*: These two flags will override the parameters selection flags specific to each of the downstream steps. 
@@ -84,6 +89,12 @@ While Differential Evolution is in principle more efficient than Grid Search, it
 to find the absolute minimum, and the results heavily depend on how extensive the search is.
 For exploratory runs, with a low number of search points, Grid Search is preferred. Differential Evolution
 should be the default choice when resources for a detailed search are available.
+
+Selecting :code:`htune` will allow you to run a hyperparametrs search with Tune_. Again,
+the number of maximum candidate points to evaluate can be set with :code:`search_candid`, 
+but the search will stop automatically after a few iterations if a plateau is reached.
+Any `search algorithm`_ included in Ray can be provided through :code:`suggest`. If none are provided,
+Tree Parzen Estimators (TPE) with Hyperopt_ will be used.
 
 Dynamic Mesh
 ------------
@@ -355,4 +366,7 @@ References
 .. [Ester1996] Ester M., Kriegel H. P., Sander J. and Xu X. (1996), “A Density-Based Algorithm for Discovering Clusters in Large Spatial Databases with Noise”, Proceedings of the 2nd International Conference on Knowledge Discovery and Data Mining, 226-231.
 .. [Campello2013] Campello R. J. G. B., Moulavi D., Sander J. (2013), "Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining", PAKDD  Lecture Notes in Computer Science, vol 7819.
 .. [Jarvis1973] Jarvis R. A. and Patrick E. A. (1973) "Clustering Using a Similarity Measure Based on Shared Near Neighbors", IEEE Transactions on Computers, vC-22 11: 1025-1034.  
-.. [Blondel2008]  londel V. D., Guillaume J-L., Lambiotte R. and Lefebvre E. (2008), "Fast unfolding of communities in large networks", Journal of Statistical Mechanics, P10008. 
+.. [Blondel2008]  londel V. D., Guillaume J-L., Lambiotte R. and Lefebvre E. (2008), "Fast unfolding of communities in large networks", Journal of Statistical Mechanics, P10008.
+.. _Tune: https://docs.ray.io/en/latest/tune/index.html 
+.. _`search algorithm`: https://docs.ray.io/en/latest/tune/api_docs/suggestion.html?highlight=suggest
+.. _Hyperopt: http://hyperopt.github.io/hyperopt/

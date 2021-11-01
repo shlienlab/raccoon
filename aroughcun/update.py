@@ -36,7 +36,7 @@ class UpdateClusters:
     """
     
     def __init__(self, data, ori_data, ori_clu,
-            refpath="./raccoon_data/", outpath="./",
+            refpath="./rc_data/", outpath="./",
             tolerance=1e-1, probcut=.25, minclusize=10,
             score='silhouette', metric_clu='cosine', 
             root='0', debug=False, gpu=False, **kwargs):
@@ -205,11 +205,11 @@ class UpdateClusters:
         """ Load projection. """
         
         proj = self.interface.df.read_hdf(os.path.join(self.outpath,
-            'raccoon_data/' + clu_name + '_knn.h5'))
+            'rc_data/' + clu_name + '_knn.h5'))
          
         if proj.shape[1] !=2:
             proj2d = self.interface.df.read_hdf(os.path.join(self.outpath,
-                'raccoon_data/' + clu_name + '_2d_knn.h5'))
+                'rc_data/' + clu_name + '_2d_knn.h5'))
         else:
             proj2d = proj
 

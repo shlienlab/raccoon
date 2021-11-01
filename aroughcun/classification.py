@@ -114,7 +114,7 @@ class KNN:
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
 
     def __init__(self, data, ori_data, ori_clust,
-            refpath="./raccoon_data/", outpath="",
+            refpath="./rc_data/", outpath="",
             root='0', debug=False, gpu=False):
         """ Initialize the the class.
 
@@ -400,7 +400,7 @@ class KNN:
 
                 proj_all.to_hdf(
                 os.path.join(self.outpath,
-                    'raccoon_data/' + names[-1] + '_knn.h5'),
+                    'rc_data/' + names[-1] + '_knn.h5'),
                     key='proj')
 
                 """ Save a 2d projection to disk if needed. """
@@ -425,7 +425,7 @@ class KNN:
                 
                     proj2d.to_hdf(
                     os.path.join(self.outpath,
-                        'raccoon_data/' + names[-1] + '_2d_knn.h5'),
+                        'rc_data/' + names[-1] + '_2d_knn.h5'),
                         key='proj')
 
                 else:

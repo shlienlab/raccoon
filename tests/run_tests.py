@@ -59,21 +59,22 @@ def _create_dataset():
 
     """
 
+    # to redo
 
-    x, y = make_blobs(n_samples=50, centers=4, n_features=16,
-            random_state=32, cluster_std=1.0)
+    x, y = make_blobs(n_samples=40, centers=3, n_features=16,
+            random_state=32, cluster_std=.5)
 
-    x2, y2 = make_blobs(n_samples=25, centers=1, n_features=16,
+    x2, y2 = make_blobs(n_samples=15, centers=1, n_features=16,
             random_state=64, cluster_std=2.5, center_box=(-10, -10))
 
-    x3, y3 = make_blobs(n_samples=25, centers=1, n_features=16,
+    x3, y3 = make_blobs(n_samples=15, centers=1, n_features=16,
             random_state=128, cluster_std=5)
 
-    x4, y4 = make_blobs(n_samples=10, centers=1, n_features=16,
+    x4, y4 = make_blobs(n_samples=5, centers=1, n_features=16,
             random_state=0, cluster_std=.5, center_box=(5,5))
-    x5, y5 = make_blobs(n_samples=10, centers=1, n_features=16,
+    x5, y5 = make_blobs(n_samples=5, centers=1, n_features=16,
             random_state=1, cluster_std=.25, center_box=(6, 6))
-    x6, y6 = make_blobs(n_samples=10, centers=1, n_features=16,
+    x6, y6 = make_blobs(n_samples=5, centers=1, n_features=16,
             random_state=2, cluster_std=.25, center_box=(5.5, 5.5))
 
     
@@ -89,7 +90,7 @@ def _create_dataset():
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Racaroughcun Test Suite')
+    parser = argparse.ArgumentParser(description='Raccoon Test Suite')
     parser.add_argument('-json', '-j', type=str, default='./testlist.json',
             help='tests selection list in json format (default: testlist.json)')
     args = parser.parse_args()    
@@ -177,7 +178,7 @@ if __name__ == "__main__":
     if to_run['resume']:
         try:
             #with HidePrints():
-            resume_test(xx, './out_test_grid/raccoon_data', labels=yy, gpu=to_run['gpu'])
+            resume_test(xx, './out_test_grid/rc_data', labels=yy, gpu=to_run['gpu'])
             print('Resume Test:\t\t\t'+colored('PASSED', 'green'))
             colored('PASSED', 'green')
         except Exception as e:
@@ -206,6 +207,18 @@ if __name__ == "__main__":
             print('Auto Test:\t\t\t'+colored('PASSED', 'green'))
         except Exception as e:
             print('Auto Test:\t\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))
+            traceback.print_exc()
+    
+    """ Test Hyperopt with Ray Tune """
+
+    if to_run['tune']:
+        try:
+            #with HidePrints():
+            tune_test(xx, labels = yy, gpu=to_run['gpu'])
+            print('Tune Test:\t\t\t'+colored('PASSED', 'green'))
+        except Exception as e:
+            print('Tune Test:\t\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
@@ -262,7 +275,7 @@ if __name__ == "__main__":
     if to_run['knn']:
         try:
             #with HidePrints():
-            reftab='./out_test_grid/raccoon_data/clusters_final.h5'
+            reftab='./out_test_grid/rc_data/clusters_final.h5'
             knn_test(xu, xx, reftab, './out_test_grid', gpu=to_run['gpu'])
             print('k-NN Test:\t\t\t'+colored('PASSED', 'green'))
         except Exception as e:
@@ -275,7 +288,7 @@ if __name__ == "__main__":
     if to_run['update']:
         try:
             #with HidePrints():
-            reftab='./out_test_grid/raccoon_data/clusters_final.h5'
+            reftab='./out_test_grid/rc_data/clusters_final.h5'
             update_test(xu, xx, reftab, './out_test_grid', gpu=to_run['gpu'])
             print('Update Test:\t\t\t'+colored('PASSED', 'green'))
         except Exception as e:
@@ -296,6 +309,7 @@ if __name__ == "__main__":
         remove_dir('./out_test_resume')
         remove_dir('./out_test_de')
         remove_dir('./out_test_auto')
+        remove_dir('./out_test_tune')
         remove_dir('./out_test_tsvd')
         remove_dir('./out_test_high')
         remove_dir('./out_test_super')

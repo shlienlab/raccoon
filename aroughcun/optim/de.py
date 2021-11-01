@@ -49,7 +49,7 @@ def _tostring(x):
 
 
 def _differential_evolution(loss_fun, bounds, integers=None,
-        popsize=10, mutation=0.6, recombination=0.7,
+        n_candidates=10, mutation=0.6, recombination=0.7,
         maxiter=20, tol=1e-4, seed=None):
     """ Basic Differential Evolution implementation.
 
@@ -60,7 +60,7 @@ def _differential_evolution(loss_fun, bounds, integers=None,
         integers (list of booleans or None): list with information on which parameters
             are integers,
             if None (default) treat every parameter as float.
-        popsize (int): size of the candidate solutions population.
+        n_candidates (int): size of the candidate solutions population.
         mutation (float): scaling factor for the mutation step.
         recombination (float): recombination (crossover) rate.
         maxiter (float): maximum number of generations.
@@ -71,6 +71,12 @@ def _differential_evolution(loss_fun, bounds, integers=None,
 
     Returns:
         (list of floats): list of best parameters.
+        (list of objects): a list containing score, labels, clustering parameter,
+            projected points, trained maps, filtered features and
+            trained low-information filter from the best scoring model.
+        (list of floats): a matrix containing all the explored models' parameters
+            and their scores (useful for plotting the hyperspace).
+
     """
 
     if seed is not None:
@@ -84,7 +90,7 @@ def _differential_evolution(loss_fun, bounds, integers=None,
     # allparams={}
 
     population = []
-    for i in range(popsize):
+    for i in range(n_candidates):
         indv = []
         for j in range(len(bounds)):
             if integers is not None and integers[j]:
@@ -110,11 +116,11 @@ def _differential_evolution(loss_fun, bounds, integers=None,
 
         """ Cycle through the whole population. """
 
-        for j in range(popsize):
+        for j in range(n_candidates):
 
             """ Create hybrid. """
 
-            candid_ix = list(range(popsize))
+            candid_ix = list(range(n_candidates))
             candid_ix.remove(j)
             candid_ix = random.sample(candid_ix, 3)
 
@@ -195,14 +201,13 @@ def _differential_evolution(loss_fun, bounds, integers=None,
                 best_param = population[j]
 
         logging.debug('DE Generation ' + str(i + 1) + ' Results ')
-        logging.debug('Average score: {:.5f}'.format(sum(scores_gen) / popsize))
+        logging.debug('Average score: {:.5f}'.format(sum(scores_gen) / n_candidates))
         logging.debug('Best score: {:.5f}'.format(best_score))
-        logging.debug('Best solution: ')
-        logging.debug(best_param)
+        logging.debug('Best solution: ', best_param)
 
         if i > 1:
             if best_history[-3] - best_score < tol:
-                logging.info('Tolerance reached < {:2e}'.format(tol))
+                logging.info('Score tolerance reached < {:2e}'.format(tol))
                 break
 
     """ Reformat for optimization surface plitting. """
@@ -214,6 +219,7 @@ def _differential_evolution(loss_fun, bounds, integers=None,
         allscores_list[0].append(float(key.split('_')[0]))
         allscores_list[1].append(int(key.split('_')[1]))
 
-    return 1 - best_score, best_res[0], best_res[1], best_param[1], \
-           best_res[2], best_param[0], best_res[3], best_res[4], \
-           best_res[5], allscores_list
+    logging.info('Best solution: {:.2f}, {:3d}'.format(best_param[0],best_param[1]))
+    
+    return best_param, [1 - best_score]+list(best_res), \
+           allscores_list

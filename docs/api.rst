@@ -50,6 +50,11 @@ Optimizers
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: hypertune
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Utils
 --------------------------------
 
