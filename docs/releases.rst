@@ -3,6 +3,14 @@
 Release History
 ===============
 
+Version 0.5
+===============
+
+Features
+--------
+   
+   - Hyperparameters optimization with Ray Tune
+
 Version 0.4.1
 ===============
 
@@ -23,3 +31,4 @@ Features
 
 
    - GPU implementation with RAPIDS
+

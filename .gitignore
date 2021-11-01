@@ -143,3 +143,4 @@ pylint*
 # Personal tests
 tests/cpu/
 tests/gpu/
+tests/out_test*

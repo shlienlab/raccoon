@@ -1,7 +1,7 @@
 
-====================
+==============
 Classification
-====================
+==============
 
 raccoon provides an implementation of a 
 basic distance-weighted k-nearest neighbours classifier adapted to

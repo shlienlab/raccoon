@@ -1,7 +1,7 @@
 
-====================
+==========
 Clustering
-====================
+==========
 
 
 A wrapper function (:code:`cluster`) is available for the user's convenience,
@@ -95,6 +95,11 @@ the number of maximum candidate points to evaluate can be set with :code:`search
 but the search will stop automatically after a few iterations if a plateau is reached.
 Any `search algorithm`_ included in Ray can be provided through :code:`suggest`. If none are provided,
 Tree Parzen Estimators (TPE) with Hyperopt_ will be used.
+
+A fourth option :code:`auto`, will automatically switch between grid search and differential evolution
+depending on the size of the dataset at each iteration step and, consequently, the candidates pool. 
+The dynamic mesh with :code:`dynmesh` needs to be active when 
+this option is chosen.
 
 Dynamic Mesh
 ------------
