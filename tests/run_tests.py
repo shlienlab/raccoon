@@ -61,8 +61,8 @@ def _create_dataset():
 
     # to redo
 
-    x, y = make_blobs(n_samples=40, centers=3, n_features=16,
-            random_state=32, cluster_std=.5)
+    x, y = make_blobs(n_samples=50, centers=4, n_features=16,
+            random_state=32, cluster_std=.75)
 
     x2, y2 = make_blobs(n_samples=15, centers=1, n_features=16,
             random_state=64, cluster_std=2.5, center_box=(-10, -10))
@@ -210,15 +210,15 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
             traceback.print_exc()
     
-    """ Test Hyperopt with Ray Tune """
+    """ Test TPE with Optuna """
 
-    if to_run['tune']:
+    if to_run['tpe']:
         try:
             #with HidePrints():
-            tune_test(xx, labels = yy, gpu=to_run['gpu'])
-            print('Tune Test:\t\t\t'+colored('PASSED', 'green'))
+            tpe_test(xx, labels = yy, gpu=to_run['gpu'])
+            print('TPE Test:\t\t\t'+colored('PASSED', 'green'))
         except Exception as e:
-            print('Tune Test:\t\t\t'+colored('FAILED', 'red'))
+            print('TPE Test:\t\t\t'+colored('FAILED', 'red'))
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         remove_dir('./out_test_resume')
         remove_dir('./out_test_de')
         remove_dir('./out_test_auto')
-        remove_dir('./out_test_tune')
+        remove_dir('./out_test_tpe')
         remove_dir('./out_test_tsvd')
         remove_dir('./out_test_high')
         remove_dir('./out_test_super')

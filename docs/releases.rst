@@ -9,7 +9,7 @@ Version 0.5
 Features
 --------
    
-   - Hyperparameters optimization with Ray Tune
+   - TPE optimization with Optuna
 
 Version 0.4.1
 ===============

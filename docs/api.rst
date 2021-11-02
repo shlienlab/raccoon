@@ -50,7 +50,7 @@ Optimizers
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: hypertune
+.. automodule:: tpe
     :members:
     :undoc-members:
     :show-inheritance:

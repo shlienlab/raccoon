@@ -17,6 +17,7 @@ This library includes
 * features filtering by variance, MAD or t-SVD
 * integrated unsupervised/supervised UMAP dimensionality reduction
 * clusters identification by DBSCAN, HDBSCAN, SNN or Louvain
+* optimization with grid search, differential evolution or TPE
 * k-NN classification
 * GPU implementation with RAPIDS
 
@@ -38,8 +39,7 @@ Besides basic scientific and plotting libraries, the current version requires
 - scikit-learn
 - scikit-network
 - umap-learn
-- ray
-- hyperopt
+- optuna
 - seaborn
 ```
 

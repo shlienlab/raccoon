@@ -60,8 +60,8 @@ Optimizers
 ==========
 
 There are currently two native optimizers, to be set with the :code:`optimizer` flag.
-A third option, :code:`htune` allows you to use the hyperparameters optimization
-algorithms implemented in Ray Tune.
+A third option, :code:`tpe` allows you to use Tree-structured Parzen Estimators
+with Optuna_.
 
 ===============  ============================================================  
 :code:`'grid'`   **Grid Search**: given a set of parameters ranges and steps, 
@@ -70,10 +70,10 @@ algorithms implemented in Ray Tune.
 :code:`'de'`     **Differential Evolution**: a simple evolutionary algorithm,
                  it requires setting a number of candidates for the parametric 
                  space search and a number of maximum iterations [Storn1997]_
-:code:`'htune'`  **Hyperparameters Optimization**: this flag allows you to 
-	         to run a hyperparameters optimization with Tune_.
+:code:`'tpe'`    **Tree-structured Parzen Estimators**: this flag allows you 
+	               to run TPE with Optuna_.
                  It requires setting a number of candidates for the parametric 
-                 space search and a search algorithm.
+                 space search.
 ===============  ============================================================
 
 While Grid Search requires defining the exact set of points to explore, either directly
@@ -90,11 +90,9 @@ to find the absolute minimum, and the results heavily depend on how extensive th
 For exploratory runs, with a low number of search points, Grid Search is preferred. Differential Evolution
 should be the default choice when resources for a detailed search are available.
 
-Selecting :code:`htune` will allow you to run a hyperparametrs search with Tune_. Again,
-the number of maximum candidate points to evaluate can be set with :code:`search_candid`, 
+Selecting :code:`tpe` will allow you to run a Tree-structured Parzen Estimators search with Optuna_. 
+As for DE, the number of maximum candidate points to evaluate can be set with :code:`search_candid`, 
 but the search will stop automatically after a few iterations if a plateau is reached.
-Any `search algorithm`_ included in Ray can be provided through :code:`suggest`. If none are provided,
-Tree Parzen Estimators (TPE) with Hyperopt_ will be used.
 
 A fourth option :code:`auto`, will automatically switch between grid search and differential evolution
 depending on the size of the dataset at each iteration step and, consequently, the candidates pool. 
@@ -372,6 +370,4 @@ References
 .. [Campello2013] Campello R. J. G. B., Moulavi D., Sander J. (2013), "Density-Based Clustering Based on Hierarchical Density Estimates, Advances in Knowledge Discovery and Data Mining", PAKDD  Lecture Notes in Computer Science, vol 7819.
 .. [Jarvis1973] Jarvis R. A. and Patrick E. A. (1973) "Clustering Using a Similarity Measure Based on Shared Near Neighbors", IEEE Transactions on Computers, vC-22 11: 1025-1034.  
 .. [Blondel2008]  londel V. D., Guillaume J-L., Lambiotte R. and Lefebvre E. (2008), "Fast unfolding of communities in large networks", Journal of Statistical Mechanics, P10008.
-.. _Tune: https://docs.ray.io/en/latest/tune/index.html 
-.. _`search algorithm`: https://docs.ray.io/en/latest/tune/api_docs/suggestion.html?highlight=suggest
-.. _Hyperopt: http://hyperopt.github.io/hyperopt/
+.. _Optuna: https://optuna.readthedocs.io/en/stable/index.html

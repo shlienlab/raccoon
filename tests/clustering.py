@@ -93,8 +93,8 @@ def de_test(data, labels=None, gpu=False):
                                      outpath='./out_test_de', savemap=True, debug=True, gpu=gpu)
 
 
-def tune_test(data, labels=None, gpu=False):
-    """ Clustering test, euclidean with hyperopt provided externally.
+def tpe_test(data, labels=None, gpu=False):
+    """ Clustering test, euclidean TPE.
 
         Args:
             data (pandas dataframe, matrix): input test dataframe.
@@ -102,15 +102,12 @@ def tune_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    from ray.tune.suggest.hyperopt import HyperOptSearch
-
     cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=5, maxdepth=2,
-                                     filterfeat='variance', optimizer='htune', 
-                                     search_candid=5, search_iter=5,
-                                     suggest=HyperOptSearch(metric="score", mode="max"),
-			                         metric_clu='euclidean', metric_map='cosine',
+                                     filterfeat='variance', optimizer='tpe', 
+                                     search_candid=25,
+			             metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=4, minmesh=4,
-                                     outpath='./out_test_tune', savemap=True, debug=True, gpu=gpu)
+                                     outpath='./out_test_tpe', savemap=True, debug=True, gpu=gpu)
 
 def auto_test(data, labels=None, gpu=False):
     """ Clustering test, euclidean automatic selection.

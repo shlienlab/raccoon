@@ -37,7 +37,7 @@ import aroughcun.utils.plots as plotting
 import aroughcun.utils.functions as functions
 import aroughcun.utils.trees as trees
 import aroughcun.optim.de as de 
-import aroughcun.optim.hypertune as htune 
+import aroughcun.optim.tpe as tpe 
 import aroughcun.utils.classes as classes
 from aroughcun.utils.option import OptionalImports
 
@@ -76,7 +76,7 @@ class IterativeClustering:
                 neicap=100, skip_equal_dim=True,
                 metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
-                optimizer='grid', search_candid=10, search_iter=10, suggest=None,
+                optimizer='grid', search_candid=10, search_iter=10,
                 score='silhouette',
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clu_algo='SNN', cparmrange='guess', minclusize=10, 
@@ -149,21 +149,17 @@ class IterativeClustering:
                 all values are exhausted,
                 (works only with ffrange='logspace', default 25).
             optimizer (string): choice of parameters optimizer, can be either 'grid' for grid search,
-                'de' for differential evolution, 'htune' for hyperparameters optimization with ray tune,
+                'de' for differential evolution, 'tpe' for Tree-structured Parzen Estimators with Optuna,
                 or 'auto' for automatic (default is 'grid').
                 Automatic will chose between grid search and DE depending on the number of
                 search points (de if >25), works only if dynmesh is True.
             search_candid (int or list of int): size of the candidate solutions population in
-                differential evolution or hyperparameters optimization.
+                DE or TPE.
                 If list, each value will be subsequently used at the next iteration until
-                all values are exhausted (this last option works only with optimizer='de' and 'htune', default 10).
+                all values are exhausted (this last option works only with optimizer='de' and 'tpe', default 10).
             search_iter (int or list of int): maximum number of iterations of differential evolution.
                 If list, each value will be subsequently used at the next iteration until
                 all values are exhausted (works only with optimizer='de', default 10).
-            suggest (ray.tune.suggest object): the searcher algorithm to be used with ray tune for
-                the hyperparameters optimization. If None, Hyperopt will be used (please note it
-                requires the proper search algorithm library to be installed, see ray tune manual
-                for the available options, default is None).
             score (string or function): objective function of the optimization, to be provided as
                 a string (currently only 'dunn' and 'silhouette' are available, default 'silhouette').
                 Alternatively, a scoring function can be provided, it must take a feature array,
@@ -173,7 +169,7 @@ class IterativeClustering:
                 not needed if metric_map is cosine
                 if None, don't normalize.
             dynmesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE, 
-                candidates in htune) to the population, overrides neipoints, search_candid, 
+                candidates in tpe) to the population, overrides neipoints, search_candid, 
                 search_iter and ffpoints (default False).
             maxmesh (int): maximum number of points for the dynmesh option (hit at 10000 samples,
                 default 20), this is a single dimension, the actuall mesh will contain n*n points.
@@ -338,10 +334,10 @@ class IterativeClustering:
 
         """ Checks on optimizer choice. """
 
-        if self.optimizer not in ['grid', 'de', 'auto', 'htune']:
+        if self.optimizer not in ['grid', 'de', 'auto', 'tpe']:
             sys.exit('ERROR: Optimizer must be either \'grid\' for Grid Search, \'de\' '+\
-                      'for Differential Evolution, \'htune\' for hyperparameters tuning with '+\
-                      'Ray or \'auto\' for automatic selection.')
+                      'for Differential Evolution, \'tpe\' for Tree-structured Parzen Estimators '+\
+                      'optimization with Optuna or \'auto\' for automatic selection.')
 
         if self.optimizer == 'de' and self.ffrange == 'kde':
             sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is '+\
@@ -388,7 +384,7 @@ class IterativeClustering:
                 self.neipoints = meshpoints
                 self.ffpoints = meshpoints
 
-            elif self.optimizer in ['de', 'htune'] :
+            elif self.optimizer in ['de', 'tpe'] :
 
                 if self.minmesh <= 3:
                     self.minmesh = 4
@@ -404,7 +400,7 @@ class IterativeClustering:
                 self.search_candid = meshpoints
                 self.search_iter = meshpoints
                 
-                if self.optimizer == 'htune':
+                if self.optimizer == 'tpe':
                     self.search_candid = self.search_candid**2
 
         try:
@@ -416,7 +412,7 @@ class IterativeClustering:
             sys.exit('ERROR: neipoints must be an integer or a list of integers')
             raise
 
-        if self.optimizer in ['de','htune']:
+        if self.optimizer in ['de','tpe']:
             try:
                 if isinstance(self.search_candid, list):
                     self.search_candid = [int(x) for x in self.search_candid]
@@ -487,13 +483,10 @@ class IterativeClustering:
         logging.info(
             "Scoring function is: "+scorename)
 
-    def _features_removal(self, cutoff, dataset=None):
+    def _features_removal(self, cutoff):
         """ Either remove features with low variance/MAD, or high correlation
             from dataset according to a specified threshold (cutoff)
-            or apply truncated SVD to reduce features to a certain number (cutoff).
-            dataset (dataframe or np matrix): the dataset to be analyzed. 
-                Needed only by htune, all other methods will take the static 
-                dataset variable (default None). 
+            or apply truncated SVD to reduce features to a certain number (cutoff). 
 
         Args:
              cutoff (string or float): if filterfeat=='variance'/'MAD'/'correlation',
@@ -508,22 +501,14 @@ class IterativeClustering:
 
         """
 
-        if dataset is None:
-            # This sort of defeats the purpose of having a static variable
-            # keeping track of the dataset, but it's the most basic way
-            # I could find to make sure ray tune works since it doesn't
-            # like static variables.
-            # Find a way around it.
-            dataset = DataGlobal.dataset.loc[self.data_ix]
-
         if self.filterfeat == 'tSVD':
 
-            if int(cutoff) >= dataset.shape[1]:
+            if int(cutoff) >= DataGlobal.dataset.shape[1]:
                 logging.info(
                     "{:d} features cutoff >= dimensionality of input data,"+\
                     " t-SVD will be skipped".format(int(cutoff)))
     
-                return dataset, None
+                return DataGlobal.dataset.loc[self.data_ix], None
 
             logging.info(
                 "Applying t-SVD with {:d} features".format(int(cutoff)))
@@ -543,25 +528,25 @@ class IterativeClustering:
             # index=DataGlobal.dataset.loc[self.data_ix].index), decomposer
 
             if self.transform is not None:
-                decomposer.fit(dataset
-                    [~dataset.index.isin(
+                decomposer.fit(DataGlobal.dataset.loc[self.data_ix]
+                    [~DataGlobal.dataset.loc[self.data_ix].index.isin(
                         self.transform)].values)
                 return self.interface.df.DataFrame(decomposer.transform(
-                    dataset.values),
-                    index=dataset.index), decomposer
+                    DataGlobal.dataset.loc[self.data_ix].values),
+                    index=DataGlobal.dataset.loc[self.data_ix].index), decomposer
 
             return self.interface.df.DataFrame(decomposer.fit_transform(
-                dataset.values),
-                index=dataset.index), decomposer
+                DataGlobal.dataset.loc[self.data_ix].values),
+                index=DataGlobal.dataset.loc[self.data_ix].index), decomposer
 
         """ Add conditional to apply the cut only on those samples used for training the map. """
 
         if self.transform is not None:
-            new_data = dataset\
-                [~dataset.index.isin(
+            new_data = DataGlobal.dataset.loc[self.data_ix]\
+                [~DataGlobal.dataset.loc[self.data_ix].index.isin(
                 self.transform)]
         else:
-            new_data = dataset
+            new_data = DataGlobal.dataset.loc[self.data_ix]
 
         if self.filterfeat in ['variance', 'MAD']:
 
@@ -573,11 +558,11 @@ class IterativeClustering:
                     new_data, self.interface, thresh=cutoff, type=self.filterfeat)
 
             logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
-                dataset.shape[1] - new_data.shape[1]))
+                DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
 
             # Extra passage needed in case the transform data cut was
             # applied
-            return dataset[new_data.columns], None
+            return DataGlobal.dataset.loc[self.data_ix][new_data.columns], None
 
         elif self.filterfeat == 'correlation':
 
@@ -586,11 +571,11 @@ class IterativeClustering:
                     new_data, self.interface, thresh=cutoff)
 
             logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
-                dataset.shape[1] - new_data.shape[1]))
+                DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
 
             # Extra passage needed in case the transform data cut was
             # applied
-            return dataset[new_data.columns], None
+            return DataGlobal.dataset.loc[self.data_ix][new_data.columns], None
 
         else:
 
@@ -972,16 +957,13 @@ class IterativeClustering:
         
         sys.exit('ERROR: clustering algorithm not recognized')
 
-    def _run_single_instance(self, cutoff, nn, dataset=None):
+    def _run_single_instance(self, cutoff, nn):
         """ Run a single instance of clusters search for a given features cutoff and
         UMAP nearest neighbors number.
 
         Args:
             cutoff (float): features cutoff.
             nn (int): UMAP nearest neighbors value.
-            dataset (dataframe or np matrix): the dataset to be analyzed. 
-                Needed only by htune, all other methods will take the static 
-                dataset variable (default None). 
 
         Returns:
             sil_opt (float): silhoutte score corresponding to the best set of parameters.
@@ -992,23 +974,15 @@ class IterativeClustering:
             decomposer (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
 
         """
-
-        if dataset is None:
-            # This sort of defeats the purpose of having a static variable
-            # keeping track of the dataset, but it's the most basic way
-            # I could find to make sure ray tune works since it doesn't
-            # like static variables.
-            # Find a way around it.
-            dataset = DataGlobal.dataset.loc[self.data_ix]
             
         sil_opt = -0.0001
 
-        labs_opt = [0] * dataset.shape[0]
+        labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
         cparm_opt = self.interface.num.nan
         keepfeat = self.interface.num.nan
 
         init = 'spectral'
-        if dataset.shape[0] <= self.dim + 1:
+        if DataGlobal.dataset.loc[self.data_ix].shape[0] <= self.dim + 1:
             init = 'random'
         logging.log(DEBUG_R, 'Initialization: ' + init)
 
@@ -1016,10 +990,7 @@ class IterativeClustering:
 
         logging.log(DEBUG_R, 'Features cutoff: {:.3f}'.format(cutoff))
 
-        data_cut, decomposer = self._features_removal(cutoff, dataset = dataset)
-        
-        #Maybe this helps with the memory
-        del dataset
+        data_cut, decomposer = self._features_removal(cutoff)
 
         if self.filterfeat in ['variance', 'MAD']:
             keepfeat = data_cut.columns
@@ -1165,15 +1136,12 @@ class IterativeClustering:
         return sil_opt, labs_opt,\
             cparm_opt, pj, mapping, keepfeat, decomposer
 
-    def _objective_function(self, params, dataset=None):
+    def _objective_function(self, params):
         """ Objective function for Differential Evolution.
 
         Args:
             params (list): a list containing a single feature cutoff and a
                 UMAP nearest neighbors parameter.
-            dataset (dataframe or np matrix): the dataset to be passed
-                to the objective function. Needed only by htune, all
-                other methods will take the static dataset variable (default None). 
         Returns:
             (float): loss value for the given set of parameters.
             labs (pandas series): series with the cluster membership identified
@@ -1188,7 +1156,7 @@ class IterativeClustering:
 
         sil_opt, labs, cparm_opt, pj, mapping, keepfeat,\
             decomposer = self._run_single_instance(
-            params[0], int(params[1]), dataset=dataset)
+            params[0], int(params[1]))
 
         return 1 - sil_opt, labs, cparm_opt, pj, mapping, keepfeat, decomposer
 
@@ -1541,17 +1509,17 @@ class IterativeClustering:
 
             logging.info('Done!')
 
-        elif self.optimizer == 'htune':
+        elif self.optimizer == 'tpe':
 
-            """ Other optimizers with RayTune. """
+            """ Tree-structured Parzen Estimators with Optuna. """
 
-            logging.info('Running hyperparameters tuning with Ray...')
+            logging.info('Running TPE with Optuna...')
  
-            hspace = { 'ffrange' : self.ffrange, 
-                       'nnrange' : nnrange}
-            config_opt, results_opt, scoreslist = htune._hyperparam_tune(
-                self._objective_function, hspace, dataset = DataGlobal.dataset.loc[self.data_ix], 
-                n_candidates=self.search_candid[0], seed=self._seed, outpath=os.path.join(self.outpath, 'rc_data/'))
+            bounds = [(min(self.ffrange), max(self.ffrange)),
+                      (min(nnrange), max(nnrange))]
+            config_opt, results_opt, scoreslist = tpe._optuna_tpe(
+                self._objective_function, bounds,
+                n_candidates=self.search_candid[0], seed=self._seed)
 
             logging.info('Done!')
             
@@ -1774,7 +1742,7 @@ class IterativeClustering:
                     'Parameters granilarity change ' +
                     '[nearest neighbours: {:d}'.format(
                         self.interface.get_value(self.neipoints[0])) + ']')
-            if self.optimizer in ['de','htune'] and len(self.search_candid) > 1:
+            if self.optimizer in ['de','tpe'] and len(self.search_candid) > 1:
                 self.search_candid = self.search_candid[1:]
                 logging.info('Parameters granilarity change ' +
                              '[Candidates population: {:d}'.format(int(self.search_candid[0])) + ']')
