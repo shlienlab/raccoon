@@ -27,7 +27,7 @@ class Palettes:
     midpalmap = LinearSegmentedColormap.from_list('my_list', midpal, N=1000)
 
 def _plot_score(scores, parm_opt, xlab, name='./scores.png', path=""):
-    """ Plot optimization score through iterations and hilights the optimal choice.
+    """ Plot optimization score through iterations and highlights the optimal choice.
 
     Args:
         scores (list of float): list of scores through the clustering
@@ -224,11 +224,11 @@ def plot_map(df, labels, name='./projection.png', path=""):
     colors = cmap(np.linspace(0, 1, len(lbvals)))
 
     # ugly, find a better way
-    # try:
+    #try:
     labels = labels.loc[df.index]
-    # except:
+    #except:
     #    labels=labels.reset_index(drop=True)
-
+    
     plt.figure(figsize=(10, 10))
     ax = plt.gca()
     
@@ -237,8 +237,8 @@ def plot_map(df, labels, name='./projection.png', path=""):
     plt.axis('off')
 
     for lab, col in zip(lbvals, colors):
-        ax.scatter(df.loc[labels[labels == lab].index][0],
-                   df.loc[labels[labels == lab].index][1],
+        ax.scatter(df.loc[labels[labels == lab].index].iloc[:,0],
+                   df.loc[labels[labels == lab].index].iloc[:,1],
                    c=[col], s=10, label=lab)
 
     ax.set_aspect('equal')

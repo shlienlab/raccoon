@@ -73,7 +73,7 @@ class IterativeClustering:
     def __init__(self, data, lab=None, transform=None, supervised=False, 
                 supervised_weight=0.5, dim=2, epochs=5000, lr=0.05, 
                 neirange='logspace', neipoints=25, neifactor=1.0,
-                neicap=100, skip_equal_dim=True,
+                neicap=100, skip_equal_dim=True, skip_dimred=False,
                 metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
                 optimizer='grid', search_candid=10, search_iter=10,
@@ -121,6 +121,8 @@ class IterativeClustering:
             skip_equal_dim (bool): if True, whenever the target dimensionality corresponds
                 to the dimensionality of the input data, the dimensionality reduction step will
                 be skipped (saves time, default True).
+            skip_dimred (bool): if True, skip the non-linear dimensionality reduction step 
+                (default False).
             metric_map (string): metric to be used in UMAP distance calculations (default cosine).
             metric_clu (string): metric to be used in clusters identification and clustering score
                 calculations (default euclidean)
@@ -287,6 +289,7 @@ class IterativeClustering:
         self.neifactor = neifactor
         self.neicap = neicap
         self.skip_equal_dim = skip_equal_dim
+        self.skip_dimred = skip_dimred
         self.metric_map = metric_map
         self.metric_clu = metric_clu
         self.mparams = {}
@@ -427,7 +430,9 @@ class IterativeClustering:
                 if self.filterfeat == 'tSVD':
                     self.ffrange = [int(min([50,
                                              DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.3])),
-                                    int(DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9)]
+                                    int(max([1,
+                                             DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9]))]
+                    self.ffrange = [x for x in self.ffrange if x>0]
 
         if self.optimizer == 'de':
             try:
@@ -458,8 +463,10 @@ class IterativeClustering:
                     self.ffrange = sorted([int(x) for x in self.interface.num.logspace(
                         self.interface.num.log10(min([50,
                             DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.3])),
-                        self.interface.num.log10(DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9),
+                        self.interface.num.log10(max([1,
+                            DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.9])),
                         num=self.ffpoints[0])])
+                    self.ffrange = [x for x in self.ffrange if x>0]
 
         """ Setup logging. """
 
@@ -553,7 +560,7 @@ class IterativeClustering:
             if cutoff == 'kde':
                 new_data = functions._drop_min_KDE(
                     new_data, self.interface, type=self.filterfeat)
-            elif cutoff < new_data.shape[1]:
+            elif cutoff < 1:
                 new_data = functions._near_zero_var_drop(
                     new_data, self.interface, thresh=cutoff, type=self.filterfeat)
 
@@ -1013,10 +1020,13 @@ class IterativeClustering:
         logging.log(DEBUG_R, 'Number of nearest neighbors: {:d}'.format(nn))
 
 
-        if self.dim == data_cut.shape[1] and self.skip_equal_dim:
+        if (self.dim == data_cut.shape[1] and self.skip_equal_dim) or\
+            self.skip_dimred:
 
             """ If the embedding space dimensionality corresponds to the data
                 dimensionality, do not run the projection. """
+
+            logging.info('Skipping non-linear dimensionality reduction step')
 
             mapping = classes.IdentityProjection()
 
@@ -1125,7 +1135,7 @@ class IterativeClustering:
                 else:
                     if ratio<=.3:
                         logging.log(DEBUG_R,
-                            'Too many points discarded (>30%)!')
+                            'Too many points discarded (>{:d}%)!'.format(int(ratio*10)))
                     sil = -0.0001
 
                 if sil > sil_opt:
@@ -1229,10 +1239,13 @@ class IterativeClustering:
 
                 logging.log(DEBUG_R, 'Number of nearest neighbors: {:d}'.format(nn))
 
-                if self.dim == data_cut.shape[1] and self.skip_equal_dim:
+                if (self.dim == data_cut.shape[1] and self.skip_equal_dim) or\
+                    self.skip_dimred:
 
                     """ If the embedding space dimensionality corresponds to the data
                         dimensionality, do not run the projection. """
+
+                    logging.info('Skipping non-linear dimensionality reduction step')
 
                     mapping = classes.IdentityProjection()
 
@@ -1347,7 +1360,7 @@ class IterativeClustering:
                         else:
                             if ratio<=self.noise_ratio:
                                 logging.log(DEBUG_R,
-                                    'Too many points discarded (>{:d}%)!'.format(ratio*10))
+                                    'Too many points discarded (>{:d}%)!'.format(int(ratio*10)))
                             sil = -0.0001
 
 
@@ -1754,7 +1767,7 @@ class IterativeClustering:
             deep = IterativeClustering(sel_new.index, lab=None, transform=to_transform,
                 dim=self.dim, epochs=self.epochs, lr=self.lr, neirange=self.neirange,
                 neipoints=self.neipoints, neicap=self.neicap, 
-                skip_equal_dim=self.skip_equal_dim, metric_map=self.metric_map,
+                skip_equal_dim=self.skip_equal_dim, skip_dimred=self.skip_dimred, metric_map=self.metric_map,
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
                 search_candid=self.search_candid, search_iter=self.search_iter, score=self.score, norm=self.norm,

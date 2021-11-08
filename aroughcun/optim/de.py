@@ -9,7 +9,6 @@ https://nathanrooy.github.io/posts/2017-08-27/simple-differential-evolution-with
 Storn, R.; Price, K. (1997). "Differential evolution - a simple and efficient heuristic
 for global optimization over continuous spaces". Journal of Global Optimization.
 11 (4): 341–359. doi:10.1023/A:1008202821328.
-
 """
 
 import random

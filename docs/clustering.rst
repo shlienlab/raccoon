@@ -194,8 +194,8 @@ of cumulative variance to be kept at 100% as the only explorable point.
   filterfeat = 'variance'
   ffrange = [1]
 
-Dimensionality Reduction
-========================
+Non-linear Dimensionality Reduction
+===================================
 
 Following the low-information features removal is the dimensionality reduction through UMAP.
 Here there are several flags that one could set, mostly inherited by UMAP itself, the
@@ -224,6 +224,7 @@ want to avoid running the dimensionality reduction step on your data.
 If for any reason you still want to transform your data, you can set :code:`'skip_equal_dim'`
 to :code:`False`.
 
+When activated, flag :code:`skip_dimred` will allow you to skip this step completely.
 
 Clusters Identification
 =======================

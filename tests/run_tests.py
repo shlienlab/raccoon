@@ -12,6 +12,7 @@ import argparse
 
 import numpy as np
 import pandas as pd
+from sklearn.datasets import load_iris
 from sklearn.datasets import make_blobs
 
 from clustering import *
@@ -50,49 +51,68 @@ class HidePrints:
         sys.stdout = self._original_stdout
 
 
-def _create_dataset():
+def _create_dataset(dset='iris'):
     """ Creates a dummy dataset for testing purposes.
 
-        Returns:
-            (matrix) cohordinates of dummy population.
-            (array) cluster membership labels of dummy population.
+    Args:
+        dset (string): dataset name, 'custom' or 'iris' 
+            (default: iris).
+
+    Returns:
+        (matrix) cohordinates of dummy population.
+        (array) cluster membership labels of dummy population.
 
     """
 
-    # to redo
+    if dset == 'custom':
 
-    x, y = make_blobs(n_samples=50, centers=4, n_features=16,
-            random_state=32, cluster_std=.75)
+        x, y = make_blobs(n_samples=50, centers=3, n_features=16,
+                random_state=32, cluster_std=.5)
 
-    x2, y2 = make_blobs(n_samples=15, centers=1, n_features=16,
-            random_state=64, cluster_std=2.5, center_box=(-10, -10))
+        x2, y2 = make_blobs(n_samples=10, centers=1, n_features=16,
+                random_state=64, cluster_std=2.5, center_box=(-10, -10))
 
-    x3, y3 = make_blobs(n_samples=15, centers=1, n_features=16,
-            random_state=128, cluster_std=5)
+        x3, y3 = make_blobs(n_samples=15, centers=1, n_features=16,
+                random_state=128, cluster_std=5)
 
-    x4, y4 = make_blobs(n_samples=5, centers=1, n_features=16,
-            random_state=0, cluster_std=.5, center_box=(5,5))
-    x5, y5 = make_blobs(n_samples=5, centers=1, n_features=16,
-            random_state=1, cluster_std=.25, center_box=(6, 6))
-    x6, y6 = make_blobs(n_samples=5, centers=1, n_features=16,
-            random_state=2, cluster_std=.25, center_box=(5.5, 5.5))
+        x4, y4 = make_blobs(n_samples=25, centers=1, n_features=16,
+                random_state=0, cluster_std=5, center_box=(0,-2.5))
 
+        x, y ,u = pd.DataFrame(np.concatenate([x, x2, x4]),
+                    index=[str(x)+'_o' for x in np.arange(x.shape[0]+x2.shape[0]+\
+                        x4.shape[0])]),\
+                pd.Series(np.concatenate([y, np.where(y2 == 0, 3, y2), np.where(y4 == 0, 4, y4)]),
+                    index=[str(x)+'_o' for x in np.arange(x.shape[0]+x2.shape[0]+\
+                        x4.shape[0])]),\
+                pd.DataFrame(x3, 
+                    index=[str(x)+'_u' for x in np.arange(x3.shape[0])])
     
-    return pd.DataFrame(np.concatenate([x, x2, x4, x5, x6]),
-                index=[str(x)+'_o' for x in np.arange(x.shape[0]+x2.shape[0]+\
-                    x4.shape[0]+x5.shape[0]+x6.shape[0])]),\
-            pd.Series(np.concatenate([y, np.where(y2 == 0, 3, y2), np.where(y4 == 0, 4, y4),
-                    np.where(y5 == 0, 5, y5), np.where(y6 == 0, 6, y6)]),
-                index=[str(x)+'_o' for x in np.arange(x.shape[0]+x2.shape[0]+\
-                    x4.shape[0]+x5.shape[0]+x6.shape[0])]),\
-            pd.DataFrame(x3, 
-                index=[str(x)+'_u' for x in np.arange(x3.shape[0])])
+    elif dset == 'iris':
+
+        iris = load_iris()
+        iris_x = pd.DataFrame(iris.data)
+        iris_y = pd.Series(iris.target)
+
+        u = iris_x.iloc[int(iris_x.shape[0]*.75):] 
+        x = iris_x.iloc[:int(iris_x.shape[0]*.75)]
+        y = iris_y.iloc[:int(iris_y.shape[0]*.75)]
+
+        x.index = [str(x)+'_o' for x in x.index.astype(str)]
+        y.index = [str(y)+'_o' for y in y.index.astype(str)]
+        u.index = [str(u)+'_u' for u in u.index.astype(str)]
+
+    else:
+        raise ValueError('Test dataset not found (\'custom\' or \'iris\' are available).')
+
+    return x, y, u
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Raccoon Test Suite')
     parser.add_argument('-json', '-j', type=str, default='./testlist.json',
             help='tests selection list in json format (default: testlist.json)')
+    parser.add_argument('-dataset', '-d', type=str, default='iris',
+            help='test dataset (iris or custom, default: iris)')
     args = parser.parse_args()    
 
 
@@ -114,7 +134,7 @@ if __name__ == "__main__":
 
     print('Running Tests...')
 
-    xx, yy, xu = _create_dataset()
+    xx, yy, xu = _create_dataset(args.dataset)
 
     if to_run['grid'] == False and (
             to_run['knn'] == True or to_run['resume'] == True):

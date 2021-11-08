@@ -4,6 +4,8 @@ Auxiliary classes for RACCOON
 F. Comitani     @2021
 """
 
+from math import sqrt
+
 class IdentityProjection:
 
     """ To be used when the target space dimensionality corresponds to the input space
@@ -16,6 +18,8 @@ class IdentityProjection:
             kwargs: keyword arguments will be ignored.
         """
 
+        self.n_neighbors  = 0
+        self.n_components = 1
 
     def identity(self, data):
         """ Identity function. Returns the input data.
@@ -29,12 +33,17 @@ class IdentityProjection:
 
         return data
 
-    def fit(self, *args, **kwargs):
-        """ Initialize the the class.
+    def fit(self, data, *args, **kwargs):
+        """ Initialize the the class, set the number of 
+            neighbors as square root of the dataset size
+            and dimensionality of the dataset.
 
             args: arguments will be ignored.
             kwargs: keyword arguments will be ignored.
         """
+
+        self.n_neighbors  = int(sqrt(data.shape[0]))
+        self.n_components = data.shape[1]
 
     def transform(self, data):
         """ Empty transform function
@@ -58,4 +67,6 @@ class IdentityProjection:
             data (any): object to be returned.
             kwargs: keyword arguments will be ignored.
         """
+
+        self.fit(data)
         return self.transform(data)

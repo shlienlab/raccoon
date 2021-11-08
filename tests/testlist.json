@@ -13,6 +13,6 @@
     "super":    true,
     "knn":      true,
     "update":   true,
-    "clean":    true,
+    "clean":    false,
     "gpu":      false
 }

@@ -15,21 +15,13 @@ It searches for the optimal clusters in your data by running low information fea
 This library includes
 
 * features filtering by variance, MAD or t-SVD
-* integrated unsupervised/supervised UMAP dimensionality reduction
+* integrated unsupervised/supervised UMAP non-linear dimensionality reduction
 * clusters identification by DBSCAN, HDBSCAN, SNN or Louvain
 * optimization with grid search, differential evolution or TPE
 * k-NN classification
 * GPU implementation with RAPIDS
 
-Detailed documentation, API references and tutorials can be found at this [link](https://aroughcun.readthedocs.io/en/latest/).
-
-### Why iterating the optimization?
-
-When working with complex high-dimensionality datasets, one may be interested in data relationships at different hierarchical levels. In a pet image recognition project, one may want to distinguish not only cats from dogs but also different breeds.
-While several hierarchical clustering methods are available, they generally tend to ignore the fact that optimal parameters in a typical clustering analysis are dependent on the subset of data being considered, and work instead on a single set space. 
-The optimal dimensionality for separating dog breeds may lay on a different lower-dimensionality manifold than the one that allows separating distinct species, while features that may be irrelevant in distinguishing a cat from a dog may hold considerable information at the breeds level. 
-For a proper hierarchal analysis, the choice of clustering parameters should be repeated at each iteration, accounting for the new range and shape of the data subsets.
-`raccoon` identifies the proper clustering parameters at each hierarchical level, by repeating the optimization independently for each identified cluster.  
+Detailed documentation, API references, FAQ and tutorials can be found at this [link](https://aroughcun.readthedocs.io/en/latest/).
 
 ### Dependencies
 
