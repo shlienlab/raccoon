@@ -18,6 +18,7 @@ This process is then repeated iteratively within each cluster identified.
    self
    installation.rst
    releases.rst
+   faq.rst
 
 .. toctree::
    :maxdepth: 1

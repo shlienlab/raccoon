@@ -13,7 +13,7 @@ def grid_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=5, maxdepth=3, minclusize=3,
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=3, minclusize=5,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3, chk=True,
                                      outpath='./out_test_grid', savemap=True, debug=True, gpu=gpu)
@@ -105,7 +105,7 @@ def tpe_test(data, labels=None, gpu=False):
     cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=5, maxdepth=2,
                                      filterfeat='variance', optimizer='tpe', 
                                      search_candid=25,
-			             metric_clu='euclidean', metric_map='cosine',
+			                         metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=4, minmesh=4,
                                      outpath='./out_test_tpe', savemap=True, debug=True, gpu=gpu)
 
