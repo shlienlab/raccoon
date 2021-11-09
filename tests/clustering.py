@@ -105,8 +105,8 @@ def tpe_test(data, labels=None, gpu=False):
     cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=5, maxdepth=2,
                                      filterfeat='variance', optimizer='tpe', 
                                      search_candid=25,
-			                         metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=4, minmesh=4,
+			             metric_clu='euclidean', metric_map='cosine',
+                                     dynmesh=False, clu_algo='SNN',
                                      outpath='./out_test_tpe', savemap=True, debug=True, gpu=gpu)
 
 def auto_test(data, labels=None, gpu=False):

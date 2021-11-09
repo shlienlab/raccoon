@@ -1139,7 +1139,7 @@ class IterativeClustering:
                 else:
                     if ratio<=.3:
                         logging.log(DEBUG_R,
-                            'Too many points discarded ({:d}%>{:d}%)!'.format(int(ratio*100),30))
+                            'Too many points discarded ({:d}%>{:d}%)!'.format(int((1-ratio)*100),70))
                     sil = -0.0001
 
                 if sil > sil_opt:
@@ -1364,7 +1364,7 @@ class IterativeClustering:
                         else:
                             if ratio<=self.noise_ratio:
                                 logging.log(DEBUG_R,
-                                    'Too many points discarded ({:d}%>{:d}%)!'.format(int(ratio*100),30))
+                                    'Too many points discarded ({:d}%>{:d}%)!'.format(int((1-ratio)*100),70))
                             sil = -0.0001
 
 
@@ -1452,9 +1452,8 @@ class IterativeClustering:
                     maxbound = self.interface.num.log10(numpoints - 1)
                 else:
                     minbound = self.interface.num.log10(
-                        self.interface.num.sqrt(numpoints * self.neifactor))
-                    maxbound = self.interface.num.log10(numpoints * self.neifactor)
-
+                        self.interface.num.sqrt(numpoints * self.neifactor - 1))
+                    maxbound = self.interface.num.log10(numpoints * self.neifactor - 1)
                 
                 """ Neighbours cap. """
 
@@ -1466,8 +1465,8 @@ class IterativeClustering:
 
                 """ Hard limit. """
 
-                if minbound <= 1:
-                    minbound = 2
+                if minbound <= 0:
+                    minbound = self.interface.num.log10(2)
 
                 nnrange = sorted([int(x) for x in self.interface.num.logspace(
                     minbound, maxbound, num=self.neipoints[0])])
@@ -1488,15 +1487,16 @@ class IterativeClustering:
             if self.neicap is not None:
                 nnrange = sorted(list(self.interface.set(
                     [x if x <= self.neicap else self.neicap for x in nnrange])))
-                
+
+            """ Number of neighbours cannot be more than the number of samples. """
+            
             nnrange = sorted(list(self.interface.set(
                 [x if x < numpoints else numpoints-1 for x in nnrange])))
-                
+
         else:
 
             nnrange = []
         
-
         """ Run Optimizer. """
 
         if self.optimizer == 'grid':
@@ -1534,6 +1534,7 @@ class IterativeClustering:
  
             bounds = [(min(self.ffrange), max(self.ffrange)),
                       (min(nnrange), max(nnrange))]
+
             config_opt, results_opt, scoreslist = tpe._optuna_tpe(
                 self._objective_function, bounds,
                 n_candidates=self.search_candid[0], 

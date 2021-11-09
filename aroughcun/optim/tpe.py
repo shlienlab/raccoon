@@ -105,6 +105,7 @@ class EarlyStoppingCallback(object):
             self._iter = 0
             self._score = study.best_value
         else:
+            #elif self._score <=1:
             self._iter += 1
 
         if self._iter >= self.patience - 1:
@@ -136,7 +137,7 @@ def _optuna_tpe(obj_func, bounds, n_candidates=20,
     """
 
     """ Set Objective function. """
-
+    
     objective = Objective(bounds, obj_func)
     
     """ Set Early stopping. """
