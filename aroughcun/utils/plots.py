@@ -43,6 +43,8 @@ def _plot_score(scores, parm_opt, xlab, name='./scores.png', path=""):
     ax.set_facecolor('white')
     
     cieling = max([max(scores[1]), 1.])
+    
+    #fix facecolor of colorbar ax
 
     ax.plot(sorted(scores[0]),
             [y for _,y in sorted(zip(scores[0],scores[1]),

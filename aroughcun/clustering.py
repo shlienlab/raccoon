@@ -77,7 +77,7 @@ class IterativeClustering:
                 metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
                 optimizer='grid', search_candid=10, search_iter=10,
-                score='silhouette',
+                tpe_patience=5, score='silhouette', 
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clu_algo='SNN', cparmrange='guess', minclusize=10, 
                 outliers='ignore', noise_ratio=.3,
@@ -158,10 +158,13 @@ class IterativeClustering:
             search_candid (int or list of int): size of the candidate solutions population in
                 DE or TPE.
                 If list, each value will be subsequently used at the next iteration until
-                all values are exhausted (this last option works only with optimizer='de' and 'tpe', default 10).
+                all values are exhausted (this last option works only with optimizer='de' and 'tpe', 
+                default 10).
             search_iter (int or list of int): maximum number of iterations of differential evolution.
                 If list, each value will be subsequently used at the next iteration until
                 all values are exhausted (works only with optimizer='de', default 10).
+            tpe_patience (int): number of tpe iteractions below the tolerance before interrupting 
+                the search.
             score (string or function): objective function of the optimization, to be provided as
                 a string (currently only 'dunn' and 'silhouette' are available, default 'silhouette').
                 Alternatively, a scoring function can be provided, it must take a feature array,
@@ -307,6 +310,7 @@ class IterativeClustering:
         self.clus_opt = None
         self._name = name
         self._depth = depth
+        self.tpe_patience = tpe_patience
         self.score = score
         self.norm = norm
         self.dynmesh = dynmesh
@@ -1135,7 +1139,7 @@ class IterativeClustering:
                 else:
                     if ratio<=.3:
                         logging.log(DEBUG_R,
-                            'Too many points discarded (>{:d}%)!'.format(int(ratio*10)))
+                            'Too many points discarded ({:d}%>{:d}%)!'.format(int(ratio*100),30))
                     sil = -0.0001
 
                 if sil > sil_opt:
@@ -1360,7 +1364,7 @@ class IterativeClustering:
                         else:
                             if ratio<=self.noise_ratio:
                                 logging.log(DEBUG_R,
-                                    'Too many points discarded (>{:d}%)!'.format(int(ratio*10)))
+                                    'Too many points discarded ({:d}%>{:d}%)!'.format(int(ratio*100),30))
                             sil = -0.0001
 
 
@@ -1532,7 +1536,8 @@ class IterativeClustering:
                       (min(nnrange), max(nnrange))]
             config_opt, results_opt, scoreslist = tpe._optuna_tpe(
                 self._objective_function, bounds,
-                n_candidates=self.search_candid[0], seed=self._seed)
+                n_candidates=self.search_candid[0], 
+                patience=self.tpe_patience, seed=self._seed)
 
             logging.info('Done!')
             
@@ -1770,7 +1775,8 @@ class IterativeClustering:
                 skip_equal_dim=self.skip_equal_dim, skip_dimred=self.skip_dimred, metric_map=self.metric_map,
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
-                search_candid=self.search_candid, search_iter=self.search_iter, score=self.score, norm=self.norm,
+                search_candid=self.search_candid, search_iter=self.search_iter, 
+                tpe_patience=self.tpe_patience, score=self.score, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                 clu_algo=self.clu_algo, cparmrange=self.cparmrange, minclusize=self.minclusize,
                 outliers=self.outliers, noise_ratio=self.noise_ratio, 

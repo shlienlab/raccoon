@@ -21,7 +21,11 @@ accuracy-computational cost trade-off. Know your data!
 
 **Can I use my own clustering score?**
 
+<<<<<<< HEAD
 Of course. :code:`raccon` can takes custom objective functions as long as they coply to the format used 
+=======
+Of course. :code:`raccoon` can takes custom objective functions as long as they coply to the format used 
+>>>>>>> 3099c7be735141f4d40f357b5fb8d67612687c9a
 by other common internal validation scores available in sickit-learn, like the silhouette score. 
 The score needs to be at a maximum when the clustering is optimal, invert its direction if necessary.
 Just remember to make sure your function is compatible with RAPIDS if you are planning to use a GPU.
@@ -35,4 +39,8 @@ See the documentation for more details.
 **Can I use something else rather than UMAP?**
 
 For the moment, the only alternative is to only run the low-information removal (e.g. with tSVD) and
+<<<<<<< HEAD
 skip the non-linear dimensionality reduction step, if you wish so. We plan on adding more algorithms in the future. Stay tuned!
+=======
+skip the non-linear dimensionality reduction step, if you wish so. We plan on adding more algorithms in the future. Stay tuned!
+>>>>>>> 3099c7be735141f4d40f357b5fb8d67612687c9a

@@ -8,67 +8,77 @@ Wrapper functions
 .. automodule:: aroughcun.__init__
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 CPU/GPU interface
 -----------------
 
-.. automodule:: interface
+.. automodule:: aroughcun.interface
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 Clustering
 ---------------------------
 
-.. automodule:: clustering
+.. automodule:: aroughcun.clustering
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 Classification
 ------------------------
 
-.. automodule:: classification
+.. automodule:: aroughcun.classification
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 Update
 --------------------------------
 
-.. automodule:: update
+.. automodule:: aroughcun.update
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 Optimizers
 --------------------------------
 
-.. automodule:: de
+.. automodule:: optim.de
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
-.. automodule:: tpe
+.. automodule:: optim.tpe
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 Utils
 --------------------------------
 
-.. automodule:: functions
+.. automodule:: utils.functions
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
-.. automodule:: classes
+.. automodule:: utils.classes
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
-.. automodule:: plots
+.. automodule:: utils.plots
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:

@@ -49,6 +49,8 @@ class Objective:
         self._model = [1 - score, labs, eps_opt, pj, mapping,\
             keepfeat, decomp]
         
+        logging.debug('Score: {:.5f}'.format(1-score))
+        
         return score
 
     def callback(self, study, trial):
