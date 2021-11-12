@@ -97,6 +97,7 @@ def _plot_score_surf(scores, parm_opt, name='./scores_surf.png', path=""):
         extend='min')
     cbar = plt.colorbar()
     cbar.set_label(r'Objective function', fontsize=20)
+    cbar.ax.set_facecolor('white')
     cbar.ax.tick_params(size=0)
     cbar.set_ticks(np.linspace(0, cieling, 11))
     cbar.ax.set_yticklabels(['{:.1f}'.format(x)

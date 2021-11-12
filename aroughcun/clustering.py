@@ -79,7 +79,7 @@ class IterativeClustering:
                 optimizer='grid', search_candid=10, search_iter=10,
                 tpe_patience=5, score='silhouette', 
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
-                clu_algo='SNN', cparmrange='guess', minclusize=10, 
+                clu_algo='SNN', cparmrange='guess', min_sam_dbscan=None, 
                 outliers='ignore', noise_ratio=.3,
                 name='0', debug=False, maxdepth=None, savemap=True, RPD=False,
                 outpath="", depth=0, chk=False, 
@@ -190,7 +190,8 @@ class IterativeClustering:
                 by the elbow method);
                 When 'HDBSCAN' this corresponds to the minimum number of samples required by
                 the clusters (if 'guess' adapts it on the dataset population).
-            minclusize (int): minimum number of samples in a cluster used in DBSCAN and HDBSCAN
+            min_sam_dbscan (int): minimum number of samples to define a core used in DBSCAN and HDBSCAN.
+                if None, set 2*target_dim (default None)
                 (default is 10).
             outliers (string): selects how to deal with outlier points in the clusters assignment
                 if 'ignore' discard them
@@ -319,11 +320,15 @@ class IterativeClustering:
 
         self.clu_algo = clu_algo
         self.cparmrange = cparmrange
-        self.minclusize = minclusize
+        self.min_sam_dbscan = min_sam_dbscan
         self.outliers = outliers
         self.noise_ratio = noise_ratio
 
         self.chk = chk
+
+        if self.min_sam_dbscan is None:
+            # Sander et al. 1998
+            self.min_sam_dbscan = self.dim * 2
 
         """ CPU vs GPU methods check. """
 
@@ -799,7 +804,7 @@ class IterativeClustering:
 
         else:
             neigh = self.interface.n_neighbor(
-                n_neighbors=2,
+                n_neighbors=self.min_sam_dbscan,
                 metric=self.metric_clu,
                 metric_params=self.mparams,
                 n_jobs=-1).fit(pj)
@@ -807,7 +812,8 @@ class IterativeClustering:
             
             if not isinstance(neigh, self.interface.df.DataFrame):
                 neigh = self.interface.df.DataFrame(neigh)
-            neigh.columns = ['0', 'elbow']
+            neigh['elbow']=neigh.iloc[:,1:].mean(axis=1)
+            #neigh.columns = ['0', 'elbow']
         
         neigh = neigh.sort_values('elbow')
         neigh['delta'] = neigh['elbow'].diff().shift(periods=-1) \
@@ -867,7 +873,7 @@ class IterativeClustering:
 
         elif self.clu_algo == 'HDBSCAN':
             minbound = self.interface.num.amax(
-                [self.minclusize, int(self.interface.num.sqrt(pj.shape[0] / 25))])
+                [self.min_sam_dbscan, int(self.interface.num.sqrt(pj.shape[0] / 25))])
             maxbound = self.interface.num.amin(
                 [250, int(self.interface.num.sqrt(pj.shape[0] * 2.5))])
             if minbound == maxbound:
@@ -927,10 +933,10 @@ class IterativeClustering:
             (list of int): list of assigned clusters. """
 
 
-        if self.clu_algo == 'SNN':
+        if self.clu_algo in ['DBSCAN','SNN']:
             return self.interface.cluster(pj,
                 eps=cparm,
-                min_samples=self.minclusize,
+                min_samples=self.min_sam_dbscan,
                 metric='precomputed',
                 n_jobs=-1,
                 leaf_size=15)
@@ -938,17 +944,6 @@ class IterativeClustering:
         if self.clu_algo == 'louvain':
             return self.interface.cluster_louvain(pj,
                 resolution=cparm)
-
-        if self.clu_algo == 'DBSCAN':
-            #NOTE: distances should be pre-computed like in SNN
-            #to speed up this search
-            return self.interface.cluster(pj,
-                eps=cparm,
-                min_samples=self.minclusize,
-                metric=self.metric_clu,
-                metric_params=self.mparams,
-                n_jobs=-1,
-                leaf_size=15)
             
         if self.clu_algo == 'HDBSCAN':
             clu_algo = HDBSCAN(
@@ -960,7 +955,7 @@ class IterativeClustering:
                 allow_single_cluster=False,
                 metric=self.metric_clu,
                 metric_params=self.mparams,
-                min_cluster_size=self.minclusize,
+                min_cluster_size=self.min_sam_dbscan,
                 min_samples=int(cparm),
                 cluster_selection_epsilon=cse,
                 p=None).fit(pj)
@@ -1092,7 +1087,12 @@ class IterativeClustering:
                         'VI': self.interface.num.linalg.pinv(
                             self.interface.num.cov(pj.T))} 
  
-            if self.clu_algo == 'SNN':
+            if self.clu_algo == 'DBSCAN':
+                to_cluster=self.interface.dist_mat(pj,
+                    metric = self.metric_clu,
+                    **self.mparams,
+                    n_jobs=-1)
+            elif self.clu_algo == 'SNN':
                 to_cluster=self.snn(pj,nn)
             elif self.clu_algo == 'louvain':
                 to_cluster=1-self.snn(pj,nn)
@@ -1319,7 +1319,15 @@ class IterativeClustering:
                                 'VI': self.interface.num.linalg.pinv(
                                     self.interface.num.cov(pj.T))}
 
-                    if self.clu_algo == 'SNN':
+                    """ Build the distance matrix for DBSCAN, or the 
+                        adjacency matrix for SNN and louvain """
+
+                    if self.clu_algo == 'DBSCAN':
+                        to_cluster=self.interface.pwd(pj,
+                            metric = self.metric_clu,
+                            **self.mparams,
+                            n_jobs=-1)
+                    elif self.clu_algo == 'SNN':
                         to_cluster=self.snn(pj,nn)
                     elif self.clu_algo == 'louvain':
                         to_cluster=1-self.snn(pj,nn)
@@ -1587,14 +1595,14 @@ class IterativeClustering:
                 """ Assign cluster membership with k-nearest neighbors. """
                  
                 labs_new = local_KNN(pj_opt, 
-                    functions.one_hot_encode(labs_opt, self.minclusize, self._name,
+                    functions.one_hot_encode(labs_opt, self.min_sam_dbscan, self._name,
                     self.interface),
                     nei_opt, self.metric_clu, 
                     self.interface, as_series=True)
 
                 #labs_new = self.interface.df.Series(
                 #    local_KNN(pj_opt, 
-                #    functions.one_hot_encode(labs_opt, self.minclusize, self._name,
+                #    functions.one_hot_encode(labs_opt, self.min_sam_dbscan, self._name,
                 #    self.interface),
                 #    nei_opt, self.metric_clu, 
                 #    self.interface, as_series=True),
@@ -1621,7 +1629,7 @@ class IterativeClustering:
                 #labs_opt = self._KNN(nei_opt, pj_opt, labs_out,
                 #                    cutoff=.5).loc[labs_opt.index]
                 labs_new = local_KNN(pj_opt, 
-                    functions.one_hot_encode(labs_out, self.minclusize, self._name,
+                    functions.one_hot_encode(labs_out, self.min_sam_dbscan, self._name,
                     self.interface),
                     nei_opt, self.metric_clu, 
                     self.interface, as_series=True) 
@@ -1708,7 +1716,7 @@ class IterativeClustering:
         #TEST REMOVE IF CREATES ISSUES
         
         clus_tmp = clus_tmp.astype(int)
-        clus_tmp = functions.one_hot_encode(clus_tmp, self.minclusize, self._name,
+        clus_tmp = functions.one_hot_encode(clus_tmp, self.min_sam_dbscan, self._name,
                     self.interface)
 
         """ Checkpoint. """
@@ -1779,7 +1787,7 @@ class IterativeClustering:
                 search_candid=self.search_candid, search_iter=self.search_iter, 
                 tpe_patience=self.tpe_patience, score=self.score, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
-                clu_algo=self.clu_algo, cparmrange=self.cparmrange, minclusize=self.minclusize,
+                clu_algo=self.clu_algo, cparmrange=self.cparmrange, min_sam_dbscan=self.min_sam_dbscan,
                 outliers=self.outliers, noise_ratio=self.noise_ratio, 
                 name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, 
                 RPD=self.RPD, outpath=self.outpath, depth=self._depth+1, 
