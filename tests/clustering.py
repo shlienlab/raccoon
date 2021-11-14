@@ -181,6 +181,37 @@ def trans_test(data, labels=None, gpu=False):
                                      dynmesh=True, maxmesh=3, minmesh=3,
                                      outpath='./out_test_trans', savemap=True, debug=True, gpu=gpu)
 
+def arand_test(data, truth, labels=None, gpu=False):
+    """ Clustering test, euclidean grid, with rand index.
+
+        Args:
+            data (pandas dataframe, matrix): input test dataframe.
+            labels (pandas series, array): input test labels.
+            gpu (bool): if True use gpu implementation.
+    """
+
+    if gpu:
+        from cuml.metrics.cluster.adjusted_rand_index import adjusted_rand_score as arand
+    else:
+        from sklearn.metrics import adjusted_rand_score as arand
+
+    def arand_score(points, pred, metric=None):
+        """ Example of external score to be fed to racoon.
+            Follows the format necessary to run with raccoon.
+
+            Args:
+                points (pandas dataframe, matrix): points coordinates, will be ignored.
+                pred (pandas series): points labels obtained with racoon.
+                metric (string): distance metric, will be ignored.
+         """
+         
+        return arand(truth.loc[pred.index], pred)
+
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1, 
+                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dynmesh=True, maxmesh=3, minmesh=3, chk=False, score=arand_score,
+                                     outpath='./out_test_arand', savemap=True, debug=True, gpu=gpu)
+
 if __name__ == "__main__":
 
     pass

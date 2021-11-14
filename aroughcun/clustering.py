@@ -1088,7 +1088,7 @@ class IterativeClustering:
                             self.interface.num.cov(pj.T))} 
  
             if self.clu_algo == 'DBSCAN':
-                to_cluster=self.interface.dist_mat(pj,
+                to_cluster=self.interface.pwd(pj,
                     metric = self.metric_clu,
                     **self.mparams,
                     n_jobs=-1)

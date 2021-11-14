@@ -290,6 +290,20 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
+    """ Test external validation score. """
+
+    if to_run['arand']:
+        try:
+            #with HidePrints():
+            arand_test(xx, yy, labels = yy, gpu=to_run['gpu'])
+            print('Rand Index Test:\t\t\t'+colored('PASSED', 'green'))
+            colored('PASSED', 'green')
+        except Exception as e:
+            print('Rand Index Test:\t\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))
+            traceback.print_exc()
+
+
     """ Test k-NN. """
 
     if to_run['knn']:
@@ -303,7 +317,7 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))        
             traceback.print_exc()
     
-    """ Test k-NN. """
+    """ Test update. """
 
     if to_run['update']:
         try:
@@ -334,6 +348,7 @@ if __name__ == "__main__":
         remove_dir('./out_test_high')
         remove_dir('./out_test_super')
         remove_dir('./out_test_trans')
+        remove_dir('./out_test_arand')
         remove_dir('./out_test_knn')
         remove_dir('./out_test_update')
 
