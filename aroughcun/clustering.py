@@ -1788,7 +1788,7 @@ class IterativeClustering:
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
                 search_candid=self.search_candid, search_iter=self.search_iter, 
-                tpe_patience=self.tpe_patience, score=self.score, norm=self.norm,
+                tpe_patience=self.tpe_patience, score=self.score, baseline=self.baseline, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                 clu_algo=self.clu_algo, cparmrange=self.cparmrange, min_sam_dbscan=self.min_sam_dbscan,
                 outliers=self.outliers, noise_ratio=self.noise_ratio, 
