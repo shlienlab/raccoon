@@ -144,6 +144,9 @@ Alternatively, a custom scoring function can be provided. It must have  compatib
 format, following that o of scikit-learn's :code: `silhouette_score`. It should
 take as inputs a feature array and an array-like list of labels for each sample. 
 It should also accept a scikit-compatible metric with the :code: `metric` flag.
+:code:`raccoon` maximizes the objective function so make sure the direction 
+of your objective function is correct. A custom baseline score can be provided 
+with :code:`baseline`.
 
 Population Cutoff
 -----------------

@@ -77,7 +77,7 @@ class IterativeClustering:
                 metric_map='cosine', metric_clu='euclidean', popcut=50,
                 filterfeat='variance', ffrange='logspace', ffpoints=25,
                 optimizer='grid', search_candid=10, search_iter=10,
-                tpe_patience=5, score='silhouette', 
+                tpe_patience=5, score='silhouette', baseline=-1e-5,
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clu_algo='SNN', cparmrange='guess', min_sam_dbscan=None, 
                 outliers='ignore', noise_ratio=.3,
@@ -170,6 +170,8 @@ class IterativeClustering:
                 Alternatively, a scoring function can be provided, it must take a feature array,
                 an array-like list of labels and a metric, in the same format as 
                 sklearn.metrics.silhouette_score.
+            baseline (float): baseline score. Candidate parameters below this score will be 
+                automatically excluded (defaul -1e5).
             norm (string): normalization factor before dimensionality reduction (default None),
                 not needed if metric_map is cosine
                 if None, don't normalize.
@@ -313,6 +315,7 @@ class IterativeClustering:
         self._depth = depth
         self.tpe_patience = tpe_patience
         self.score = score
+        self.baseline = baseline
         self.norm = norm
         self.dynmesh = dynmesh
         self.maxmesh = maxmesh
@@ -981,7 +984,7 @@ class IterativeClustering:
 
         """
             
-        sil_opt = -0.0001
+        sil_opt = self.baseline
 
         labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
         cparm_opt = self.interface.num.nan
@@ -1140,7 +1143,7 @@ class IterativeClustering:
                     if ratio<=.3:
                         logging.log(DEBUG_R,
                             'Too many points discarded ({:d}%>{:d}%)!'.format(int((1-ratio)*100),70))
-                    sil = -0.0001
+                    sil = self.baseline
 
                 if sil > sil_opt:
                     cparm_opt = cparm
@@ -1193,7 +1196,7 @@ class IterativeClustering:
 
         # Note: this should be moved to optimizers.
 
-        sil_opt = -0.0001
+        sil_opt = self.baseline
         keepfeat = []
         decomp_opt = None
         labs_opt = [0] * DataGlobal.dataset.loc[self.data_ix].shape[0]
@@ -1306,7 +1309,7 @@ class IterativeClustering:
 
                     scoreslist[0].append(cutoff)
                     scoreslist[1].append(nn)
-                    scoreslist[2].append(-0.0001)
+                    scoreslist[2].append(self.baseline)
 
                     self.mparams = {}
                     if self.metric_clu == 'mahalanobis':
@@ -1373,7 +1376,7 @@ class IterativeClustering:
                             if ratio<=self.noise_ratio:
                                 logging.log(DEBUG_R,
                                     'Too many points discarded ({:d}%>{:d}%)!'.format(int((1-ratio)*100),70))
-                            sil = -0.0001
+                            sil = self.baseline
 
 
                         logging.log(DEBUG_R, 'Clustering score: {:.3f}'.format(sil))
@@ -1398,7 +1401,7 @@ class IterativeClustering:
 
         """ If an optimal solution was not found. """
 
-        if sil_opt == -0.0001:
+        if sil_opt == self.baseline:
             logging.info('Optimal solution not found!')
             pj_opt = pj
             map_opt = mapping
@@ -1785,7 +1788,7 @@ class IterativeClustering:
                 metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
                 search_candid=self.search_candid, search_iter=self.search_iter, 
-                tpe_patience=self.tpe_patience, score=self.score, norm=self.norm,
+                tpe_patience=self.tpe_patience, score=self.score, baseline=self.baseline, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                 clu_algo=self.clu_algo, cparmrange=self.cparmrange, min_sam_dbscan=self.min_sam_dbscan,
                 outliers=self.outliers, noise_ratio=self.noise_ratio, 
