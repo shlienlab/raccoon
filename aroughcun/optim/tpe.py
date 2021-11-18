@@ -1,6 +1,5 @@
 """
 Tree-structured Parzen Estimators optimization for RACCOON
-(Robust Adaptive Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2021
 """
 

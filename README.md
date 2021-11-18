@@ -1,7 +1,7 @@
 <img src="docs/figs/logo_rc.png" width=400, padding=100>
 
 
-## Robust Adaptive Coarse-to-fine Clusters OptimizatiON
+## Resolution-Adaptive Coarse-to-fine Clusters OptimizatiON
 ### v 0.5
 
 [![Licence](https://img.shields.io/github/license/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/blob/main/LICENSE)

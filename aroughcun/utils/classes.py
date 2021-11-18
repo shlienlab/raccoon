@@ -1,6 +1,5 @@
 """
 Auxiliary classes for RACCOON
-(Robust Adaptive Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2021
 """
 

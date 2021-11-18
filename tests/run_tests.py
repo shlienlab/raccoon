@@ -193,6 +193,19 @@ if __name__ == "__main__":
             print('An error occourred: ' + str(e))
             traceback.print_exc()
 
+    """ Test Neighbors selection function. """
+
+    if to_run['neifun']:
+        try:
+            #with HidePrints():
+            neifun_test(xx, labels = yy, gpu=to_run['gpu'])
+            print('Neighbors Function Test:\t\t\t'+colored('PASSED', 'green'))
+            colored('PASSED', 'green')
+        except Exception as e:
+            print('Neighbors Function Test:\t\t\t'+colored('FAILED', 'red'))
+            print('An error occourred: ' + str(e))
+            traceback.print_exc()
+
     """ Test Resume. """
 
     if to_run['resume']:
@@ -340,6 +353,7 @@ if __name__ == "__main__":
         remove_dir('./out_test_mahalanobis')
         remove_dir('./out_test_snn')
         remove_dir('./out_test_louvain')
+        remove_dir('./out_test_neifun')
         remove_dir('./out_test_resume')
         remove_dir('./out_test_de')
         remove_dir('./out_test_auto')
