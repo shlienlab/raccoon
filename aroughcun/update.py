@@ -207,11 +207,10 @@ class UpdateClusters:
         proj = self.interface.df.read_hdf(os.path.join(self.outpath,
             'rc_data/' + clu_name + '_knn.h5'))
          
-        if proj.shape[1] !=2:
-            proj2d = self.interface.df.read_hdf(os.path.join(self.outpath,
-                'rc_data/' + clu_name + '_2d_knn.h5'))
-        else:
-            proj2d = proj
+        proj2d = self.interface.df.read_hdf(os.path.join(self.outpath,
+            'rc_data/' + clu_name + '_2d_knn.h5')) \
+                if proj.shape[1] != 2 \
+                else  proj
 
         """ Reformat assignments vectors. """
 

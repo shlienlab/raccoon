@@ -104,19 +104,18 @@ class IterativeClustering:
             dim (integer): number of dimensions of the target projection (default 2).
             epochs (integer): number of UMAP epochs (default 5000).
             lr (float): UMAP learning rate (default 0.05).
-            neirange (array, list of integers or string): list of nearest neighbors values to be
+            neirange (array, list of integers or string or function): list of nearest neighbors values to be
                 used in the search;
                 if 'logspace' take an adaptive range based on the dataset size at each iteration
                 with logarithmic spacing (reccomended),
-                if 'sqrt' always take the sqare root of the number of samples.
-                if 'quartsqrt' always take the sqare root of half the number of samples
-                (ideal for extremely large datasets).
+                if a function is provided it will be used to define the neighbors range at each step
+                    (see the manual for more details).
             neipoints (int or list of int): number of grid points for the neighbors search,
                 if list, each value will be subsequently used at the next iteration until
                 all values are exhausted,
-                (works only with neirange='logspace' default 25).
+                (works only with optimizer='grid' and neirange='logspace' default 25).
             neifactor (float): scaling factor for 'logspace' and 'sqrt' selections in neirange
-            neicap (int): maximum number of neighbours (reccomended with low-memory systems,
+            neicap (int): maximum number of neighbors (reccomended with low-memory systems,
                 default 100).
             skip_equal_dim (bool): if True, whenever the target dimensionality corresponds
                 to the dimensionality of the input data, the dimensionality reduction step will
@@ -184,7 +183,7 @@ class IterativeClustering:
                 default 4, must be >3 if optimizer='de'),
                 this is a single dimension, the actuall mesh will contain n*n points.
             clu_algo (string): selects which algorithm to use for clusters identification.
-                Choose among 'DBSCAN', 'SNN' (Shared Nearest Neighbours DBSCAN, default),  
+                Choose among 'DBSCAN', 'SNN' (Shared Nearest Neighbors DBSCAN, default),  
                 'HDBSCAN', or 'louvain' (Louvain community detection with SNN).
             cparmrange (array, list) or string: clusters identification parameter range to
                 be explored (default 'guess').
@@ -389,10 +388,7 @@ class IterativeClustering:
                 self.minmesh)
 
             if self.optimizer == 'auto':
-                if meshpoints**2 > 25:
-                    self.optimizer = 'de'
-                else:
-                    self.optimizer = 'grid'
+                self.optimizer = 'de' if meshpoints**2 > 25 else 'grid'
 
             if self.optimizer == 'grid':
 
@@ -419,20 +415,20 @@ class IterativeClustering:
                     self.search_candid = self.search_candid**2
 
         try:
-            if isinstance(self.neipoints, list):
-                self.neipoints = [int(x) for x in self.neipoints]
-            else:
-                self.neipoints = [int(self.neipoints)]
+            self.neipoints = [int(x) for x in self.neipoints] \
+                                if isinstance(self.neipoints, list) \
+                                else [int(self.neipoints)]
+
         except BaseException:
             sys.exit('ERROR: neipoints must be an integer or a list of integers')
             raise
 
         if self.optimizer in ['de','tpe']:
             try:
-                if isinstance(self.search_candid, list):
-                    self.search_candid = [int(x) for x in self.search_candid]
-                else:
-                    self.search_candid = [int(self.search_candid)]
+                self.search_candid = [int(x) for x in self.search_candid] \
+                                        if isinstance(self.search_candid, list) \
+                                        else [int(self.search_candid)]
+
             except BaseException:
                 sys.exit('ERROR: search_candid must be an integer or a list of integers')
                 raise
@@ -448,20 +444,20 @@ class IterativeClustering:
 
         if self.optimizer == 'de':
             try:
-                if isinstance(self.search_iter, list):
-                    self.search_iter = [int(x) for x in self.search_iter]
-                else:
-                    self.search_iter = [int(self.search_iter)]
+                self.search_iter = [int(x) for x in self.search_iter] \
+                                        if isinstance(self.search_iter, list) \
+                                        else [int(self.search_iter)] 
+
             except BaseException:
                 sys.exit('ERROR: search_iter must be an integer or a list of integers')
                 raise
             
         if self.optimizer == 'grid':
             try:
-                if isinstance(self.ffpoints, list):
-                    self.ffpoints = [int(x) for x in self.ffpoints]
-                else:
-                    self.ffpoints = [int(self.ffpoints)]
+                self.ffpoints = [int(x) for x in self.ffpoints] \
+                                    if isinstance(self.ffpoints, list) \
+                                    else [int(self.ffpoints)]
+
             except BaseException:
                 sys.exit('ERROR: ffpoints must be an integer or a list of integers')
                 raise
@@ -494,10 +490,8 @@ class IterativeClustering:
         logging.info(
             "Random seed is: {:d}".format(int(self._seed)))
 
-        if hasattr(self.score, '__call__'):
-            scorename = 'user defined'
-        else:
-            scorename = self.score
+        scorename = 'user defined' if hasattr(self.score, '__call__') \
+                        else self.score 
 
         logging.info(
             "Scoring function is: "+scorename)
@@ -648,7 +642,7 @@ class IterativeClustering:
             plotting._plot_score([scoreslist[1],
                                  scoreslist[2]],
                                 n_nei,
-                                'Nearest neighbours',
+                                'Nearest neighbors',
                                 'scores_' + self._name,
                                 self.outpath)
 
@@ -898,11 +892,11 @@ class IterativeClustering:
             sys.exit('ERROR: clustering algorithm not recognized')
 
     def snn(self, points, num_neigh):
-        """ Calculates Shared Nearest Neighbour (SNN) matrix
+        """ Calculates Shared Nearest Neighbor (SNN) matrix
 
         Args:
             points (dataframe or matrix): points coordinates.
-            num_neigh (int): number of neighbours considered
+            num_neigh (int): number of neighbors considered
                 to define the similarity of two points.
 
         Returns:
@@ -1128,12 +1122,9 @@ class IterativeClustering:
                 compset.discard(-1)
                 
                 #if too many were discarded take another
-                labs = self.interface.df.Series(labs, index=pj.index)
+                labs  = self.interface.df.Series(labs, index=pj.index)
                 ratio = labs.value_counts()
-                if -1 in ratio:
-                    ratio=ratio[-1]/labs.shape[0]
-                else:
-                    ratio=0
+                ratio = ratio[-1]/labs.shape[0] if -1 in ratio else 0
                 
                 #could be stricter/looser
                 if len(compset) > 1 and ratio<=.3:
@@ -1361,13 +1352,10 @@ class IterativeClustering:
                         compset.discard(-1)
 
                         #if too many were discarded take another
-                        labs = self.interface.df.Series(labs, index=pj.index)
+                        labs  = self.interface.df.Series(labs, index=pj.index)
                         ratio = labs.value_counts()
-                        if -1 in ratio:
-                            ratio=ratio[-1]/labs.shape[0]
-                        else:
-                            ratio=0
-
+                        ratio = ratio[-1]/labs.shape[0] if -1 in ratio else 0
+                        
                         #could be stricter/looser
                         if len(compset) > 1 and ratio<=self.noise_ratio:
                             sil = functions.calc_score(pj, labs,
@@ -1466,7 +1454,7 @@ class IterativeClustering:
                         self.interface.num.sqrt(numpoints * self.neifactor - 1))
                     maxbound = self.interface.num.log10(numpoints * self.neifactor - 1)
                 
-                """ Neighbours cap. """
+                """ Neighbors cap. """
 
                 if self.neicap is not None:
                     if minbound > self.interface.num.log10(self.neicap):
@@ -1479,30 +1467,47 @@ class IterativeClustering:
                 if minbound <= 0:
                     minbound = self.interface.num.log10(2)
 
-                nnrange = sorted([int(x) for x in self.interface.num.logspace(
+                nnrange = sorted([x for x in self.interface.num.logspace(
                     minbound, maxbound, num=self.neipoints[0])])
+            
+            elif hasattr(self.neirange, '__call__'):
+                """ If a function to select the neighbors was selected. """
 
-            elif self.neirange == 'sqrt':
-                nnrange = [int(self.interface.num.sqrt(
-                    numpoints * self.neifactor))]
+                nnrange = self.neirange(numpoints * self.neifactor)
+            
             else:
                 nnrange = self.neirange
-                if not isinstance(nnrange, list):
-                    nnrange = [nnrange]
+            
+            if not isinstance(nnrange, list):
+                nnrange = [nnrange]
 
             #check 
             logging.debug('neihgbours range:')
             logging.debug(nnrange)
 
-            #if self.neirange != 'logspace' and self.neicap is not None:
+            #There is a bit of redundancy here, to clean up.
+            #All these sorted sets maybe not needed.
+
+            """ Number of neighbors cannot be more than provided cap. """
+
             if self.neicap is not None:
                 nnrange = sorted(list(self.interface.set(
                     [x if x <= self.neicap else self.neicap for x in nnrange])))
 
-            """ Number of neighbours cannot be more than the number of samples. """
+            """ Number of neighbors cannot be more than the number of samples. """
             
             nnrange = sorted(list(self.interface.set(
                 [x if x < numpoints else numpoints-1 for x in nnrange])))
+
+            """ Number of neighbors cannot be less than 2. """
+
+            nnrange = sorted(list(self.interface.set(
+                [x if x > 2 else 2 for x in nnrange])))
+
+            """ Make sure they are all integers. """
+
+            nnrange = sorted(list(self.interface.set(
+                [int(x) for x in nnrange])))
 
         else:
 
@@ -1770,7 +1775,7 @@ class IterativeClustering:
                 self.neipoints = self.neipoints[1:]
                 logging.info(
                     'Parameters granilarity change ' +
-                    '[nearest neighbours: {:d}'.format(
+                    '[nearest neighbors: {:d}'.format(
                         self.interface.get_value(self.neipoints[0])) + ']')
             if self.optimizer in ['de','tpe'] and len(self.search_candid) > 1:
                 self.search_candid = self.search_candid[1:]

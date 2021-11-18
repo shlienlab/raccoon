@@ -60,6 +60,30 @@ def louvain_test(data, labels=None, gpu=False):
                                      dynmesh=True, maxmesh=3, minmesh=3,
                                      outpath='./out_test_louvain', savemap=True, debug=True, gpu=gpu)
 
+
+def neifun_test(data, labels=None, gpu=False):
+    """ Clustering test, custom neighbors selection function.
+
+        Args:
+            data (pandas dataframe, matrix): input test dataframe.
+            labels (pandas series, array): input test labels.
+            gpu (bool): if True use gpu implementation.
+    """
+
+    from math import sqrt
+
+
+    def range_sqrt(n):
+
+      sq = sqrt(n)
+      return [sq/2, sq, sq+sq/2]
+
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=2,
+                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine', 
+				     neirange=range_sqrt, 
+                                     dynmesh=True, maxmesh=3, minmesh=3,
+                                     outpath='./out_test_neifun', savemap=True, debug=True, gpu=gpu)
+
 def resume_test(data, resume_path, labels=None, gpu=False):
     """ Resume clustering test, euclidean grid loading parameters data from file.
 
@@ -70,7 +94,7 @@ def resume_test(data, resume_path, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.resume(data, lab=labels, dim=2, popcut=5, maxdepth=None,
+    cluster_membership, tree = aroughcun.resume(data, lab=labels, dim=2, popcut=10, maxdepth=4,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3, refpath=resume_path, 
                                      outpath='./out_test_resume', savemap=True, debug=True, gpu=gpu)
@@ -196,12 +220,12 @@ def arand_test(data, truth, labels=None, gpu=False):
         from sklearn.metrics import adjusted_rand_score as arand
 
     def arand_score(points, pred, metric=None):
-        """ Example of external score to be fed to racoon.
+        """ Example of external score to be fed to raccoon.
             Follows the format necessary to run with raccoon.
 
             Args:
                 points (pandas dataframe, matrix): points coordinates, will be ignored.
-                pred (pandas series): points labels obtained with racoon.
+                pred (pandas series): points labels obtained with raccoon.
                 metric (string): distance metric, will be ignored.
          """
          

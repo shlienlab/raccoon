@@ -1,6 +1,5 @@
 """
 Basic differential evolution implementation for RACCOON
-(Robust Adaptive Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2019
 
 Based on

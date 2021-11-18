@@ -1,6 +1,5 @@
 """
 Utility functions for RACCOON
-(Robust Adaptive Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2018-2021
 A. Maheshwari   @2019
 """

@@ -22,7 +22,7 @@ setup(
     author='Federico Comitani',
     author_email='federico.comitani@gmail.com',
 
-    license='MIT',
+    license='GPL-3.0',
 
     classifiers=[
         'Development Status :: 4 - Beta',

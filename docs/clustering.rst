@@ -144,6 +144,31 @@ Alternatively, a custom scoring function can be provided. It must have  compatib
 format, following that o of scikit-learn's :code: `silhouette_score`. It should
 take as inputs a feature array and an array-like list of labels for each sample. 
 It should also accept a scikit-compatible metric with the :code: `metric` flag.
+
+Here is an example with the Rand index:
+
+.. code-block:: python
+
+  def arand_score(points, pred, metric=None):
+
+      """ Example of external score to be fed to raccoon.
+          Follows the format necessary to run with raccoon.
+
+          Args:
+              points (pandas dataframe, matrix): points coordinates, will be ignored.
+              pred (pandas series): points labels obtained with raccoon.
+              metric (string): distance metric, will be ignored.
+
+          Returns:
+              (float): the adjusted Rand Index
+       """
+       
+      return arand(truth.loc[pred.index], pred)
+
+Please note that the Rand Index requires a ground truth Series to be compared with the
+results and will not use the position of the data points (athough it still needs to be provided
+to the function).
+
 :code:`raccoon` maximizes the objective function so make sure the direction 
 of your objective function is correct. A custom baseline score can be provided 
 with :code:`baseline`.
@@ -219,6 +244,39 @@ If the range is left to be guessed automatically, for example as a logarithmic
 space based on the population (:code:`'logspace'`), a factor can be set to reduce the 
 value proportionally (:code:`neifactor`) in the presence of particularly large datasets,
 as high values of these parameters can impact the performance considerably.
+
+This choice is crucial for a proper analysis, make sure to know your dataset well and run 
+preliminary analyses if necessary.
+
+A custom function that calculates the number of neighbors (or a range) from the population
+can be also provided to :code:`neirange`. The function needs to take one argument, the subset population, 
+from which the parameter will be calculated and must return a single value or a list of values.
+The population will be multiplied by :code:`neifactor` before being passed to this function and the 
+provided values will be cast to integer.
+
+
+A simple example of this would be the square root function.
+
+.. code-block:: python
+
+  from math import sqrt
+
+  neirange = sqrt
+
+
+Or a more complicated one, a small range around the square root.
+
+.. code-block:: python
+
+  from math import sqrt
+
+  def range_sqrt(n):
+
+    sq = sqrt(n)
+    return [sq/2, sq, sq+sq/2]
+
+  neirange = range_sqrt
+
 
 If the dimensionality of the target space corresponds to the dimensionality of the input space
 (after the low-information filter), this step will be skipped by default. This helps speeding 

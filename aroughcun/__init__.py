@@ -1,5 +1,5 @@
 """
-RACCOON (Recursive Algorithm for Coarse-to-fine Clustering OptimizatiON)
+RACCOON (Resolution-Adaptive for Coarse-to-fine Clustering OptimizatiON)
 F. Comitani     @2018-2021
 A. Maheshwari   @2019
 """
