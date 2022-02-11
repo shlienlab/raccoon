@@ -404,6 +404,7 @@ class InterfaceGPU(Interface):
         #so I need to make sure that pj is a pd dataframe... 
         #return self.louvain(self.graph().from_pandas_adjacency(pj), **kwargs)
         #temporary super-inefficient workaround
+        #also the results don't match, to be reviewed, don't use!!!
         parts, modularity = self.louvain(pj, **kwargs)
         return parts['partition']
 

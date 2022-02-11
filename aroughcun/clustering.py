@@ -243,7 +243,7 @@ class IterativeClustering:
                 except BaseException:
                     if self.gpu:
                         try:
-                            data = self.interface.df.from_pandas(data)
+                            data = self.interface.df.from_pandas(data.astype(float))
                         except BaseException:
                             pass
                     print("Unexpected error: ", sys.exc_info()[0])
@@ -1485,29 +1485,35 @@ class IterativeClustering:
             logging.debug('neihgbours range:')
             logging.debug(nnrange)
 
-            #There is a bit of redundancy here, to clean up.
-            #All these sorted sets maybe not needed.
-
             """ Number of neighbors cannot be more than provided cap. """
-
-            if self.neicap is not None:
-                nnrange = sorted(list(self.interface.set(
-                    [x if x <= self.neicap else self.neicap for x in nnrange])))
-
             """ Number of neighbors cannot be more than the number of samples. """
-            
-            nnrange = sorted(list(self.interface.set(
-                [x if x < numpoints else numpoints-1 for x in nnrange])))
-
             """ Number of neighbors cannot be less than 2. """
-
-            nnrange = sorted(list(self.interface.set(
-                [x if x > 2 else 2 for x in nnrange])))
-
             """ Make sure they are all integers. """
+            
+            maxnei = self.neicap if self.neicap is not None and self.neicap < numpoints-1 else numpoints-1
 
-            nnrange = sorted(list(self.interface.set(
-                [int(x) for x in nnrange])))
+            nnrange = sorted(list(set(
+                [int(max(2,min(x,maxnei))) for x in nnrange])))
+            
+
+            #if self.neicap is not None:
+            #    nnrange = sorted(list(self.interface.set(
+            #        [x if x <= self.neicap else self.neicap for x in nnrange])))
+            
+            #""" Number of neighbors cannot be more than the number of samples. """
+            
+            #nnrange = sorted(list(self.interface.set(
+            #    [x if x < numpoints else numpoints-1 for x in nnrange])))
+
+            #""" Number of neighbors cannot be less than 2. """
+
+            #nnrange = sorted(list(self.interface.set(
+            #    [x if x > 2 else 2 for x in nnrange])))
+
+            #""" Make sure they are all integers. """
+
+            #nnrange = sorted(list(self.interface.set(
+            #    [int(x) for x in nnrange])))
 
         else:
 
