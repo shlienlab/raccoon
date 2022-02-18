@@ -48,10 +48,10 @@ Optional dependencies include
 raccoon can be run on GPU by leveraging RAPIDS libraries. Since these libraries are still in active development, the latest versions are required to avoid issues.
 
 ```
-- cupy v8.60
-- cuml v0.18
-- cudf v0.18
-- cugraph v0.18
+- cupy      v8.60
+- cuml      v0.18
+- cudf      v0.18
+- cugraph   v0.18
 ```
 
 Currently, there are some major (hopefully temporary) limitations in this implementation (e.g. UMAP can only run with euclidean distance).

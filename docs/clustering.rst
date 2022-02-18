@@ -59,7 +59,7 @@ norms, and is set by default at :code:`'l2'`. If :code:`None`, no normalization 
 Optimizers
 ==========
 
-There are currently two native optimizers, to be set with the :code:`optimizer` flag.
+There are currently two optimizers implemented, to be set with the :code:`optimizer` flag.
 A third option, :code:`tpe` allows you to use Tree-structured Parzen Estimators
 with Optuna_.
 

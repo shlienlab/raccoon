@@ -9,23 +9,23 @@ class Interface:
 
     def __init__(self):
 
-        self.gpu = False
-        self.num = None
-        self.df = None
+        self.gpu        = False
+        self.num        = None
+        self.df         = None
 
-        self.tSVD = None
-        self.UMAP = None
-        self.DBSCAN = None
-        self.NN = None
-        self.norm = None
-        self.lb = None
-        self.ohe = None
-        self.sis = None
-        self.pwd = None
-        self.louvain = None
+        self.tSVD       = None
+        self.UMAP       = None
+        self.DBSCAN     = None
+        self.NN         = None
+        self.norm       = None
+        self.lb         = None
+        self.ohe        = None
+        self.sis        = None
+        self.pwd        = None
+        self.louvain    = None
 
-        self.num = None
-        self.df = None
+        self.num        = None
+        self.df         = None
 
     def decompose(self):
         pass
@@ -105,19 +105,21 @@ class InterfaceCPU(Interface):
         from sklearn.metrics import pairwise_distances as pwd
         from sknetwork.clustering import Louvain 
 
-        self.num = numpy
-        self.df = pd
+        self.gpu        = False
 
-        self.tSVD = tSVD
-        self.UMAP = UMAP
-        self.DBSCAN = DBSCAN
-        self.louvain = Louvain
-        self.NN = NN
-        self.norm = normalize
-        self.lb = LabelBinarizer
-        self.ohe = OneHotEncoder
-        self.sis = silhouette_score
-        self.pwd = pwd
+        self.num        = numpy
+        self.df         = pd
+
+        self.tSVD       = tSVD
+        self.UMAP       = UMAP
+        self.DBSCAN     = DBSCAN
+        self.louvain    = Louvain
+        self.NN         = NN
+        self.norm       = normalize
+        self.lb         = LabelBinarizer
+        self.ohe        = OneHotEncoder
+        self.sis        = silhouette_score
+        self.pwd        = pwd
 
     def decompose(self, **kwargs):
         """ Sets up features filtering object.
@@ -318,22 +320,22 @@ class InterfaceGPU(Interface):
         #from cuml.metrics.cluster import silhouette_score
         from sklearn.metrics import silhouette_score
 
-        self.gpu = True
+        self.gpu        = True
 
-        self.num = cupy
-        self.df = cudf
+        self.num        = cupy
+        self.df         = cudf
 
-        self.tSVD = tSVD
-        self.UMAP = UMAP
-        self.DBSCAN = DBSCAN
-        self.louvain = louvain
-        self.NN = NN
-        self.norm = normalize
-        self.lb = LabelBinarizer
-        self.ohe = OneHotEncoder
-        self.sis = silhouette_score
-        self.pwd = pwd
-        self.graph = Graph
+        self.tSVD       = tSVD
+        self.UMAP       = UMAP
+        self.DBSCAN     = DBSCAN
+        self.louvain    = louvain
+        self.NN         = NN
+        self.norm       = normalize
+        self.lb         = LabelBinarizer
+        self.ohe        = OneHotEncoder
+        self.sis        = silhouette_score
+        self.pwd        = pwd
+        self.graph      = Graph
 
 
     def decompose(self, **kwargs):

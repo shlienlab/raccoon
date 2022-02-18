@@ -335,9 +335,9 @@ class IterativeClustering:
         """ CPU vs GPU methods check. """
 
         if self.gpu:
-            if self.clu_algo not in  ['DBSCAN', 'louvain']:
-                warnings.warn("Only DBSCAN or louvain are available with RAPIDS, "+\
-                               "setting clu_algo as DBSCAN!")
+            if self.clu_algo not in  ['DBSCAN']:
+                warnings.warn("For now, Only DBSCAN is available with RAPIDS, "+\
+                               "setting clu_algo as DBSCAN! Please check the github repo for updates.")
                 self.clu_algo = 'DBSCAN'
 
             if self.metric_map != 'euclidean' or self.metric_clu != 'euclidean':
