@@ -415,14 +415,15 @@ def calc_score(points, labels, score, metric_clu, interface):
     sys.exit('ERROR: score not recognized')
 
 
-def one_hot_encode(labs_opt, minpop, name, interface, rename=True):
+def one_hot_encode(labs_opt, name, interface, min_pop=None, rename=True):
     """ Build and return a one-hot-encoded clusters membership dataframe.
 
     Args:
         labs_opt (pandas series): cluster membership series or list.
-        minpop (int): population threshold for clusters.
         name (str): parent cluster name.
         interface (obj): CPU/GPU numeric functions interface.
+        min_pop (int): population threshold for clusters, if None, keep all
+            produced clusters.
         rename (bool): rename columns expanding the parent cluster
             name (default True).
 
@@ -450,10 +451,11 @@ def one_hot_encode(labs_opt, minpop, name, interface, rename=True):
         columns=interface.get_value(
             ohe.categories_[0])).astype(int)
 
-    """ Discard clusters that have less than minpop of population. """
+    """ Discard clusters that have less than min_pop of population. """
 
-    tmplab.drop(tmplab.columns[interface.get_value(
-        tmplab.sum() < minpop)], axis=1, inplace=True)
+    if min_pop is not None:
+        tmplab.drop(tmplab.columns[interface.get_value(
+            tmplab.sum() < min_pop)], axis=1, inplace=True)
     
     # not_implemented_error: String Arrays is not yet implemented in cudf
     #tmplab = tmplab.set_index(DataGlobal.dataset.loc[data_ix].index.values)

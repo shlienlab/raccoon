@@ -37,7 +37,7 @@ class UpdateClusters:
     
     def __init__(self, data, ori_data, ori_clu,
             refpath="./rc_data/", outpath="./",
-            tolerance=1e-1, probcut=.25, minclusize=10,
+            tolerance=1e-1, prob_cut=.25, min_csize=None,
             score='silhouette', metric_clu='cosine', 
             root='0', debug=False, gpu=False, **kwargs):
         """ Initialize the the class.
@@ -56,10 +56,11 @@ class UpdateClusters:
                 (default save to the current folder).
             tolerance (float): objective score change threshold, beyond which
                 clusters will have to be recalculated (default 1e-1).
-            probcut (float): prubability cutoff, when running the KNN, samples
+            prob_cut (float): prubability cutoff, when running the KNN, samples
                 with less than this value of probability to any assigned class will be
                 treated as noise and won't impact the clusters score review (default 0.25).
-            minclusize (int): minimum number of samples in a cluster (default is 10).
+            min_csize (int): minimum number of samples in a cluster, if None keep all clusters
+                (default is None).
             score (string): objective function of the optimization (currently only 'dunn'
                 and 'silhouette' are available, default 'silhouette').
             metric_clu (string): metric to be used in clusters identification and clustering score
@@ -122,8 +123,8 @@ class UpdateClusters:
         self.refpath = refpath
         self.outpath = outpath
         self.tolerance = tolerance
-        self.probcut = probcut
-        self.minclusize = minclusize
+        self.prob_cut = probcut
+        self.min_csize = min_csize
         self.score = score
         self.metric_clu = metric_clu
         self.root = root
@@ -159,7 +160,7 @@ class UpdateClusters:
             path along the hierarchy. 
         """
 
-        self.clu[self.clu<self.probcut]=0
+        self.clu[self.clu<self.prob_cut]=0
         self.clu = functions.unique_assignment(self.clu, self.root, self.interface)
         
         self.new_clus = None
@@ -315,8 +316,8 @@ class UpdateClusters:
        
         """ If clusters were not rebuilt, return updated assignment. """
 
-        return functions.one_hot_encode(assign_vec, self.minclusize, clu_name,
-                            self.interface)
+        return functions.one_hot_encode(assign_vec,  clu_name,
+                            self.interface, min_pop=self.min_csize)
 
     
     def find_and_update(self):

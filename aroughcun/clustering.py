@@ -80,8 +80,9 @@ class IterativeClustering:
                 tpe_patience=5, score='silhouette', baseline=-1e-5,
                 norm=None, dynmesh=False, maxmesh=20, minmesh=4,
                 clu_algo='SNN', cparmrange='guess', min_sam_dbscan=None, 
-                outliers='ignore', noise_ratio=.3,
-                name='0', debug=False, maxdepth=None, savemap=True, RPD=False,
+                outliers='ignore', noise_ratio=.3, min_csize=None,
+                name='0', debug=False, maxdepth=None,
+                savemap=True, RPD=False,
                 outpath="", depth=0, chk=False, 
                 gpu=False, _user=True):
         """ Initialize the the class.
@@ -201,6 +202,9 @@ class IterativeClustering:
             noise_ratio (float): maximum percentage cutoff of samples that can be labelled as noise
                  before discarding the result (relevant only for clustering algorithms that label border 
                  points as noise, default .3).
+            min_csize (int): Minimum population size of clusters. If None, keep all clusters,
+                else, clusters below this threshold will be discarded as soon as they are 
+                identified (default None).
             name (string): name of current clustering level (should be left as default, '0',
                 unless continuing from a previous run).
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
@@ -305,6 +309,7 @@ class IterativeClustering:
         self.debug = debug
         self.savemap = savemap
         self.maxdepth = maxdepth
+        self.min_csize = min_csize
         self.RPD = RPD
         self.search_candid = search_candid
         self.search_iter = search_iter
@@ -1609,8 +1614,8 @@ class IterativeClustering:
                 """ Assign cluster membership with k-nearest neighbors. """
                  
                 labs_new = local_KNN(pj_opt, 
-                    functions.one_hot_encode(labs_opt, self.min_sam_dbscan, self._name,
-                    self.interface),
+                    functions.one_hot_encode(labs_opt, self._name,
+                    self.interface, min_pop=self.min_csize),
                     nei_opt, self.metric_clu, 
                     self.interface, as_series=True)
 
@@ -1643,8 +1648,8 @@ class IterativeClustering:
                 #labs_opt = self._KNN(nei_opt, pj_opt, labs_out,
                 #                    cutoff=.5).loc[labs_opt.index]
                 labs_new = local_KNN(pj_opt, 
-                    functions.one_hot_encode(labs_out, self.min_sam_dbscan, self._name,
-                    self.interface),
+                    functions.one_hot_encode(labs_out, self._name,
+                    self.interface, min_pop=self.min_csize),
                     nei_opt, self.metric_clu, 
                     self.interface, as_series=True) 
                                     
@@ -1730,8 +1735,8 @@ class IterativeClustering:
         #TEST REMOVE IF CREATES ISSUES
         
         clus_tmp = clus_tmp.astype(int)
-        clus_tmp = functions.one_hot_encode(clus_tmp, self.min_sam_dbscan, self._name,
-                    self.interface)
+        clus_tmp = functions.one_hot_encode(clus_tmp, self._name,
+                    self.interface, min_pop=self.min_csize)
 
         """ Checkpoint. """
 
@@ -1802,7 +1807,7 @@ class IterativeClustering:
                 tpe_patience=self.tpe_patience, score=self.score, baseline=self.baseline, norm=self.norm,
                 dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
                 clu_algo=self.clu_algo, cparmrange=self.cparmrange, min_sam_dbscan=self.min_sam_dbscan,
-                outliers=self.outliers, noise_ratio=self.noise_ratio, 
+                outliers=self.outliers, noise_ratio=self.noise_ratio, min_csize=self.min_csize, 
                 name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, 
                 RPD=self.RPD, outpath=self.outpath, depth=self._depth+1, 
                 chk=self.chk, gpu=self.gpu, _user=False)
