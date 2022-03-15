@@ -28,9 +28,9 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GPL-3.0',
         'Programming Language :: Python'
-        'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.8'
 		],
 
     keywords='clustering scale-adaptive dimension-reduction k-NN hiearchical-clustering optimal-clusters differential-evolution',

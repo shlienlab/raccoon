@@ -56,7 +56,8 @@ raccoon can be run on GPU by leveraging RAPIDS libraries. Since these libraries 
 
 Currently, there are some major (hopefully temporary) limitations in this implementation (e.g. UMAP can only run with euclidean distance).
 If these do not affect your analysis, we suggest activating the GPU option, especially for larger datasets that could lead to exceptionally cumbersome runs. Alternatively, this option should be used for exploratory runs only.
-Important note: the GPU implementation is still a work in progress and may change considerably in the coming versions. Please report any bug or issue you experience. 
+
+**Important note**: the GPU implementation is still a work in progress and may change considerably in the coming versions. Please report any bug or issue you experience. 
 
 ### Installation
 
