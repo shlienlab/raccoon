@@ -151,6 +151,8 @@ ix   0_0  0_1  0_2  0_3  0_4  0_5  0_0_0 0_0_1 ...
 ...                         
 ==== ==== ==== ==== ==== ==== ==== ===== ===== ====
 
+:code:`read_output.R` in :code:`scripts` is available for R users to read this output file as an R dataframe.
+
 A json file containing an :code:`anytree` object is also saved in output and can be loaded to help understand the hierarchical structure.
 
 

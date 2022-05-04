@@ -59,6 +59,11 @@ If these do not affect your analysis, we suggest activating the GPU option, espe
 
 **Important note**: the GPU implementation is still a work in progress and may change considerably in the coming versions. Please report any bug or issue you experience. 
 
+### Scripts
+
+Useful scripts can be found in the `scripts` folder. For now it only contains a file with functions to read the hdf5 storing the output pandas dataframe in R.
+See the documentation for more details. 
+
 ### Installation
 
 <!--- raccoon releases can be easily installed through the python standard package manager  
@@ -88,7 +93,7 @@ automatically set up a clusters search with just some basic options.
 
 When using this library, please cite
 
-> F. Comitani, J. O. Nash, S. Cohen-Gogo, A. Chen Schwertschkow, T. T. Wen, A. Maheshwari, B. Goyal, E. S. L. Tio, K. Tabataei, K. Brunga, J. E. G. Lawrence, P. Balogh, A. Flanagan, S. Teichmann, V. Ramaswamy, J. Hitzler, J. Wasserman, R. A. Gladdy, B. C. Dickson, U. Tabori, M. J. Cowley, S. Behjati, D. Malkin, A. Villani, M. S. Irwin and A. Shlien, "Multi-scale transcriptional clustering and heterogeneity analysis reveal diagnostic classes of childhood cancer" (under review). 
+> F. Comitani, J. O. Nash, S. Cohen-Gogo, A. Chang, T. T. Wen, A. Maheshwari, B. Goyal, E. S. L. Tio, K. Tabatabaei, L. Brunga, J. E. G. Lawrence, P. Balogh, A. Flanagan, S. Teichmann, V. Ramaswamy, J. Hitzler, J. Wasserman, R. A. Gladdy, B. C. Dickson, U. Tabori, M. J. Cowley, S. Behjati, D. Malkin, A. Villani, M. S. Irwin and A. Shlien, "Multi-scale transcriptional clustering and heterogeneity analysis reveal diagnostic classes of childhood cancer" (under review). 
 
 ### Contributions
 
