@@ -151,8 +151,6 @@ ix   0_0  0_1  0_2  0_3  0_4  0_5  0_0_0 0_0_1 ...
 ...                         
 ==== ==== ==== ==== ==== ==== ==== ===== ===== ====
 
-:code:`read_output.R` in :code:`scripts` is available for R users to read this output file as an R dataframe.
-
 A json file containing an :code:`anytree` object is also saved in output and can be loaded to help understand the hierarchical structure.
 
 
@@ -161,6 +159,8 @@ A json file containing an :code:`anytree` object is also saved in output and can
   import aroughcun.trees as trees
   nodes = trees.load_tree('raccaroughcun_data/tree.json')
 
+
+:code:`read_output.R` in :code:`scripts` is available for R users to read the hdf5 file as an R dataframe and the tree-structure json as a data.tree.
 
 In the plot folder, we find two-dimensional projections of our dataset at different steps of the search. They are colour-coded by cluster or by label (if provided). 
 Depending on which parameters were selected, you may also find other plots justifying the choice of clustering or feature filtering parameters.

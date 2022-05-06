@@ -25,6 +25,25 @@ open.h5<-function(file){
     return(data)
   }
 
+open.json<-function(file){
+
+  #This function reads in an tree-structured json file
+  #and converts it to a data.tree
+  #
+  # args: 
+  #   file (json), path to the json file to read
+  # returns: 
+  #   (data.tree object), the hdf5 object
+  
+  library(jsonlite)
+  library(data.tree)
+
+  tree<-fromJSON(file(tree.json), simplifyDataFrame = FALSE) 
+  tree<- as.Node(tree, mode = "explicit", check = "no-warn")
+
+  return(tree)
+}
+
 import_cluster_table<-function(cluster_data.h5){
 
   # This function imports the class assignment output from RACCOON, 
@@ -33,7 +52,7 @@ import_cluster_table<-function(cluster_data.h5){
   # args: 
   #   cluster_data (pandas dataframe hdf5, Python), path to the class assignment data hdf5 file
   # returns: 
-  #   dataframe (R dataframe), columns are samples and cluster names are rows. 
+  #   (R dataframe), columns are samples and cluster names are rows. 
   #                            Values are 1 when a sample is assigned to a cluster. 
   
   # Load the data
@@ -49,4 +68,3 @@ import_cluster_table<-function(cluster_data.h5){
 
   return(cluster_data)
 }
-
