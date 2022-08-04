@@ -316,7 +316,7 @@ With :code:`cparmrange` one can set the range to be explored. By default, this i
 as :code:`guess` which allows the algorithm to find an ideal range based on the elbow method.
 
 If :code:`'DBSCAN'` is chosen as clustering algorithm, its minimum value of cluster size can also be set
-with :code:`minclusize`.
+with :code:`min_csize`.
 
 This step is also affected by the choice of :code:`metricC` as distances need to be measured
 in the embedded space.
@@ -417,7 +417,7 @@ When resuming a run, all new data will be saved in the original directory tree.
 :code:`resume` takes most of the same arguments as :code:`cluster`, you are free to change them,  
 e.g to allow for a finer or deeper search by decreasing :code:`popcut` or increasing :code:`maxdepth`. The algorithm will automatically search for all
 candidate classes and extend the search. This includes classes higher up in the hierarchy that fell below the population threshold. 
-Classes that were discarded as noise by the clustering algorithm or were below the :code:`minclusize` cutoff
+Classes that were discarded as noise by the clustering algorithm or were below the :code:`min_csize` cutoff
 cannot be recovered.
 
 

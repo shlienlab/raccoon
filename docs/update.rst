@@ -21,7 +21,7 @@ This will set up the necessary folders and run the update automatically.
   import aroughcun as rc
 
   updated_membership  = rc.update(new_df, original_df, cluster_membership, tolerance=1e-2,
-                            probcut=.2, refpath=r'original_clusters/raccoon_data',
+                            prob_cut=.2, refpath=r'original_clusters/raccoon_data',
                             dim=2, filterfeat='variance', optimizer='auto',
                             metric_clu='euclidean', metric_map='cosine',
                             dynmesh=True, chk=True, outpath=r'./',
@@ -33,7 +33,7 @@ matching classes with k-NN and re-evaluate their clustering score including the 
 Iteratively, if the score degrades beyond the given :code:`tolerance` the clusters 
 and those along the subsequent branch will be rebuild from scratch, but including the new data.
 The new classes are marked with a 'u' suffix to the original name at the point of rebuilding.
-A second flag, :code:`probcut`, defines a probability cutoff when assigning the best matching
+A second flag, :code:`prob_cut`, defines a probability cutoff when assigning the best matching
 class at each level. Probabilities below this cutoff will be ignored, if a point doesn't reach
 any this threshold with any class it will be considered as noise.
 
@@ -56,7 +56,7 @@ called directly.
 
 
     obj = UpdateClusters(new_data, old_data, membership, refpath=r'./raccoon_data',
-        outpath=outpath, tolerance=1e-2, probcut=.2, **kwargs)
+        outpath=outpath, tolerance=1e-2, prob_cut=.2, **kwargs)
     obj.find_and_update()
     output = obj.new_clus
 
