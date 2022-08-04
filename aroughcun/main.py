@@ -314,7 +314,7 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
     return obj.membership
 
 
-def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath='./rc_data', 
+def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath='./rc_data', 
             outpath='./', **kwargs):
     """ Wrapper function to update
         a previous IterativeClustering output with new data.
@@ -333,7 +333,7 @@ def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath=
             table from the original run.
         tolerance (float): objective score change threshold, beyond which
             clusters will have to be recalculated.
-        probcut (float): prubability cutoff, when running the KNN, samples
+        prob_cut (float): prubability cutoff, when running the KNN, samples
             with less than this value of probability to any assigned class will be
             treated as noise and won't impact the clusters score review.
         refpath (string): path to the location where trained umap files (pkl) are
@@ -361,7 +361,7 @@ def update(new_data, old_data, membership, tolerance=1e-1, probcut=.25, refpath=
     logging.info('Starting clusters perturbation run.')
 
     obj = UpdateClusters(new_data, old_data, membership, refpath=refpath, 
-        outpath=outpath, tolerance=tolerance, probcut=probcut, **kwargs)
+        outpath=outpath, tolerance=tolerance, prob_cut=prob_cut, **kwargs)
     obj.find_and_update()
 
     """ Save the assignment to disk and buil tree. """

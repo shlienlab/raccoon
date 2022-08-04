@@ -530,7 +530,7 @@ def unique_assignment(tab, root, interface):
           else:
             assign_vec = assign_vec.astype(str).apply(lambda x: x.split('_')[-1]).astype(int)
           
-          ohe = one_hot_encode(assign_vec, 0, cl,
+          ohe = one_hot_encode(assign_vec, cl,
                         interface, rename=False)
           ohe.columns=[cl+'_'+str(c) for c in ohe.columns]
           ohe[[x for x in children if x not in ohe.columns]]=0

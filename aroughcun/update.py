@@ -123,7 +123,7 @@ class UpdateClusters:
         self.refpath = refpath
         self.outpath = outpath
         self.tolerance = tolerance
-        self.prob_cut = probcut
+        self.prob_cut = prob_cut
         self.min_csize = min_csize
         self.score = score
         self.metric_clu = metric_clu
