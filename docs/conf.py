@@ -12,6 +12,12 @@
 #
 import os
 import sys
+import mock
+ 
+MOCK_MODULES = ['numpy']
+for mod_name in MOCK_MODULES:
+sys.modules[mod_name] = mock.Mock()
+
 sys.path.insert(0, os.path.abspath('../aroughcun'))
 sys.path.insert(0, os.path.abspath('../aroughcun/utils'))
 sys.path.insert(0, os.path.abspath('../aroughcun/optim'))
