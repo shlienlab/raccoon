@@ -2,11 +2,10 @@
 
 
 ## Resolution-Adaptive Coarse-to-fine Clusters OptimizatiON
-### v 1.0.0
+### v 0.5.1
 
 [![Licence](https://img.shields.io/github/license/shlienlab/raccoon?style=flat-square)](https://github.com/shlienlab/raccoon/blob/main/LICENSE)
 [![GitHub top language](https://img.shields.io/github/languages/top/shlienlab/raccoon?style=flat-square)](https://github.com/shlienlab/raccoon/search?l=python)
-[![Build Status](https://img.shields.io/travis/com/shlienlab/raccoon/main?style=flat-square)](https://travis-ci.com/shlienlab/raccoon)
 [![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest&style=flat-square)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
 
 RACCOON (`aroughcun` in Algonquinian) is a python 3 package for top-down clustering automatization. 
@@ -54,8 +53,8 @@ raccoon can be run on GPU by leveraging RAPIDS libraries. Since these libraries 
 - cugraph   v0.18
 ```
 
-Currently, there are some major (hopefully temporary) limitations in this implementation (e.g. UMAP can only run with euclidean distance).
-If these do not affect your analysis, we suggest activating the GPU option, especially for larger datasets that could lead to exceptionally cumbersome runs. Alternatively, this option should be used for exploratory runs only.
+Currently, there are some limitations in this implementation (e.g. UMAP can only run with euclidean distance).
+If these do not affect your analysis, we suggest activating the GPU option, especially for larger datasets that could lead to cumbersome runs. Alternatively, this option should be used for exploratory runs only.
 
 **Important note**: the GPU implementation is still a work in progress and may change considerably in the coming versions. Please report any bug or issue you experience. 
 
@@ -97,6 +96,6 @@ When using this library, please cite
 
 ### Contributions
 
-This library is still a work in progress and we are striving to improve it, by adding more flexibility and increase the memory and time efficiency of the code. If you would like to be part of this effort, please fork the main branch and work from there. Make sure your code passes the travis build test. 
+This library is still a work in progress and we are striving to improve it, by adding more flexibility and increase the memory and time efficiency of the code. If you would like to be part of this effort, please fork the main branch and work from there. We plan on adding pytests and CI in the coming versions. 
 
 Contributions are always welcome.

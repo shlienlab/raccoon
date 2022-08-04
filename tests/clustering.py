@@ -94,7 +94,7 @@ def resume_test(data, resume_path, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.resume(data, lab=labels, dim=2, popcut=10, maxdepth=4,
+    cluster_membership, tree = aroughcun.resume(data, lab=labels, dim=2, popcut=15, maxdepth=4,
                                      filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
                                      dynmesh=True, maxmesh=3, minmesh=3, refpath=resume_path, 
                                      outpath='./out_test_resume', savemap=True, debug=True, gpu=gpu)

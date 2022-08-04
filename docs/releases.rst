@@ -4,12 +4,12 @@ Release History
 ===============
 
 
-Version 1.0
+Version 0.5.1
 ===============
  
 First public release.
 
-Version 0.5
+Version 0.5.0
 ===============
 
 Features

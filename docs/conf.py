@@ -23,8 +23,8 @@ copyright = '2022, Federico Comitani and Adam Shlien'
 author = 'Federico Comitani'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
-version = '1.0'
+release = '0.5.1'
+version = '0.5'
 
 # -- General configuration ---------------------------------------------------
 

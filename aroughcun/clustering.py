@@ -1747,7 +1747,7 @@ class IterativeClustering:
                     clus_tmp.reset_index().to_feather(
                         os.path.join(
                             self.outpath, 'rc_data/chk/clusters_chk_'+self._name+'.fe'))
-            else:
+                else:
                     clus_tmp.to_hdf(
                         os.path.join(
                             self.outpath, 'rc_data/chk/clusters_chk_'+self._name+'.h5'),
