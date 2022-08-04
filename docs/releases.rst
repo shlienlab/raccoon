@@ -3,6 +3,12 @@
 Release History
 ===============
 
+
+Version 1.0
+===============
+ 
+First public release.
+
 Version 0.5
 ===============
 

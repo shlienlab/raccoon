@@ -1,6 +1,6 @@
 """
 Plotting functions for RACCOON
-F. Comitani     @2018-2021
+F. Comitani     @2018-2022
 """
 
 import os

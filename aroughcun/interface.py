@@ -1,6 +1,6 @@
 """
 Parallelizable functions interface for RACCOON
-F. Comitani     @2020-2021
+F. Comitani     @2020-2022
 """
 
 class Interface:

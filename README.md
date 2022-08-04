@@ -2,11 +2,11 @@
 
 
 ## Resolution-Adaptive Coarse-to-fine Clusters OptimizatiON
-### v 0.5
+### v 1.0.0
 
-[![Licence](https://img.shields.io/github/license/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/blob/main/LICENSE)
-[![GitHub top language](https://img.shields.io/github/languages/top/fcomitani/raccoon?style=flat-square)](https://github.com/fcomitani/raccoon/search?l=python)
-[![Build Status](https://img.shields.io/travis/com/fcomitani/raccoon/main?style=flat-square)](https://travis-ci.com/fcomitani/raccoon)
+[![Licence](https://img.shields.io/github/license/shlienlab/raccoon?style=flat-square)](https://github.com/shlienlab/raccoon/blob/main/LICENSE)
+[![GitHub top language](https://img.shields.io/github/languages/top/shlienlab/raccoon?style=flat-square)](https://github.com/shlienlab/raccoon/search?l=python)
+[![Build Status](https://img.shields.io/travis/com/shlienlab/raccoon/main?style=flat-square)](https://travis-ci.com/shlienlab/raccoon)
 [![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest&style=flat-square)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
 
 RACCOON (`aroughcun` in Algonquinian) is a python 3 package for top-down clustering automatization. 
@@ -61,18 +61,17 @@ If these do not affect your analysis, we suggest activating the GPU option, espe
 
 ### Scripts
 
-Useful scripts can be found in the `scripts` folder. For now it only contains a file with functions to read the hdf5 storing the output pandas dataframe in R.
+Useful scripts can be found in the `scripts` folder. These include files to read hdf5 storing the output pandas dataframe in R.
 See the documentation for more details. 
 
 ### Installation
 
-<!--- raccoon releases can be easily installed through the python standard package manager  
+Raccoon releases can be easily installed through the python standard package manager  
 `pip install aroughcun`.
---->
 
 To install the latest (unreleased) version you can download it from this repository by running 
  
-    git clone https://github.com/fcomitani/raccoon
+    git clone https://github.com/shlienlab/raccoon
     cd raccoon
     python setup.py install
 
@@ -93,10 +92,11 @@ automatically set up a clusters search with just some basic options.
 
 When using this library, please cite
 
-> F. Comitani, J. O. Nash, S. Cohen-Gogo, A. Chang, T. T. Wen, A. Maheshwari, B. Goyal, E. S. L. Tio, K. Tabatabaei, L. Brunga, J. E. G. Lawrence, P. Balogh, A. Flanagan, S. Teichmann, V. Ramaswamy, J. Hitzler, J. Wasserman, R. A. Gladdy, B. C. Dickson, U. Tabori, M. J. Cowley, S. Behjati, D. Malkin, A. Villani, M. S. Irwin and A. Shlien, "Multi-scale transcriptional clustering and heterogeneity analysis reveal diagnostic classes of childhood cancer" (under review). 
+> F. Comitani, J. O. Nash, S. Cohen-Gogo, A. Chang, T. T. Wen, A. Maheshwari, B. Goyal, E. S. L. Tio, K. Tabatabaei, R. Zhao, L. Brunga, J. E. G. Lawrence, P. Balogh, A. Flanagan, S. Teichmann, B. Ho, A. Huang, V. Ramaswamy, J. Hitzler, J. Wasserman, R. A. Gladdy, B. C. Dickson, U. Tabori, M. J. Cowley, S. Behjati, D. Malkin, A. Villani, M. S. Irwin and A. Shlien, "Multi-scale transcriptional clustering and heterogeneity analysis reveal diagnostic classes of childhood cancer" (under review).
+
 
 ### Contributions
 
-This library is still a work in progress and we are striving to improve it, by adding more flexibility and increase the memory and time efficiency of the code. If you would like to be part of this effort, please fork the master branch and work from there. Make sure your code passes the travis build test. 
+This library is still a work in progress and we are striving to improve it, by adding more flexibility and increase the memory and time efficiency of the code. If you would like to be part of this effort, please fork the main branch and work from there. Make sure your code passes the travis build test. 
 
 Contributions are always welcome.

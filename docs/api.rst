@@ -5,7 +5,7 @@ API
 Wrapper functions
 -----------------
 
-.. automodule:: aroughcun.__init__
+.. automodule:: aroughcun.main
     :members:
     :undoc-members:
     :private-members:

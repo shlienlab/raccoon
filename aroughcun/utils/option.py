@@ -1,6 +1,6 @@
 """
 Optional imports class for RACCOON
-F. Comitani     @2021
+F. Comitani     @2022
 """
 
 class OptionalImports:

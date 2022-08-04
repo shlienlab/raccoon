@@ -1,3 +1,3 @@
 """RACCOON Version information."""
 
-__version__ = "0.5.0"
+__version__ = "1.0.0"

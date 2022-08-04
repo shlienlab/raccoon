@@ -1,6 +1,6 @@
 """
 Set of standardized tests for the clustering function of RACCOON
-F. Comitani     @2020-2021
+F. Comitani     @2020-2022
 """
 import aroughcun
 

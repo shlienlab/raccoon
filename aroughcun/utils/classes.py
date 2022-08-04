@@ -1,6 +1,6 @@
 """
 Auxiliary classes for RACCOON
-F. Comitani     @2021
+F. Comitani     @2022
 """
 
 from math import sqrt

@@ -16,7 +16,7 @@ you can download it from our GitHub repository by running
 
 .. code-block:: bash
 
-   git clone https://github.com/fcomitani/raccoon
+   git clone https://github.com/shlienlab/raccoon
    cd raccoon
    python setup.py install
 

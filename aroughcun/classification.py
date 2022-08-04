@@ -1,6 +1,6 @@
 """
 Basic k-nearest neighbours classifier for RACCOON
-F. Comitani     @2020-2021
+F. Comitani     @2020-2022
 """
 
 import os

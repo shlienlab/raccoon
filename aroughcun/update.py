@@ -1,6 +1,6 @@
 """
 To update previous RACCOON clustering runs with new data.
-F. Comitani     @2021
+F. Comitani     @2021-2022
 """
 
 import os

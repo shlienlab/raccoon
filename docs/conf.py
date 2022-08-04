@@ -19,12 +19,12 @@ sys.path.insert(0, os.path.abspath('../aroughcun/optim'))
 # -- Project information -----------------------------------------------------
 
 project = 'raccoon'
-copyright = '2019-2021, Federico Comitani'
+copyright = '2022, Federico Comitani and Adam Shlien'
 author = 'Federico Comitani'
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.0'
-version = '0.4'
+release = '1.0.0'
+version = '1.0'
 
 # -- General configuration ---------------------------------------------------
 

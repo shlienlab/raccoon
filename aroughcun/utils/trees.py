@@ -1,6 +1,6 @@
 """
 Hierarchical tree functions for RACCOON
-F. Comitani     @2020
+F. Comitani     @2020-2022
 """
 
 import os

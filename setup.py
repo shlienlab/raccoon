@@ -17,8 +17,8 @@ setup(
     description='Scale-adaptive clustering in Python',
     long_description=long_description,
 
-    url='https://github.com/fcomitani/raccoon',
-	download_url = 'https://github.com/fcomitani/raccoon/archive/'+version+'.tar.gz', 
+    url='https://github.com/shlienlab/raccoon',
+	download_url = 'https://github.com/shlienlab/raccoon/archive/'+version+'.tar.gz', 
     author='Federico Comitani',
     author_email='federico.comitani@gmail.com',
 
@@ -33,7 +33,9 @@ setup(
         'Programming Language :: Python :: 3.8'
 		],
 
-    keywords='clustering scale-adaptive dimension-reduction k-NN hiearchical-clustering optimal-clusters differential-evolution',
+    keywords=('clustering','optimization','dimensionality-reduction',
+              'differential-evolution','knn','umap','hierarchical-clustering',
+	      'multi-scale','scale-adaptive','optimal-clusters'), 
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
