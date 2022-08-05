@@ -21,9 +21,10 @@ class Objective:
     def __init__(self, bounds, obj_func):
         """ Initialize the objective object.
         
-        obj_func (function): objective function; takes a set of parameters to be optimized
-            and returns a single float value.
-        bounds (tuple): minimum and maximum boundaries for the parameters to optimize.
+        Args:
+            obj_func (function): objective function; takes a set of parameters to be optimized
+                and returns a single float value.
+            bounds (tuple): minimum and maximum boundaries for the parameters to optimize.
         """
 
         self.best_model = None
@@ -36,6 +37,7 @@ class Objective:
 
         Args:
             trial (optuna.Trial): the current trial.
+
         Returns:
             score (float): the objective function result on the current trial.
         """
@@ -53,7 +55,7 @@ class Objective:
         return score
 
     def callback(self, study, trial):
-        """Stores the best results.
+        """ Stores the best results.
         
         Args:
             study (optuna.Study): the study to interrupt.
@@ -64,7 +66,7 @@ class Objective:
             self.best_model = self._model
             
 class EarlyStoppingCallback(object):
-    """Early stopping callback for Optuna."""
+    """ Early stopping callback for Optuna. """
 
     def __init__(self, patience = 5, tolerance = 1e-4, direction = "minimize"):
         """ Initialize early stopping.
@@ -93,7 +95,7 @@ class EarlyStoppingCallback(object):
             ValueError(f"invalid direction: {direction}")
 
     def __call__(self, study, trial):
-        """Checks if the study needs to be stopped or can continue.
+        """ Checks if the study needs to be stopped or can continue.
         
         Args:
             study (optuna.Study): the study to interrupt.
@@ -119,19 +121,20 @@ def _optuna_tpe(obj_func, bounds, n_candidates=20,
         obj_func (function): objective function; takes a set of parameters to be optimized
             and returns a single float value.
         bounds (tuple): minimum and maximum boundaries for the parameters to optimize.
-        candidates (int): maximum number of candidate points in the hyperspace to explore
-            (default 20).
+        candidates (int): maximum number of candidate points in the hyperspace 
+            to explore (default 20).
         patience (int): number of rounds to wait after reaching the plateau
-                before stopping the study (default 5).
+            before stopping the study (default 5).
         tol (float): solution improvement tolerance (default 1e-4).
         seed (int): seed for the random numbers generator (default None).
 
     Returns:
-        (list of floats): list of best parameters.
-        (list of objects): a list containing score, labels, clustering parameter,
+        (tuple (list of floats, list of objects, list of floats)): tuple containing
+            the list of best parameters; 
+            a list containing score, labels, clustering parameter,
             projected points, trained maps, filtered features and
-            trained low-information filter from the best scoring model.
-        (list of floats): a matrix containing all the explored models' parameters
+            trained low-information filter from the best scoring model;
+            a matrix containing all the explored models' parameters
             and their scores (useful for plotting the hyperspace).
     """
 

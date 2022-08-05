@@ -30,13 +30,13 @@ def cluster(data, **kwargs):
 	run the top-down iterations  and logging.
 
     Args:
-	data (pandas dataframe): dataframe with sampels as rows and features as columns.
-	kwargs (dict): keyword arguments for IterativeClustering. 
+	    data (pandas dataframe): dataframe with sampels as rows and features as columns.
+	    kwargs (dict): keyword arguments for IterativeClustering. 
 
     Returns:
         clus_opt (pandas dataframe): one-hot-encoded clusters membership of data.
-        tree (anytree object): anytree structure with information on the clusters
-	       	               hierarchy.
+            tree (anytree object): anytree structure with information on the clusters
+	        hierarchy.
     """
 
     start_time = time.time()
@@ -90,21 +90,21 @@ def cluster(data, **kwargs):
 def resume(data, refpath='./rc_data', lab=None, **kwargs):
 
     """ Wrapper function to resume a IterativeClustering run 
-        from checkpoint files.
+    from checkpoint files.
 
     Args:
         data (pandas dataframe): dataframe with sampels as rows and features as columns.
         refpath (string): path to checkpoint files parent folder
-                          (default subdirectory raaroughcun_data of current folder).
+            (default subdirectory raaroughcun_data of current folder).
         lab (list, array or pandas series): list of labels corresponding to each sample
-                                            (for plotting only).
+            (for plotting only).
         kwargs (dict): keyword arguments for KNN and IterativeClustering. 
 
     Returns:
         new_clus (pandas dataframe): one-hot-encoded clusters membership of the 
-                                     whole data.
+            whole data.
         tree (anytree object): anytree structure with information on the clusters
-                               hierarchy.
+            hierarchy.
     """
 
     start_time = time.time()
@@ -263,7 +263,7 @@ def resume(data, refpath='./rc_data', lab=None, **kwargs):
 
 def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
     """ Wrapper function to classify new data with KNN on
-        a previous IterativeClustering output.
+    a previous IterativeClustering output.
 
     Args:
         new_data (matrix or pandas dataframe): data to classify in 
@@ -278,7 +278,7 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
 
     Returns:
         (pandas dataframe): one-hot-encoded clusters membership of the 
-                            projected data.
+            projected data.
     """
 
     start_time = time.time()
@@ -317,12 +317,12 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
 def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath='./rc_data', 
             outpath='./', **kwargs):
     """ Wrapper function to update
-        a previous IterativeClustering output with new data.
-        Runs KNN furst on the new data points to identify the closest matching
-        clusters. These points are then added to each cluster along the heirarchy
-        and the objective function is recalculated. If this score is lowered
-        beyond the given threshold, the cluster under scrutiny is scrapped, 
-        together with its offspring, and re-built from scrach.
+    a previous IterativeClustering output with new data.
+    Runs KNN furst on the new data points to identify the closest matching
+    clusters. These points are then added to each cluster along the heirarchy
+    and the objective function is recalculated. If this score is lowered
+    beyond the given threshold, the cluster under scrutiny is scrapped, 
+    together with its offspring, and re-built from scrach.
 
     Args:
         new_data (matrix or pandas dataframe): data to classify in

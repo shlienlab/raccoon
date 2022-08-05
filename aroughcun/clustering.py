@@ -110,7 +110,7 @@ class IterativeClustering:
                 if 'logspace' take an adaptive range based on the dataset size at each iteration
                 with logarithmic spacing (reccomended),
                 if a function is provided it will be used to define the neighbors range at each step
-                    (see the manual for more details).
+                (see the manual for more details).
             neipoints (int or list of int): number of grid points for the neighbors search,
                 if list, each value will be subsequently used at the next iteration until
                 all values are exhausted,
@@ -503,8 +503,8 @@ class IterativeClustering:
 
     def _features_removal(self, cutoff):
         """ Either remove features with low variance/MAD, or high correlation
-            from dataset according to a specified threshold (cutoff)
-            or apply truncated SVD to reduce features to a certain number (cutoff). 
+        from dataset according to a specified threshold (cutoff)
+        or apply truncated SVD to reduce features to a certain number (cutoff). 
 
         Args:
              cutoff (string or float): if filterfeat=='variance'/'MAD'/'correlation',
@@ -850,7 +850,7 @@ class IterativeClustering:
 
         Args:
             pj (pandas dataframe): projection of saxmples in the low-dimensionality space
-            obtained with UMAP.
+                obtained with UMAP.
 
         Returns:
             (numpy range): estimated range.
@@ -932,7 +932,8 @@ class IterativeClustering:
             algorithm (string): value of algorithm for HDBSCAN.
 
         Returns:
-            (list of int): list of assigned clusters. """
+            (list of int): list of assigned clusters. 
+        """
 
 
         if self.clu_algo in ['DBSCAN','SNN']:
@@ -974,13 +975,13 @@ class IterativeClustering:
             nn (int): UMAP nearest neighbors value.
 
         Returns:
-            sil_opt (float): silhoutte score corresponding to the best set of parameters.
-            labs (pandas series): series with the cluster membership identified for each sample.
-            cparm_opt (float): optimal clustering parameter value found.
-            pj (pandas dataframe): low dimensionality data projection from UMAP.
-            keepfeat (pandas index): set of genes kept after low /MAD removal, nan if 'tSVD'.
-            decomposer (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
-
+            (tuple (float, pd.Series, float, pd.DataFrame, pd.Index, tsvd object)): a tuple containing
+            the silhoutte score corresponding to the best set of parameters;
+            a series with the cluster membership identified for each sample;
+            the optimal clustering parameter value found;
+            a low dimensionality data projection from UMAP;
+            a set of genes kept after low /MAD removal, nan if 'tSVD';
+            the trained tsvd instance, None if 'variance'/'MAD'.
         """
             
         sil_opt = self.baseline
@@ -1155,16 +1156,15 @@ class IterativeClustering:
         Args:
             params (list): a list containing a single feature cutoff and a
                 UMAP nearest neighbors parameter.
-        Returns:
-            (float): loss value for the given set of parameters.
-            labs (pandas series): series with the cluster membership identified
-                for each sample.
-            cparm_opt (float): optimal clustering parameter value found.
-            pj (pandas dataframe): low dimensionality data projection from UMAP.
-            keepfeat (pandas index): set of genes kept after low variance/MAD removal,
-                nan if tSVD.
-            decomposer (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
 
+        Returns:
+            (tuple (float, pd.Series, float, pd.DataFrame, pd.Index, tsvd object)): a tuple containing
+            the loss value for the given set of parameters;
+            a series with the cluster membership identified for each sample;
+            the optimal clustering parameter value found;
+            a low dimensionality data projection from UMAP;
+            a set of genes kept after low variance/MAD removal, nan if tSVD;
+            the trained tsvd instance, None if 'variance'/'MAD'.
         """
 
         sil_opt, labs, cparm_opt, pj, mapping, keepfeat,\
@@ -1175,19 +1175,19 @@ class IterativeClustering:
 
     def _run_grid_instances(self, nnrange):
         """ Run Grid Search to find the optimal set of parameters by maximizing the
-            clustering score.
+        clustering score.
 
         Args:
             nnrange (numpy range): UMAP nearest neighbors range.
 
         Returns:
-            best_param (list of floats): list of best parameters.
-            best_res (list of objects): a list containing score, labels, clustering parameter,
-                projected points, trained maps, filtered features and
-                trained low-information filter from the best scoring model.
-            scores_list (list of floats): a matrix containing all the explored models' parameters
-                and their scores (useful for plotting the hyperspace).
-            
+            (tuple (list of floats, list of objects, list of floats)): a tuple containing
+            the list of best parameters;
+            a list containing score, labels, clustering parameter,
+            projected points, trained maps, filtered features and
+            trained low-information filter from the best scoring model;
+            a matrix containing all the explored models' parameters
+            and their scores (useful for plotting the hyperspace).
         """
 
         # Note: this should be moved to optimizers.
@@ -1407,21 +1407,19 @@ class IterativeClustering:
         """ Wrapper function for the parameters optimization.
 
         Returns:
-            sil_opt (float): Silhoutte score corresponding to the best set of parameters.
-            labs_opt (pandas series): series with the cluster membership identified
-                for each sample.
-            cparm_opt (float): optimal clusters identification parameter value found.
-            num_clus_opt (int):  total number of clusters determined by the search.
-            nei_opt (int): optimal number of nearest neighbors used with UMAP.
-            pj_opt (pandas dataframe): low dimensionality data projection from UMAP.
-            cut_opt (float): optimal cutoff value used for the features removal step.
-            keepfeat (pandas index): set of genes kept after low variance/MAD removal,
-                nan if tSVD.
-            decomp_opt (tsvd object): trained tsvd instance, None if 'variance'/'MAD'.
-            reassigned (float): percentage of points forecefully assigned to a class
-                if outliers='reassign'.
-            scoreslist (list of float): list of all scores evaluated and their parameters.
-
+            (tuple (float, pd.Series, float, int, int, pd.DataFrame, 
+                float, pd.Index, tsvd onject, float, list of floats)): a tuple containing
+                the silhoutte score corresponding to the best set of parameters;
+                a series with the cluster membership identified for each sample;
+                the optimal clusters identification parameter value found;
+                the  total number of clusters determined by the search;
+                the optimal number of nearest neighbors used with UMAP;
+                a low dimensionality data projection from UMAP;
+                the optimal cutoff value used for the features removal step;
+                the set of genes kept after low variance/MAD removal, nan if tSVD;
+                the trained tsvd instance, None if 'variance'/'MAD';
+                the percentage of points forecefully assigned to a class if outliers='reassign';
+                the list of all scores evaluated and their parameters.
         """
 
         logging.info(
@@ -1673,8 +1671,8 @@ class IterativeClustering:
 
     def iterate(self):
         """ Iteratively  clusters the input data, by first optimizing the parameters,
-            binarizing the resulting labels, plotting and repeating. 
-         """
+        binarizing the resulting labels, plotting and repeating. 
+        """
 
         #self._depth += 1
 
@@ -1704,7 +1702,8 @@ class IterativeClustering:
             file.close()
 
         """ Save intermediate UMAP data to be able to re-access specific clusters
-        (expensive, only if debug True). """
+        (expensive, only if debug True). 
+        """
 
         if self.savemap:
             with open(os.path.join(self.outpath,

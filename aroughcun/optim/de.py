@@ -52,12 +52,11 @@ def _differential_evolution(loss_fun, bounds, integers=None,
     """ Basic Differential Evolution implementation.
 
     Args:
-        loss_fun (function): objective function; takes a set of parameters to be optimized
+        loss_fun (function): objective function, takes a set of parameters to be optimized
             and returns a single float value.
         bounds (tuple): minimum and maximum boundaries for the parameters to optimize.
         integers (list of booleans or None): list with information on which parameters
-            are integers,
-            if None (default) treat every parameter as float.
+            are integers, if None (default) treat every parameter as float.
         n_candidates (int): size of the candidate solutions population.
         mutation (float): scaling factor for the mutation step.
         recombination (float): recombination (crossover) rate.
@@ -68,13 +67,13 @@ def _differential_evolution(loss_fun, bounds, integers=None,
         seed (int): seed for the random numbers generator.
 
     Returns:
-        (list of floats): list of best parameters.
-        (list of objects): a list containing score, labels, clustering parameter,
+        (tuple (list of floats, list of objects, list of floats)): tuple containing
+            the list of best parameters; 
+            a list containing score, labels, clustering parameter,
             projected points, trained maps, filtered features and
-            trained low-information filter from the best scoring model.
-        (list of floats): a matrix containing all the explored models' parameters
+            trained low-information filter from the best scoring model;
+            a matrix containing all the explored models' parameters
             and their scores (useful for plotting the hyperspace).
-
     """
 
     if seed is not None:
@@ -150,7 +149,8 @@ def _differential_evolution(loss_fun, bounds, integers=None,
                     mutant.append(target[k])
 
             """ Select the solution with best score,
-                if candidate's score has been evaluated before, skip and use old score. """
+            if candidate's score has been evaluated before, skip and use old score. 
+            """
 
             # Note: keep the results for the best candidate so we don't have to
             # recalculate them.
