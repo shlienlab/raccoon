@@ -1,5 +1,5 @@
 .. image:: figs/logo_rc.png
-	:width: 300px
+	:width: 400px
 
 |
 Welcome to raccoon's documentation!

@@ -1,6 +1,6 @@
 """
 Basic differential evolution implementation for RACCOON
-F. Comitani     @2019
+F. Comitani     @2019-2022
 
 Based on
 https://nathanrooy.github.io/posts/2017-08-27/simple-differential-evolution-with-python

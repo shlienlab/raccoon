@@ -12,6 +12,7 @@
 #
 import os
 import sys
+sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('../aroughcun'))
 sys.path.insert(0, os.path.abspath('../aroughcun/utils'))
 sys.path.insert(0, os.path.abspath('../aroughcun/optim'))
@@ -47,9 +48,6 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-# Mock imports
-autodoc_mock_imports = ['numpy','scipy','matplotlib','scikit-learn','scikit-network']
 
 # -- Options for HTML output -------------------------------------------------
 

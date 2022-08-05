@@ -33,9 +33,9 @@ setup(
         'Programming Language :: Python :: 3.8'
 		],
 
-    keywords=('clustering','optimization','dimensionality-reduction',
+    keywords=['clustering','optimization','dimensionality-reduction',
               'differential-evolution','knn','umap','hierarchical-clustering',
-	      'multi-scale','scale-adaptive','optimal-clusters'), 
+	      'multi-scale','scale-adaptive','optimal-clusters'], 
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 

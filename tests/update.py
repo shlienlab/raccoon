@@ -26,7 +26,7 @@ def update_test(data, ori_data, reftab, refpath, gpu=False):
         dim=2, filterfeat='variance', optimizer='grid', 
         metric_clu='euclidean', metric_map='cosine',
         dynmesh=True, maxmesh=3, minmesh=3, chk=True,
-        maxdepth=None, popcut=10, min_csize=5,
+        maxdepth=None, popcut=15, min_csize=10,
         outpath='./out_test_update', savemap=True, debug=True, 
         gpu=gpu)
 
