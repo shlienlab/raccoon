@@ -4,9 +4,12 @@
 ## Resolution-Adaptive Coarse-to-fine Clusters OptimizatiON
 ### v 0.5.1
 
-[![Licence](https://img.shields.io/github/license/shlienlab/raccoon?style=flat-square)](https://github.com/shlienlab/raccoon/blob/main/LICENSE)
-[![GitHub top language](https://img.shields.io/github/languages/top/shlienlab/raccoon?style=flat-square)](https://github.com/shlienlab/raccoon/search?l=python)
-[![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest&style=flat-square)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/shlienlab/raccoon)
+[![Licence](https://img.shields.io/github/license/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/blob/main/LICENSE)
+[![GitHub top language](https://img.shields.io/github/languages/top/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/search?l=python)
+[![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6970014.svg)](https://doi.org/10.5281/zenodo.6970014)
+
 
 RACCOON (`aroughcun` in Algonquinian) is a python 3 package for top-down clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated iteratively within each cluster identified.
