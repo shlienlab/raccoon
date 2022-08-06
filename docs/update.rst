@@ -22,10 +22,10 @@ This will set up the necessary folders and run the update automatically.
 
   updated_membership  = rc.update(new_df, original_df, cluster_membership, tolerance=1e-2,
                             prob_cut=.2, refpath=r'original_clusters/raccoon_data',
-                            dim=2, filterfeat='variance', optimizer='auto',
+                            dim=2, filter_feat='variance', optimizer='auto',
                             metric_clu='euclidean', metric_map='cosine',
-                            dynmesh=True, chk=True, outpath=r'./',
-                            maxdepth=-1,savemap=True, debug=True,
+                            dyn_mesh=True, chk=True, out_path=r'./',
+                            max_depth=-1,save_map=True, debug=True,
                             gpu=gpu)
 
 This tool will first project the new samples on the old hierarchy, identify their closest
@@ -45,7 +45,7 @@ calculated on the old data only, is also produced in the :code:`raccoon_plot` fo
 
 Keywords arguments can be provided for the re-clustering step. These should ideally match the
 original setup but don't have to. If you want to extend the search in this specific instance,
-for example, it may be worth changing some of these flags (e.g. :code:`maxdepth` or :code:`popcut`).
+for example, it may be worth changing some of these flags (e.g. :code:`max_depth` or :code:`pop_cut`).
 
 Alternatively, the update object can be initialized and the process can be
 called directly.
@@ -54,11 +54,10 @@ called directly.
   
   from aroughcun.utils.update import UpdateClusters
 
-
-    obj = UpdateClusters(new_data, old_data, membership, refpath=r'./raccoon_data',
-        outpath=outpath, tolerance=1e-2, prob_cut=.2, **kwargs)
-    obj.find_and_update()
-    output = obj.new_clus
+  obj = UpdateClusters(new_data, old_data, membership, refpath=r'./raccoon_data',
+      out_path=out_path, tolerance=1e-2, prob_cut=.2, **kwargs)
+  obj.find_and_update()
+  output = obj.new_clus
 
 The output is in the same one-hot-encoded matrix format
 (rows as samples, columns classes) as the iterative clustering output table.

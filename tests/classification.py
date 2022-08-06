@@ -24,7 +24,7 @@ def knn_test(data, ori_data, reftab, refpath, gpu=False):
     new_membership = aroughcun.classify(data, ori_data,
         pd.read_hdf(reftab),
         refpath=os.path.join(refpath,'rc_data'),
-        outpath='./out_test_knn',
+        out_path='./out_test_knn',
         gpu=gpu)
 
 if __name__ == "__main__":

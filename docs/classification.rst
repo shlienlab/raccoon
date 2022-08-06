@@ -13,7 +13,7 @@ at different levels of the hierarchy.
 Clusters assignment is calculated by averaging the nearest neighbours 
 classes and weighting them as a function of their distance.
 
-To run this classifier, :code:`savemap` must be active during the clustering 
+To run this classifier, :code:`save_map` must be active during the clustering 
 step.
 
 A wrapper function is available 
@@ -23,7 +23,7 @@ A wrapper function is available
   import aroughcun as rc
 
   projected_membership  = rc.classify(df_to_predict, original_df, cluster_membership, 
-                                      refpath=r'./raccoon_data', outpath=r'./')
+                                      refpath=r'./raccoon_data', out_path=r'./')
 
 Alternatively, the k-NN object can be initialized and the classification can be
 called directly.
@@ -33,7 +33,7 @@ called directly.
   from aroughcun.utils.classification import KNN
 
   obj = KNN(df_to_predict, original_df, cluster_membership, 
-            refpath=r'./raccoon_data', outpath=r'./',
+            refpath=r'./raccoon_data', out_path=r'./',
             debug=False, gpu=False)
   obj.assign_membership()
 

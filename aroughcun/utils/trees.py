@@ -8,13 +8,13 @@ from anytree import Node
 from anytree.importer import JsonImporter, DictImporter
 from anytree.exporter import JsonExporter
 
-def build_tree(table, outpath=None):
+def build_tree(table, out_path=None):
     """ Set up a anytree object with useful information on
         the hierarchy of identified classes.
 
     Args:
         table (pandas dataframe): one-hot-encoded table of class membership.
-        outpath (string): path where output files will be saved
+        out_path (string): path where output files will be saved
             (includes filename).
 
     """
@@ -39,9 +39,9 @@ def build_tree(table, outpath=None):
     for n in nodes:
         n.leaf = len(n.children) == 0
 
-    if outpath is not None:
+    if out_path is not None:
         exporter = JsonExporter(indent=2, sort_keys=True)
-        with open(outpath, 'w') as handle:
+        with open(out_path, 'w') as handle:
             exporter.write(nodes[0], handle)
 
     return nodes

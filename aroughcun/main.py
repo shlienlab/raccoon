@@ -41,8 +41,8 @@ def cluster(data, **kwargs):
 
     start_time = time.time()
 
-    if 'outpath' not in kwargs or kwargs['outpath'] is None:
-        kwargs['outpath'] = os.getcwd()
+    if 'out_path' not in kwargs or kwargs['out_path'] is None:
+        kwargs['out_path'] = os.getcwd()
     if 'RPD' not in kwargs:
         kwargs['RPD'] = False
     if 'chk' not in kwargs:
@@ -50,7 +50,7 @@ def cluster(data, **kwargs):
 
     """ Setup folders and files, remove old data if present. """
 
-    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'], suffix='_'+str(uuid.uuid1()))
+    functions.setup(kwargs['out_path'], True, kwargs['chk'], kwargs['RPD'], suffix='_'+str(uuid.uuid1()))
 
     logging.info('Starting a new clustering run')
     
@@ -65,11 +65,11 @@ def cluster(data, **kwargs):
     if obj.clus_opt is not None:
         obj.clus_opt.to_hdf(
             os.path.join(
-                kwargs['outpath'], 'rc_data/clusters_final.h5'),
+                kwargs['out_path'], 'rc_data/clusters_final.h5'),
             key='df')
         tree = trees.build_tree(
-            obj.clus_opt, outpath=os.path.join(
-                kwargs['outpath'], 'rc_data/tree_final.json'))
+            obj.clus_opt, out_path=os.path.join(
+                kwargs['out_path'], 'rc_data/tree_final.json'))
 
     """ Log the total runtime and memory usage. """
 
@@ -110,14 +110,14 @@ def resume(data, refpath='./rc_data', lab=None, **kwargs):
     start_time = time.time()
     
 
-    if 'outpath' not in kwargs or kwargs['outpath'] is None:
-        kwargs['outpath'] = os.getcwd()
+    if 'out_path' not in kwargs or kwargs['out_path'] is None:
+        kwargs['out_path'] = os.getcwd()
     if 'RPD' not in kwargs:
         kwargs['RPD'] = False
-    if 'popcut' not in kwargs:
-        kwargs['popcut'] = 50 #default value
-    if 'maxdepth' not in kwargs:
-        kwargs['maxdepth'] = None  #default value
+    if 'pop_cut' not in kwargs:
+        kwargs['pop_cut'] = 50 #default value
+    if 'max_depth' not in kwargs:
+        kwargs['max_depth'] = None  #default value
     if 'depth' in kwargs:
         del kwargs['depth']
     if 'chk' not in kwargs:
@@ -176,7 +176,7 @@ def resume(data, refpath='./rc_data', lab=None, **kwargs):
 
     """ Setup logging."""
 
-    functions.setup(kwargs['outpath'], True, kwargs['chk'], kwargs['RPD'], suffix='_res_'+str(uuid.uuid1()),
+    functions.setup(kwargs['out_path'], True, kwargs['chk'], kwargs['RPD'], suffix='_res_'+str(uuid.uuid1()),
         delete=False)
 
     logging.info('Resuming clustering run.')
@@ -198,8 +198,8 @@ def resume(data, refpath='./rc_data', lab=None, **kwargs):
     """
     to_run = [x for x in old_clus.columns
                 if x not in intf.get_value(oldparams['name']) and
-                old_clus[x].sum()>kwargs['popcut'] and
-                (kwargs['maxdepth'] is None or x.count('_') < kwargs['maxdepth'])]
+                old_clus[x].sum()>kwargs['pop_cut'] and
+                (kwargs['max_depth'] is None or x.count('_') < kwargs['max_depth'])]
 
     if len(to_run) == 0:
         logging.warning('No resumable cluster found. Your run might have completed succesfully.')
@@ -238,11 +238,11 @@ def resume(data, refpath='./rc_data', lab=None, **kwargs):
     if new_clus is not None:
         new_clus.to_hdf(
             os.path.join(
-                kwargs['outpath'], 'rc_data/clusters_resumed_final.h5'),
+                kwargs['out_path'], 'rc_data/clusters_resumed_final.h5'),
             key='df')
         tree = trees.build_tree(
-            new_clus, outpath=os.path.join(
-                kwargs['outpath'], 'rc_data/tree_resumed_final.json'))
+            new_clus, out_path=os.path.join(
+                kwargs['out_path'], 'rc_data/tree_resumed_final.json'))
 
     """ Log the total runtime and memory usage. """
 
@@ -283,12 +283,12 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
 
     start_time = time.time()
 
-    if 'outpath' not in kwargs or kwargs['outpath'] is None:
-        kwargs['outpath'] = os.getcwd()
+    if 'out_path' not in kwargs or kwargs['out_path'] is None:
+        kwargs['out_path'] = os.getcwd()
 
     """ Setup logging."""
 
-    functions.setup(kwargs['outpath'], False, False, False, suffix='_knn_'+str(uuid.uuid1()),
+    functions.setup(kwargs['out_path'], False, False, False, suffix='_knn_'+str(uuid.uuid1()),
         delete=False)
 
     """ Run classifier. """
@@ -301,7 +301,7 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
     if obj.membership is not None:
         obj.membership.to_hdf(
             os.path.join(
-                kwargs['outpath'], 'rc_data/classification_final.h5'),
+                kwargs['out_path'], 'rc_data/classification_final.h5'),
             key='df')
 
     """ Log the total runtime and memory usage. """
@@ -315,7 +315,7 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
 
 
 def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath='./rc_data', 
-            outpath='./', **kwargs):
+            out_path='./', **kwargs):
     """ Wrapper function to update
     a previous IterativeClustering output with new data.
     Runs KNN furst on the new data points to identify the closest matching
@@ -338,7 +338,7 @@ def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath
             treated as noise and won't impact the clusters score review.
         refpath (string): path to the location where trained umap files (pkl) are
             stored (default subdirectory raaroughcun_data of current folder).
-        outpath (string): path to the location where output files will be saved
+        out_path (string): path to the location where output files will be saved
             (default current folder).
         kwargs (dict): keyword arguments for KNN and IterativeClustering.
 
@@ -355,13 +355,13 @@ def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath
 
     """ Setup logging."""
 
-    functions.setup(outpath, True, kwargs['chk'], kwargs['RPD'], suffix='_upt_'+str(uuid.uuid1()),
+    functions.setup(out_path, True, kwargs['chk'], kwargs['RPD'], suffix='_upt_'+str(uuid.uuid1()),
         delete=False)
 
     logging.info('Starting clusters perturbation run.')
 
     obj = UpdateClusters(new_data, old_data, membership, refpath=refpath, 
-        outpath=outpath, tolerance=tolerance, prob_cut=prob_cut, **kwargs)
+        out_path=out_path, tolerance=tolerance, prob_cut=prob_cut, **kwargs)
     obj.find_and_update()
 
     """ Save the assignment to disk and buil tree. """
@@ -370,11 +370,11 @@ def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath
     if obj.new_clus is not None:
         obj.new_clus.to_hdf(
             os.path.join(
-                outpath, 'rc_data/clusters_updated_final.h5'),
+                out_path, 'rc_data/clusters_updated_final.h5'),
             key='df')
         tree = trees.build_tree(
-            obj.new_clus, outpath=os.path.join(
-                outpath, 'rc_data/tree_updated_final.json'))
+            obj.new_clus, out_path=os.path.join(
+                out_path, 'rc_data/tree_updated_final.json'))
 
     """ Log the total runtime and memory usage. """
 

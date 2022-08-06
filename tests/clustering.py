@@ -13,10 +13,10 @@ def grid_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=3, 
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3, chk=True,
-                                     outpath='./out_test_grid', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=3, 
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3, chk=True,
+                                     out_path='./out_test_grid', save_map=True, debug=True, gpu=gpu)
 
 def mahalanobis_test(data, labels=None, gpu=False):
     """ Clustering test, mahalanobis grid.
@@ -27,10 +27,10 @@ def mahalanobis_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1,
-                                     filterfeat='variance', optimizer='grid', metric_clu='mahalanobis', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_mahalanobis', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=1,
+                                     filter_feat='variance', optimizer='grid', metric_clu='mahalanobis', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_mahalanobis', save_map=True, debug=True, gpu=gpu)
 
 def snn_test(data, labels=None, gpu=False):
     """ Clustering test, euclidean grid, SNN DBSCAN.
@@ -41,10 +41,10 @@ def snn_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1, clu_algo='SNN',
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_snn', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=1, clu_algo='SNN',
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_snn', save_map=True, debug=True, gpu=gpu)
 
 def louvain_test(data, labels=None, gpu=False):
     """ Clustering test, euclidean grid, SNN Louvain.
@@ -55,10 +55,10 @@ def louvain_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1, clu_algo='louvain',
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_louvain', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=1, clu_algo='louvain',
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_louvain', save_map=True, debug=True, gpu=gpu)
 
 
 def neifun_test(data, labels=None, gpu=False):
@@ -78,11 +78,11 @@ def neifun_test(data, labels=None, gpu=False):
       sq = sqrt(n)
       return [sq/2, sq, sq+sq/2]
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=2,
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine', 
-				     neirange=range_sqrt, 
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_neifun', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=2,
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine', 
+				     nei_range=range_sqrt, 
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_neifun', save_map=True, debug=True, gpu=gpu)
 
 def resume_test(data, resume_path, labels=None, gpu=False):
     """ Resume clustering test, euclidean grid loading parameters data from file.
@@ -94,10 +94,10 @@ def resume_test(data, resume_path, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.resume(data, lab=labels, dim=2, popcut=15, maxdepth=4,
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3, refpath=resume_path, 
-                                     outpath='./out_test_resume', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.resume(data, lab=labels, dim=2, pop_cut=15, max_depth=4,
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3, refpath=resume_path, 
+                                     out_path='./out_test_resume', save_map=True, debug=True, gpu=gpu)
 
 
 def de_test(data, labels=None, gpu=False):
@@ -109,12 +109,12 @@ def de_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=5, maxdepth=2,
-                                     filterfeat='variance', optimizer='de', 
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=5, max_depth=2,
+                                     filter_feat='variance', optimizer='de', 
                                      search_candid=5, search_iter=5,
                                      metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=4, minmesh=4,
-                                     outpath='./out_test_de', savemap=True, debug=True, gpu=gpu)
+                                     dyn_mesh=True, max_mesh=4, min_mesh=4,
+                                     out_path='./out_test_de', save_map=True, debug=True, gpu=gpu)
 
 
 def tpe_test(data, labels=None, gpu=False):
@@ -126,12 +126,12 @@ def tpe_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=5, maxdepth=2,
-                                     filterfeat='variance', optimizer='tpe', 
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=5, max_depth=2,
+                                     filter_feat='variance', optimizer='tpe', 
                                      search_candid=25, tpe_patience=10,
 			             metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=False, clu_algo='DBSCAN',
-                                     outpath='./out_test_tpe', savemap=True, debug=True, gpu=gpu)
+                                     dyn_mesh=False, clu_algo='DBSCAN',
+                                     out_path='./out_test_tpe', save_map=True, debug=True, gpu=gpu)
 
 def auto_test(data, labels=None, gpu=False):
     """ Clustering test, euclidean automatic selection.
@@ -142,10 +142,10 @@ def auto_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1,
-                                     filterfeat='variance', optimizer='auto', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_auto', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=1,
+                                     filter_feat='variance', optimizer='auto', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_auto', save_map=True, debug=True, gpu=gpu)
 
 
 def tsvd_test(data, labels=None, gpu=False):
@@ -157,10 +157,10 @@ def tsvd_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1,
-                                     filterfeat='tSVD', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_tsvd', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=1,
+                                     filter_feat='tSVD', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_tsvd', save_map=True, debug=True, gpu=gpu)
 
 
 def high_test(data, labels=None, gpu=False):
@@ -172,10 +172,10 @@ def high_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=3, popcut=20, maxdepth=2,
-                                     filterfeat='variance', optimizer='grid', metric_clu='cosine', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_high', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=3, pop_cut=20, max_depth=2,
+                                     filter_feat='variance', optimizer='grid', metric_clu='cosine', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_high', save_map=True, debug=True, gpu=gpu)
 
 def super_test(data, labels=None, gpu=False):
     """ Supervised clustering test, euclidean grid.
@@ -186,10 +186,10 @@ def super_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, supervised=True, dim=2, popcut=20, maxdepth=1,
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_super', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, supervised=True, dim=2, pop_cut=20, max_depth=1,
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_super', save_map=True, debug=True, gpu=gpu)
 
 def trans_test(data, labels=None, gpu=False):
     """ Clustering test, euclidean grid with transform-only data.
@@ -200,10 +200,10 @@ def trans_test(data, labels=None, gpu=False):
             gpu (bool): if True use gpu implementation.    
     """
 
-    cluster_membership, tree = aroughcun.cluster(data, transform=data.sample(frac=.2).index, lab=labels, dim=2, popcut=20, maxdepth=2,
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3,
-                                     outpath='./out_test_trans', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, transform=data.sample(frac=.2).index, lab=labels, dim=2, pop_cut=20, max_depth=2,
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3,
+                                     out_path='./out_test_trans', save_map=True, debug=True, gpu=gpu)
 
 def arand_test(data, truth, labels=None, gpu=False):
     """ Clustering test, euclidean grid, with rand index.
@@ -231,10 +231,10 @@ def arand_test(data, truth, labels=None, gpu=False):
          
         return arand(truth.loc[pred.index], pred)
 
-    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, popcut=20, maxdepth=1, 
-                                     filterfeat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
-                                     dynmesh=True, maxmesh=3, minmesh=3, chk=False, score=arand_score,
-                                     outpath='./out_test_arand', savemap=True, debug=True, gpu=gpu)
+    cluster_membership, tree = aroughcun.cluster(data, lab=labels, dim=2, pop_cut=20, max_depth=1, 
+                                     filter_feat='variance', optimizer='grid', metric_clu='euclidean', metric_map='cosine',
+                                     dyn_mesh=True, max_mesh=3, min_mesh=3, chk=False, score=arand_score,
+                                     out_path='./out_test_arand', save_map=True, debug=True, gpu=gpu)
 
 if __name__ == "__main__":
 

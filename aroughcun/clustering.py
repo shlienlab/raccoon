@@ -72,18 +72,18 @@ class IterativeClustering:
 
     def __init__(self, data, lab=None, transform=None, supervised=False, 
                 supervised_weight=0.5, dim=2, epochs=5000, lr=0.05, 
-                neirange='logspace', neipoints=25, neifactor=1.0,
+                nei_range='logspace', nei_points=25, nei_factor=1.0,
                 neicap=100, skip_equal_dim=True, skip_dimred=False,
-                metric_map='cosine', metric_clu='euclidean', popcut=50,
-                filterfeat='variance', ffrange='logspace', ffpoints=25,
+                metric_map='cosine', metric_clu='euclidean', pop_cut=50,
+                filter_feat='variance', ffrange='logspace', ffpoints=25,
                 optimizer='grid', search_candid=10, search_iter=10,
                 tpe_patience=5, score='silhouette', baseline=-1e-5,
-                norm=None, dynmesh=False, maxmesh=20, minmesh=4,
-                clu_algo='SNN', cparmrange='guess', min_sam_dbscan=None, 
+                norm=None, dyn_mesh=False, max_mesh=20, min_mesh=4,
+                clu_algo='SNN', cparm_range='guess', min_sam_dbscan=None, 
                 outliers='ignore', noise_ratio=.3, min_csize=None,
-                name='0', debug=False, maxdepth=None,
-                savemap=True, RPD=False,
-                outpath="", depth=0, chk=False, 
+                name='0', debug=False, max_depth=None,
+                save_map=True, RPD=False,
+                out_path="", depth=0, chk=False, 
                 gpu=False, _user=True):
         """ Initialize the the class.
 
@@ -105,17 +105,17 @@ class IterativeClustering:
             dim (integer): number of dimensions of the target projection (default 2).
             epochs (integer): number of UMAP epochs (default 5000).
             lr (float): UMAP learning rate (default 0.05).
-            neirange (array, list of integers or string or function): list of nearest neighbors values to be
+            nei_range (array, list of integers or string or function): list of nearest neighbors values to be
                 used in the search;
                 if 'logspace' take an adaptive range based on the dataset size at each iteration
                 with logarithmic spacing (reccomended),
                 if a function is provided it will be used to define the neighbors range at each step
                 (see the manual for more details).
-            neipoints (int or list of int): number of grid points for the neighbors search,
+            nei_points (int or list of int): number of grid points for the neighbors search,
                 if list, each value will be subsequently used at the next iteration until
                 all values are exhausted,
-                (works only with optimizer='grid' and neirange='logspace' default 25).
-            neifactor (float): scaling factor for 'logspace' and 'sqrt' selections in neirange
+                (works only with optimizer='grid' and nei_range='logspace' default 25).
+            nei_factor (float): scaling factor for 'logspace' and 'sqrt' selections in nei_range
             neicap (int): maximum number of neighbors (reccomended with low-memory systems,
                 default 100).
             skip_equal_dim (bool): if True, whenever the target dimensionality corresponds
@@ -128,21 +128,21 @@ class IterativeClustering:
                 calculations (default euclidean)
                 Warning: 'cosine' does not work with HDBSCAN, normalize to 'l2' and use 'euclidean'
                 instead.
-            popcut (integer): minimum number of samples for a cluster to be considered valid, if a
+            pop_cut (integer): minimum number of samples for a cluster to be considered valid, if a
                 cluster is found with a lower population than this threshold, it will not be further
                 explored (default 50).
-            filterfeat (string): set the method to filter features in preprocessing;
+            filter_feat (string): set the method to filter features in preprocessing;
                 if 'variance' remove low variance genes
                 if 'MAD' remove low median absolute deviation genes
                 if 'correlation' remove correlated genes
                 if 'tSVD' use truncated single value decomposition (LSA)
-            ffrange (array, list or string): if filterfeat=='variance'/'MAD'/'correlation',
+            ffrange (array, list or string): if filter_feat=='variance'/'MAD'/'correlation',
                 percentage values for the low-variance/correlation removal cufoff search;
                 if 'logspace' (default) take a range between .3 and .9 with logarithmic spacing
                 (reccomended, will take the extremes if optimizer=='de');
                 if 'kde' kernel density estimation will be used to find a single optimal
                 low-variance cutoff (not compatible with optimizer=='de')
-                if filterfeat=='tSVD', values for the number of output compontents search;
+                if filter_feat=='tSVD', values for the number of output compontents search;
                 if 'logspace' (default) take a range between number of features times .3 and
                 .9 with logarithmic spacing
                 (reccomended, will take the extremes if optimizer=='de')
@@ -154,7 +154,7 @@ class IterativeClustering:
                 'de' for differential evolution, 'tpe' for Tree-structured Parzen Estimators with Optuna,
                 or 'auto' for automatic (default is 'grid').
                 Automatic will chose between grid search and DE depending on the number of
-                search points (de if >25), works only if dynmesh is True.
+                search points (de if >25), works only if dyn_mesh is True.
             search_candid (int or list of int): size of the candidate solutions population in
                 DE or TPE.
                 If list, each value will be subsequently used at the next iteration until
@@ -175,18 +175,18 @@ class IterativeClustering:
             norm (string): normalization factor before dimensionality reduction (default None),
                 not needed if metric_map is cosine
                 if None, don't normalize.
-            dynmesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE, 
-                candidates in tpe) to the population, overrides neipoints, search_candid, 
+            dyn_mesh (bool): if true, adapt the number of mesh points (candidates and iteration in DE, 
+                candidates in tpe) to the population, overrides nei_points, search_candid, 
                 search_iter and ffpoints (default False).
-            maxmesh (int): maximum number of points for the dynmesh option (hit at 10000 samples,
+            max_mesh (int): maximum number of points for the dyn_mesh option (hit at 10000 samples,
                 default 20), this is a single dimension, the actuall mesh will contain n*n points.
-            minmesh (int): minimum number of points for the dynmesh option (hit at 50 samples,
+            min_mesh (int): minimum number of points for the dyn_mesh option (hit at 50 samples,
                 default 4, must be >3 if optimizer='de'),
                 this is a single dimension, the actuall mesh will contain n*n points.
             clu_algo (string): selects which algorithm to use for clusters identification.
                 Choose among 'DBSCAN', 'SNN' (Shared Nearest Neighbors DBSCAN, default),  
                 'HDBSCAN', or 'louvain' (Louvain community detection with SNN).
-            cparmrange (array, list) or string: clusters identification parameter range to
+            cparm_range (array, list) or string: clusters identification parameter range to
                 be explored (default 'guess').
                 When 'DBSCAN' this corresponds to epsilon (if 'guess' attempts to identify it
                 by the elbow method);
@@ -208,14 +208,14 @@ class IterativeClustering:
             name (string): name of current clustering level (should be left as default, '0',
                 unless continuing from a previous run).
             debug (boolean): specifies whether algorithm is run in debug mode (default is False).
-            maxdepth (int): Specify the maximum number of search iterations, if None (default),
+            max_depth (int): Specify the maximum number of search iterations, if None (default),
                 keep going while possible.
                 0 stops the algorithm immediately, 1 stops it after the first level.
-            savemap (boolean): if active, saves the trained maps to disk (default is True).
+            save_map (boolean): if active, saves the trained maps to disk (default is True).
                 Needed to run the k-NN classifier.
             RPD (boolean): specifies whether to save RPD distributions for each cluster
                 (default is False). Warning: this option is unstable and not reccomended.
-            outpath (string): path to the location where outputs will be saved (default,
+            out_path (string): path to the location where outputs will be saved (default,
                 save to the current folder).
             depth (integer): current depth of search (should be left as default
                 0, unless continuing from a previous run).
@@ -293,27 +293,27 @@ class IterativeClustering:
         self.dim = dim
         self.epochs = epochs
         self.lr = lr
-        self.neirange = neirange
-        self.neipoints = neipoints
-        self.neifactor = neifactor
+        self.nei_range = nei_range
+        self.nei_points = nei_points
+        self.nei_factor = nei_factor
         self.neicap = neicap
         self.skip_equal_dim = skip_equal_dim
         self.skip_dimred = skip_dimred
         self.metric_map = metric_map
         self.metric_clu = metric_clu
         self.mparams = {}
-        self.popcut = popcut
-        self.filterfeat = filterfeat
+        self.pop_cut = pop_cut
+        self.filter_feat = filter_feat
         self.ffrange = ffrange
         self.ffpoints = ffpoints
         self.debug = debug
-        self.savemap = savemap
-        self.maxdepth = maxdepth
+        self.save_map = save_map
+        self.max_depth = max_depth
         self.min_csize = min_csize
         self.RPD = RPD
         self.search_candid = search_candid
         self.search_iter = search_iter
-        self.outpath = outpath
+        self.out_path = out_path
         self.clus_opt = None
         self._name = name
         self._depth = depth
@@ -321,12 +321,12 @@ class IterativeClustering:
         self.score = score
         self.baseline = baseline
         self.norm = norm
-        self.dynmesh = dynmesh
-        self.maxmesh = maxmesh
-        self.minmesh = minmesh
+        self.dyn_mesh = dyn_mesh
+        self.max_mesh = max_mesh
+        self.min_mesh = min_mesh
 
         self.clu_algo = clu_algo
-        self.cparmrange = cparmrange
+        self.cparm_range = cparm_range
         self.min_sam_dbscan = min_sam_dbscan
         self.outliers = outliers
         self.noise_ratio = noise_ratio
@@ -362,12 +362,12 @@ class IterativeClustering:
             sys.exit('ERROR: KDE estimation of the low variance/MAD removal cutoff is '+\
                       'not compatible with Differential Evolution.')
 
-        if self.filterfeat not in ['variance', 'MAD', 'correlation', 'tSVD']:
+        if self.filter_feat not in ['variance', 'MAD', 'correlation', 'tSVD']:
             sys.exit('ERROR: Features filter must be either \'variance\' for low-variance removal, '+\
                       '\'MAD\' for low-MAD removal, \'correlation\' for correlation removal, '+\
                       'or \'tSVD\' for truncated SVD.')
 
-        if self.optimizer == 'auto' and dynmesh == False:
+        if self.optimizer == 'auto' and dyn_mesh == False:
             self.optimizer = 'grid'
             warnings.warn('Optimizer \'auto\' works only if dynamic mesh is active, '+\
                            'falling to Grid Search')
@@ -381,37 +381,37 @@ class IterativeClustering:
 
         """ Evaluate parameters granularity options. """
 
-        if self.dynmesh:
+        if self.dyn_mesh:
 
             meshpoints = self.interface.num.rint(
-                ((self.maxmesh - 1) * functions.sigmoid(
+                ((self.max_mesh - 1) * functions.sigmoid(
                     self.interface.num.log(
                         self.data_ix.shape[0]),
                     self.interface,
                     a=self.interface.num.log(500),
                     b=1))) + (
-                self.minmesh)
+                self.min_mesh)
 
             if self.optimizer == 'auto':
                 self.optimizer = 'de' if meshpoints**2 > 25 else 'grid'
 
             if self.optimizer == 'grid':
 
-                self.neipoints = meshpoints
+                self.nei_points = meshpoints
                 self.ffpoints = meshpoints
 
             elif self.optimizer in ['de', 'tpe'] :
 
-                if self.minmesh <= 3:
-                    self.minmesh = 4
+                if self.min_mesh <= 3:
+                    self.min_mesh = 4
                     meshpoints = self.interface.num.rint(
-                        ((self.maxmesh - 1) * functions.sigmoid(
+                        ((self.max_mesh - 1) * functions.sigmoid(
                             self.interface.num.log(
                                 self.data_ix.shape[0]),
                             self.interface,
                             a=self.interface.num.log(500),
                             b=1))) + (
-                        self.minmesh)
+                        self.min_mesh)
 
                 self.search_candid = meshpoints
                 self.search_iter = meshpoints
@@ -420,12 +420,12 @@ class IterativeClustering:
                     self.search_candid = self.search_candid**2
 
         try:
-            self.neipoints = [int(x) for x in self.neipoints] \
-                                if isinstance(self.neipoints, list) \
-                                else [int(self.neipoints)]
+            self.nei_points = [int(x) for x in self.nei_points] \
+                                if isinstance(self.nei_points, list) \
+                                else [int(self.nei_points)]
 
         except BaseException:
-            sys.exit('ERROR: neipoints must be an integer or a list of integers')
+            sys.exit('ERROR: nei_points must be an integer or a list of integers')
             raise
 
         if self.optimizer in ['de','tpe']:
@@ -438,9 +438,9 @@ class IterativeClustering:
                 sys.exit('ERROR: search_candid must be an integer or a list of integers')
                 raise
             if self.ffrange == 'logspace':
-                if self.filterfeat in ['variance', 'MAD', 'correlation']:
+                if self.filter_feat in ['variance', 'MAD', 'correlation']:
                     self.ffrange = [0.3, 0.9]
-                if self.filterfeat == 'tSVD':
+                if self.filter_feat == 'tSVD':
                     self.ffrange = [int(min([50,
                                              DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.3])),
                                     int(max([1,
@@ -467,12 +467,12 @@ class IterativeClustering:
                 sys.exit('ERROR: ffpoints must be an integer or a list of integers')
                 raise
             if self.ffrange == 'logspace':
-                if self.filterfeat in ['variance', 'MAD', 'correlation']:
+                if self.filter_feat in ['variance', 'MAD', 'correlation']:
                     self.ffrange = sorted([float(x) for x in self.interface.num.logspace(
                         self.interface.num.log10(0.3),
                         self.interface.num.log10(0.9),
                         num=self.ffpoints[0])])
-                if self.filterfeat == 'tSVD':
+                if self.filter_feat == 'tSVD':
                     self.ffrange = sorted([int(x) for x in self.interface.num.logspace(
                         self.interface.num.log10(min([50,
                             DataGlobal.dataset.loc[self.data_ix].shape[1] * 0.3])),
@@ -507,11 +507,11 @@ class IterativeClustering:
         or apply truncated SVD to reduce features to a certain number (cutoff). 
 
         Args:
-             cutoff (string or float): if filterfeat=='variance'/'MAD'/'correlation',
+             cutoff (string or float): if filter_feat=='variance'/'MAD'/'correlation',
                 percentage value for the low-variance/MAD/high-correlation removal cufoff,
                 if 'kde' kernel density estimation will be used to find a single optimal
                 low-variance/MAD/high-correlation cutoff;
-                if filterfeat=='tSVD', dimensionality of the output data.
+                if filter_feat=='tSVD', dimensionality of the output data.
 
         Returns:
             (pandas dataframe): reduced-dimensionality input data.
@@ -519,7 +519,7 @@ class IterativeClustering:
 
         """
 
-        if self.filterfeat == 'tSVD':
+        if self.filter_feat == 'tSVD':
 
             if int(cutoff) >= DataGlobal.dataset.shape[1]:
                 logging.info(
@@ -566,14 +566,14 @@ class IterativeClustering:
         else:
             new_data = DataGlobal.dataset.loc[self.data_ix]
 
-        if self.filterfeat in ['variance', 'MAD']:
+        if self.filter_feat in ['variance', 'MAD']:
 
             if cutoff == 'kde':
                 new_data = functions._drop_min_KDE(
-                    new_data, self.interface, type=self.filterfeat)
+                    new_data, self.interface, type=self.filter_feat)
             elif cutoff < 1:
                 new_data = functions._near_zero_var_drop(
-                    new_data, self.interface, thresh=cutoff, type=self.filterfeat)
+                    new_data, self.interface, thresh=cutoff, type=self.filter_feat)
 
             logging.log(DEBUG_R, "Dropped Features #: " + '{:1.0f}'.format(
                 DataGlobal.dataset.loc[self.data_ix].shape[1] - new_data.shape[1]))
@@ -582,7 +582,7 @@ class IterativeClustering:
             # applied
             return DataGlobal.dataset.loc[self.data_ix][new_data.columns], None
 
-        elif self.filterfeat == 'correlation':
+        elif self.filter_feat == 'correlation':
 
             if cutoff < 1:
                 new_data = functions._drop_collinear(
@@ -597,17 +597,17 @@ class IterativeClustering:
 
         else:
 
-            sys.exit('ERROR: Oops, something went really wrong! Make sure filterfeat \
+            sys.exit('ERROR: Oops, something went really wrong! Make sure filter_feat \
                         is properly set.\nIf you see this error please contact us on GitHub!')
 
     
     def _level_check(self):
-        """ Stop the iterative search if a given maxdepth parameter has been reached. """
+        """ Stop the iterative search if a given max_depth parameter has been reached. """
 
-        if self.maxdepth is not None:
-            #self.maxdepth -= 1
-            #if self.maxdepth == -1:
-            if self.maxdepth <= self._depth:
+        if self.max_depth is not None:
+            #self.max_depth -= 1
+            #if self.max_depth == -1:
+            if self.max_depth <= self._depth:
                 #self.clus_opt = None
                 return True
         return False
@@ -635,21 +635,21 @@ class IterativeClustering:
             plotting._plot_score_surf(scoreslist,
                                     (cut_opt, n_nei),
                                     'scores_' + self._name,
-                                    self.outpath)
+                                    self.out_path)
         elif len(set(scoreslist[0])) > 1 and len(set(scoreslist[1])) == 1:
             plotting._plot_score([scoreslist[0],
                                  scoreslist[2]],
                                 cut_opt,
                                 'Features filter',
                                 'scores_' + self._name,
-                                self.outpath)
+                                self.out_path)
         elif len(set(scoreslist[1])) > 1 and len(set(scoreslist[0])) == 1:
             plotting._plot_score([scoreslist[1],
                                  scoreslist[2]],
                                 n_nei,
                                 'Nearest neighbors',
                                 'scores_' + self._name,
-                                self.outpath)
+                                self.out_path)
 
         """ Plot the Relative Pairwise Distance (RPD) distributions. """
 
@@ -657,11 +657,11 @@ class IterativeClustering:
             #WARNING: unstable
             try:
                 functions._calc_RPD(proj, clus_opt, self.interface,
-                    True, self._name, self.outpath)
+                    True, self._name, self.out_path)
             except BaseException:
                 logging.warning('RPD failed at step: ' + self._name)
 
-        if self.filterfeat in ['variance','MAD'] \
+        if self.filter_feat in ['variance','MAD'] \
             and isinstance(keepfeat,self.interface.df.Index):
             selcut = DataGlobal.dataset.loc[self.data_ix][keepfeat]
 
@@ -670,9 +670,9 @@ class IterativeClustering:
             plotting._plot_cut(self.interface.get_value(DataGlobal.dataset.loc[self.data_ix],
                               pandas=True),
                               self.interface.get_value(selcut, pandas=True),
-                              'cut_' + self._name, self.outpath)
+                              'cut_' + self._name, self.out_path)
 
-        elif self.filterfeat == 'tSVD' and decomposer is not None:
+        elif self.filter_feat == 'tSVD' and decomposer is not None:
             # scr_matrix not compatible with RAPIDS
             #selcut=self.interface.df.DataFrame(decomposer.transform(csr_matrix(DataGlobal.dataset.loc[self.data_ix].values)), index=DataGlobal.dataset.loc[self.data_ix].index)
             selcut = self.interface.df.DataFrame(decomposer.transform(
@@ -731,15 +731,15 @@ class IterativeClustering:
                 # here...
                 proj.index = selcut.index
 
-            if self.savemap:
-                with open(os.path.join(self.outpath,
+            if self.save_map:
+                with open(os.path.join(self.out_path,
                         'rc_data/' + self._name + '_2d.pkl'), 'wb') as file:
                     # keepfeat and decompt already in the not 2d map
                     pickle.dump(mapping, file)
                     file.close()
 
                 proj.to_hdf(
-                    os.path.join(self.outpath,
+                    os.path.join(self.out_path,
                         'rc_data/' + self._name + '_2d.h5'),
                     key='proj')
 
@@ -756,7 +756,7 @@ class IterativeClustering:
                 pandas=True),
             'proj_clusters_' +
             self._name,
-            self.outpath)
+            self.out_path)
 
         """ Plot the same 2-dimensional umap with labels if provided. """
 
@@ -764,7 +764,7 @@ class IterativeClustering:
             
             plotting.plot_map(self.interface.get_value(proj, pandas=True), self.interface.get_value(
                 DataGlobal.labels.loc[proj.index], pandas=True),
-                'proj_labels_' + self._name, self.outpath)
+                'proj_labels_' + self._name, self.out_path)
 
         """ Plot the same 2-dimensional umap with transform only data if provided. """
 
@@ -778,7 +778,7 @@ class IterativeClustering:
                 self.interface.get_value(proj,pandas=True),
                 self.interface.get_value(transflab,pandas=True),
                 'proj_trans_' + self._name,
-                self.outpath)
+                self.out_path)
 
     def _elbow(self, pj):
         """ Estimates the point of flex of a pairwise distances plot.
@@ -1001,7 +1001,7 @@ class IterativeClustering:
 
         data_cut, decomposer = self._features_removal(cutoff)
 
-        if self.filterfeat in ['variance', 'MAD']:
+        if self.filter_feat in ['variance', 'MAD']:
             keepfeat = data_cut.columns
 
         if self.norm is not None:
@@ -1107,14 +1107,14 @@ class IterativeClustering:
             """ Set clustering parameter range at the first iteration. """
             
             # TODO: check if better to update at every iteration
-            cparmrange = self.cparmrange
-            if cparmrange == 'guess':
-                cparmrange = self._guess_parm(to_cluster)
+            cparm_range = self.cparm_range
+            if cparm_range == 'guess':
+                cparm_range = self._guess_parm(to_cluster)
 
             # Note: Calculating (H)DBSCAN on a grid of parameters is cheap even
             # with Differential Evolution.
 
-            for cparm in cparmrange:  # self.cparmrange
+            for cparm in cparm_range:  # self.cparm_range
 
                 logging.log(DEBUG_R, 
                     'Clustering parameter: {:.5f}'.format(
@@ -1201,9 +1201,9 @@ class IterativeClustering:
         cparm_opt = self.interface.num.nan
         nei_opt = DataGlobal.dataset.loc[self.data_ix].shape[0]
         
-        if self.filterfeat in ['variance', 'MAD']:
+        if self.filter_feat in ['variance', 'MAD']:
             cut_opt = 1.0
-        elif self.filterfeat == 'tSVD':
+        elif self.filter_feat == 'tSVD':
             cut_opt = DataGlobal.dataset.loc[self.data_ix].shape[1]
         scoreslist = [[], [], []]
 
@@ -1337,13 +1337,13 @@ class IterativeClustering:
 
                     """ Set clustering parameter range at the first iteration. """
 
-                    cparmrange = self.cparmrange
-                    if cparmrange == 'guess':
-                        cparmrange = self._guess_parm(to_cluster)
+                    cparm_range = self.cparm_range
+                    if cparm_range == 'guess':
+                        cparm_range = self._guess_parm(to_cluster)
                     # Note: Calculating (H)DBSCAN on a grid of parameters is
                     # cheap even with Differential Evolution.
 
-                    for cparm in cparmrange:  # self.cparmrange
+                    for cparm in cparm_range:  # self.cparm_range
 
                         logging.log(DEBUG_R, 
                             'Clustering parameter: {:.5f}'.format(
@@ -1386,10 +1386,10 @@ class IterativeClustering:
                             nei_opt = nn
                             cut_opt = cutoff
                             map_opt = mapping
-                            if self.filterfeat in [
+                            if self.filter_feat in [
                                     'variance', 'MAD', 'correlation']:
                                 keepfeat = data_cut.columns
-                            if self.filterfeat == 'tSVD':
+                            if self.filter_feat == 'tSVD':
                                 decomp_opt = decomposer
 
         """ If an optimal solution was not found. """
@@ -1427,10 +1427,10 @@ class IterativeClustering:
                 self.dim))
         logging.info('Samples #: {:d}'.format(
             DataGlobal.dataset.loc[self.data_ix].shape[0]))
-        if self.dynmesh:
+        if self.dyn_mesh:
             if self.optimizer == 'grid':
                 logging.info('Dynamic mesh active, number of grid points: {:d}'.format(
-                        self.neipoints[0] * self.ffpoints[0]))
+                        self.nei_points[0] * self.ffpoints[0]))
             if self.optimizer == 'de':
                 logging.info('Dynamic mesh active, number of candidates: {:d} \
                               and iterations: {:d}'.format(
@@ -1447,15 +1447,15 @@ class IterativeClustering:
 
         if numpoints != 0:
             
-            if self.neirange == 'logspace':
-                if self.neifactor >= 1:
+            if self.nei_range == 'logspace':
+                if self.nei_factor >= 1:
                     minbound = self.interface.num.log10(
                         self.interface.num.sqrt(numpoints - 1))
                     maxbound = self.interface.num.log10(numpoints - 1)
                 else:
                     minbound = self.interface.num.log10(
-                        self.interface.num.sqrt(numpoints * self.neifactor - 1))
-                    maxbound = self.interface.num.log10(numpoints * self.neifactor - 1)
+                        self.interface.num.sqrt(numpoints * self.nei_factor - 1))
+                    maxbound = self.interface.num.log10(numpoints * self.nei_factor - 1)
                 
                 """ Neighbors cap. """
 
@@ -1471,15 +1471,15 @@ class IterativeClustering:
                     minbound = self.interface.num.log10(2)
 
                 nnrange = sorted([x for x in self.interface.num.logspace(
-                    minbound, maxbound, num=self.neipoints[0])])
+                    minbound, maxbound, num=self.nei_points[0])])
             
-            elif hasattr(self.neirange, '__call__'):
+            elif hasattr(self.nei_range, '__call__'):
                 """ If a function to select the neighbors was selected. """
 
-                nnrange = self.neirange(numpoints * self.neifactor)
+                nnrange = self.nei_range(numpoints * self.nei_factor)
             
             else:
-                nnrange = self.neirange
+                nnrange = self.nei_range
             
             if not isinstance(nnrange, list):
                 nnrange = [nnrange]
@@ -1591,9 +1591,9 @@ class IterativeClustering:
 
             else:
                 # A bit redundant, try to clean up
-                if self.filterfeat in ['variance', 'MAD', 'correlation']:
+                if self.filter_feat in ['variance', 'MAD', 'correlation']:
                     transdata = DataGlobal.dataset[keepfeat].loc[self.transform]
-                elif self.filterfeat == 'tSVD':
+                elif self.filter_feat == 'tSVD':
                     transdata = decomp_opt.transform(
                         DataGlobal.dataset.loc[self.transform])
                 
@@ -1680,7 +1680,7 @@ class IterativeClustering:
             self.clust_opt=None
             return
 
-        if DataGlobal.dataset.loc[self.data_ix].shape[0] < self.popcut:
+        if DataGlobal.dataset.loc[self.data_ix].shape[0] < self.pop_cut:
             logging.info('Population too small!')
             self.clus_opt = None
             return 
@@ -1696,7 +1696,7 @@ class IterativeClustering:
                 chosen, cut, self.metric_map,
                 self.metric_clu, self.norm, reassigned, self._seed]
 
-        with open(os.path.join(self.outpath, 'rc_data/paramdata.csv'), 'a') as file:
+        with open(os.path.join(self.out_path, 'rc_data/paramdata.csv'), 'a') as file:
             writer = csv.writer(file)
             writer.writerow(vals)
             file.close()
@@ -1705,16 +1705,16 @@ class IterativeClustering:
         (expensive, only if debug True). 
         """
 
-        if self.savemap:
-            with open(os.path.join(self.outpath,
+        if self.save_map:
+            with open(os.path.join(self.out_path,
                     'rc_data/' + self._name + '.pkl'), 'wb') as file:
-                if self.filterfeat in ['variance', 'MAD', 'correlation']:
+                if self.filter_feat in ['variance', 'MAD', 'correlation']:
                     pickle.dump([keepfeat, chomap], file)
-                elif self.filterfeat == 'tSVD':
+                elif self.filter_feat == 'tSVD':
                     pickle.dump([decomp_opt, chomap], file)
                 file.close()
             pj.to_hdf(
-                os.path.join(self.outpath,
+                os.path.join(self.out_path,
                     'rc_data/' + self._name + '.h5'),
                 key='proj')
 
@@ -1745,11 +1745,11 @@ class IterativeClustering:
                 if OptionalImports.feather:
                     clus_tmp.reset_index().to_feather(
                         os.path.join(
-                            self.outpath, 'rc_data/chk/clusters_chk_'+self._name+'.fe'))
+                            self.out_path, 'rc_data/chk/clusters_chk_'+self._name+'.fe'))
                 else:
                     clus_tmp.to_hdf(
                         os.path.join(
-                            self.outpath, 'rc_data/chk/clusters_chk_'+self._name+'.h5'),
+                            self.out_path, 'rc_data/chk/clusters_chk_'+self._name+'.h5'),
                             key='df')
             
         """ Dig within each subcluster and repeat. """
@@ -1781,12 +1781,12 @@ class IterativeClustering:
                     'Parameters granilarity change ' +
                     '[features filter: {:d}'.format(
                         self.interface.get_value(self.ffpoints[0])) + ']')
-            if self.optimizer == 'grid' and len(self.neipoints) > 1:
-                self.neipoints = self.neipoints[1:]
+            if self.optimizer == 'grid' and len(self.nei_points) > 1:
+                self.nei_points = self.nei_points[1:]
                 logging.info(
                     'Parameters granilarity change ' +
                     '[nearest neighbors: {:d}'.format(
-                        self.interface.get_value(self.neipoints[0])) + ']')
+                        self.interface.get_value(self.nei_points[0])) + ']')
             if self.optimizer in ['de','tpe'] and len(self.search_candid) > 1:
                 self.search_candid = self.search_candid[1:]
                 logging.info('Parameters granilarity change ' +
@@ -1797,18 +1797,18 @@ class IterativeClustering:
                              '[DE iterations: {:d}'.format(int(self.search_iter[0])) + ']')
 
             deep = IterativeClustering(sel_new.index, lab=None, transform=to_transform,
-                dim=self.dim, epochs=self.epochs, lr=self.lr, neirange=self.neirange,
-                neipoints=self.neipoints, neicap=self.neicap, 
+                dim=self.dim, epochs=self.epochs, lr=self.lr, nei_range=self.nei_range,
+                nei_points=self.nei_points, neicap=self.neicap, 
                 skip_equal_dim=self.skip_equal_dim, skip_dimred=self.skip_dimred, metric_map=self.metric_map,
-                metric_clu=self.metric_clu, popcut=self.popcut, filterfeat=self.filterfeat,
+                metric_clu=self.metric_clu, pop_cut=self.pop_cut, filter_feat=self.filter_feat,
                 ffrange=self.ffrange, ffpoints=self.ffpoints, optimizer=self.optimtrue,
                 search_candid=self.search_candid, search_iter=self.search_iter, 
                 tpe_patience=self.tpe_patience, score=self.score, baseline=self.baseline, norm=self.norm,
-                dynmesh=self.dynmesh, maxmesh=self.maxmesh, minmesh=self.minmesh,
-                clu_algo=self.clu_algo, cparmrange=self.cparmrange, min_sam_dbscan=self.min_sam_dbscan,
+                dyn_mesh=self.dyn_mesh, max_mesh=self.max_mesh, min_mesh=self.min_mesh,
+                clu_algo=self.clu_algo, cparm_range=self.cparm_range, min_sam_dbscan=self.min_sam_dbscan,
                 outliers=self.outliers, noise_ratio=self.noise_ratio, min_csize=self.min_csize, 
-                name=str(l), debug=self.debug, maxdepth=self.maxdepth, savemap=self.savemap, 
-                RPD=self.RPD, outpath=self.outpath, depth=self._depth+1, 
+                name=str(l), debug=self.debug, max_depth=self.max_depth, save_map=self.save_map, 
+                RPD=self.RPD, out_path=self.out_path, depth=self._depth+1, 
                 chk=self.chk, gpu=self.gpu, _user=False)
 
             deep.iterate()

@@ -23,11 +23,11 @@ def update_test(data, ori_data, reftab, refpath, gpu=False):
     new_membership = aroughcun.update(data, ori_data,
         pd.read_hdf(reftab), tolerance=1e-2,
         refpath=os.path.join(refpath,'rc_data'),
-        dim=2, filterfeat='variance', optimizer='grid', 
+        dim=2, filter_feat='variance', optimizer='grid', 
         metric_clu='euclidean', metric_map='cosine',
-        dynmesh=True, maxmesh=3, minmesh=3, chk=True,
-        maxdepth=None, popcut=15, min_csize=10,
-        outpath='./out_test_update', savemap=True, debug=True, 
+        dyn_mesh=True, max_mesh=3, min_mesh=3, chk=True,
+        max_depth=None, pop_cut=15, min_csize=10,
+        out_path='./out_test_update', save_map=True, debug=True, 
         gpu=gpu)
 
 if __name__ == "__main__":

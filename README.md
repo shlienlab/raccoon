@@ -81,11 +81,11 @@ automatically set up a clusters search with just some basic options.
 
     import aroughcun as rc
 
-    cluster_membership, tree = rc.cluster(input, dim=2, popcut=25,
-                                     optimizer='auto', dynmesh=True,
+    cluster_membership, tree = rc.cluster(input, dim=2, pop_cut=25,
+                                     optimizer='auto', dyn_mesh=True,
                                      metric_clu='cosine', metric_map='cosine',
-                                     savemap=True, chk=True,
-                                     outpath='./output', gpu=False)
+                                     save_map=True, chk=True,
+                                     out_path='./output', gpu=False)
 
 ### Citation
 

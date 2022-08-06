@@ -46,10 +46,10 @@ here we select some default values as explained in the following paragraphs.
 
   import aroughcun as rc
 
-  cluster_membership, tree = rc.cluster(input_df, lab=labels, dim=2, popcut=50, 
-                      filterfeat='t_sVD', optimizer='de', depop=25, deiter=25,  
-                      neifactor=0.5, metric_clu='euclidean', metric_map='cosine',  
-                      outpath='./raccoon_outputs/', savemap=True) 
+  cluster_membership, tree = rc.cluster(input_df, lab=labels, dim=2, pop_cut=50, 
+                      filter_feat='t_sVD', optimizer='de', depop=25, deiter=25,  
+                      nei_factor=0.5, metric_clu='euclidean', metric_map='cosine',  
+                      out_path='./raccoon_outputs/', save_map=True) 
 
 this function will automatically take care of initializing the clustering object and run it for us, it just requires the selection of which kind of tools to use.
 
@@ -65,12 +65,12 @@ as the metric for the identification of the clusters and speed up considerably t
 *Note*: When working with higher-dimensionality embedding, the library will keep producing two-dimensional plots to help with a visual inspection of the results if the plotting 
 function is set as active (default).
 
-We chose truncated Single Value Decomposition (t-SVD) as a low-information filter in :code:`filterfeat`. This is a linear transformation that allows us to easily identify and remove
+We chose truncated Single Value Decomposition (t-SVD) as a low-information filter in :code:`filter_feat`. This is a linear transformation that allows us to easily identify and remove
 components carrying less variance. We leave the choice of how many components to keep to the optimizer itself. We could manually set the shape and size of the range of features to consider during the optimization 
 by setting the :code:`ffrange` and :code:`ffpoints` flags, but we leave them to their default values since we will be using Differential Evolution as our optimizer, for which they bear much less importance.
 
-Similarly, we leave the values for the clusters' identification parameter(:code:`cparmrange`) 
-and for the UMAP nearest neighbours choice (set by :code:`neirange` and :code:`neipoints`) as default. The only exception is the scaling factor for the number of neighbours :code:`neifactor`, here reduced to speed up the search. 
+Similarly, we leave the values for the clusters' identification parameter(:code:`cparm_range`) 
+and for the UMAP nearest neighbours choice (set by :code:`nei_range` and :code:`nei_points`) as default. The only exception is the scaling factor for the number of neighbours :code:`nei_factor`, here reduced to speed up the search. 
 If you have time and a powerful enough machine, we suggest you leave it as default to :code:`1`.
 
 There are currently two optimizers implemented, Grid Search (:code:`optimizer='grid'`) and Differential Evolution (:code:`optimizer='de'`). While the former 
@@ -84,7 +84,7 @@ Here, 25 for both is a reasonable choice.
 Finally, :code:`run` will return a data frame, :code:`clusters_membership`, with a one-hot-encoded clusters membership for the input data points and it will save important information to disk, in the chosen
 output folder. Subdirectories will be automatically built to store plots and data, if the output path already contains a previous raccoon run, a prompt will ask you if you wish to delete them or interrupt the operation.
 If :code:`outputpath` is not explicitly given, the directory where the script is run will be set as home.
-We also activate :code:`savemap`, asking the algorithm to save the trained UMAP objects. These can require quite a bit of disk space but will come in handy when we build the nearest-neighbour classifier.
+We also activate :code:`save_map`, asking the algorithm to save the trained UMAP objects. These can require quite a bit of disk space but will come in handy when we build the nearest-neighbour classifier.
 
 A hierarchical tree object, :code:`tree`, will also be returned in the output. It is formatted 
 as a list of nodes with information on the hierarchy, the parent-child relationship
@@ -286,7 +286,7 @@ The results will be stored in the :code:`membership` attribute.
 
   from aroughcun.utils.classification import KNN
 
-  rcknn=KNN(df_to_predict, df, cluster_membership, refpath=r'./raccoon_data', outpath=r'./')
+  rcknn=KNN(df_to_predict, df, cluster_membership, refpath=r'./raccoon_data', out_path=r'./')
   rcknn.assign_membership()
 
   new_membership = rcknn.membership

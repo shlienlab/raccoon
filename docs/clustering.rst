@@ -36,15 +36,15 @@ allows for great flexibility in the clustering analysis.
 
 Among these we find
 
-================  ================================================================= 
-:code:`maxdepth`  sets the maximum depth at which the clustering is allowed to go,
-                  if :code:`None` (default) the iterative process will proceed until 
-                  other conditions for its termination are met.
-:code:`savemap`   if active, trained maps, preprocessing status and feature filters 
-                  will be saved to disk
-:code:`outpath`   set the path to a directory where all the plots and output data 
-                  will be stored
-================  =================================================================
+=================  ================================================================== 
+:code:`max_depth`  sets the maximum depth at which the clustering is allowed to go,
+                   if :code:`None` (default) the iterative process will proceed until 
+                   other conditions for its termination are met.
+:code:`save_map`   if active, trained maps, preprocessing status and feature filters 
+                   will be saved to disk.
+:code:`out_path`   set the path to a directory where all the plots and output data 
+                   will be stored.
+=================  ==================================================================
 
 For the full list of available options and their use, see :ref:`api`.
 
@@ -63,18 +63,17 @@ There are currently two optimizers implemented, to be set with the :code:`optimi
 A third option, :code:`tpe` allows you to use Tree-structured Parzen Estimators
 with Optuna_.
 
-===============  ============================================================  
-:code:`'grid'`   **Grid Search**: given a set of parameters ranges and steps, 
-                 the tool will evaluate all possible combinations
-                 on the defined mesh
-:code:`'de'`     **Differential Evolution**: a simple evolutionary algorithm,
-                 it requires setting a number of candidates for the parametric 
-                 space search and a number of maximum iterations [Storn1997]_
-:code:`'tpe'`    **Tree-structured Parzen Estimators**: this flag allows you 
-	               to run TPE with Optuna_.
-                 It requires setting a number of candidates for the parametric 
-                 space search.
-===============  ============================================================
+==============  =============================================================  
+:code:`'grid'`  **Grid Search**: given a set of parameters ranges and steps, 
+                the tool will evaluate all possible combinations
+                on the defined mesh
+:code:`'de'`    **Differential Evolution**: a simple evolutionary algorithm,
+                it requires setting a number of candidates for the parametric 
+                space search and a number of maximum iterations [Storn1997]_
+:code:`'tpe'`   **Tree-structured Parzen Estimators**: this flag allows you 
+	              to run TPE with Optuna_. It requires setting a number of 
+                candidates for the parametric space search.
+==============  =============================================================
 
 While Grid Search requires defining the exact set of points to explore, either directly
 or indirectly by setting the explorable ranges and steps for each parameter (see the next sections), 
@@ -96,7 +95,7 @@ but the search will stop automatically after a few iterations if a plateau is re
 
 A fourth option :code:`auto`, will automatically switch between grid search and differential evolution
 depending on the size of the dataset at each iteration step and, consequently, the candidates pool. 
-The dynamic mesh with :code:`dynmesh` needs to be active when 
+The dynamic mesh with :code:`dyn_mesh` needs to be active when 
 this option is chosen.
 
 Dynamic Mesh
@@ -108,7 +107,7 @@ the convergence towards a point of absolute optimality and lead to the loss
 of important details.
 For this reason, we implemented a dynamic mesh, which automatically attempts to adapt
 the granularity of the search at each iteration. 
-By setting :code:`dynmesh` as :code:`True`, the number of grid points (or candidates
+By setting :code:`dyn_mesh` as :code:`True`, the number of grid points (or candidates
 and iterations in the case of DE) are calculated as a function of the population of the 
 investigated cluster.
 
@@ -178,7 +177,7 @@ Population Cutoff
 
 The iterative search will be terminated under two conditions: if the optimization found a 
 single cluster as the best outcome or if the population lower bound is met.
-The latter can be set with :code:`popcut` and should be kept as high as possible to avoid
+The latter can be set with :code:`pop_cut` and should be kept as high as possible to avoid
 atomization of the clusters, but low enough to allow for the identification of subclasses.
 (depending on the dataset, the suggested values are between 10 and 50).
 
@@ -198,7 +197,7 @@ These are the methods currently available for low-information features filtering
 Although this step is not strictly necessary to run UMAP, it can considerably improve the outcome
 of the clustering, by removing noise and batch effects emerging in the low information features.
 
-All these methods are set with :code:`filterfeat` and require a cutoff, a percentage of the cumulative variance/MAD to be removed, or 
+All these methods are set with :code:`filter_feat` and require a cutoff, a percentage of the cumulative variance/MAD to be removed, or 
 the number of output components in t-SVD. 
 This is a tunable parameter and is part of the optimization process, its range and step
 can be set with :code:`ffrange` and :code:`ffpoints` respectively.
@@ -207,7 +206,7 @@ For example, setting
 
 .. code-block:: python
 
-  filterfeat = 'MAD'
+  filter_feat = 'MAD'
   ffrange = 'logspace'
   ffpoints = 25
 
@@ -219,7 +218,7 @@ of cumulative variance to be kept at 100% as the only explorable point.
 
 .. code-block:: python
 
-  filterfeat = 'variance'
+  filter_feat = 'variance'
   ffrange = [1]
 
 Non-linear Dimensionality Reduction
@@ -239,19 +238,19 @@ and learning rate (:code:`lr`), to their default values unless you know what you
 Finally, as in the case of the features removal step, the number of nearest neighbours,
 which defines the scale at which the dimensionality reduction is performed, is left as tunable
 by the optimizer. You can choose the range and the number of points (if Grid Search is active) with
-:code:`neirange` and :code:`neipoints` respectively.
+:code:`nei_range` and :code:`nei_points` respectively.
 If the range is left to be guessed automatically, for example as a logarithmic
 space based on the population (:code:`'logspace'`), a factor can be set to reduce the 
-value proportionally (:code:`neifactor`) in the presence of particularly large datasets,
+value proportionally (:code:`nei_factor`) in the presence of particularly large datasets,
 as high values of these parameters can impact the performance considerably.
 
 This choice is crucial for a proper analysis, make sure to know your dataset well and run 
 preliminary analyses if necessary.
 
 A custom function that calculates the number of neighbors (or a range) from the population
-can be also provided to :code:`neirange`. The function needs to take one argument, the subset population, 
+can be also provided to :code:`nei_range`. The function needs to take one argument, the subset population, 
 from which the parameter will be calculated and must return a single value or a list of values.
-The population will be multiplied by :code:`neifactor` before being passed to this function and the 
+The population will be multiplied by :code:`nei_factor` before being passed to this function and the 
 provided values will be cast to integer.
 
 
@@ -261,7 +260,7 @@ A simple example of this would be the square root function.
 
   from math import sqrt
 
-  neirange = sqrt
+  nei_range = sqrt
 
 
 Or a more complicated one, a small range around the square root.
@@ -275,7 +274,7 @@ Or a more complicated one, a small range around the square root.
     sq = sqrt(n)
     return [sq/2, sq, sq+sq/2]
 
-  neirange = range_sqrt
+  nei_range = range_sqrt
 
 
 If the dimensionality of the target space corresponds to the dimensionality of the input space
@@ -312,7 +311,7 @@ The clusters identification tool is chosen with the :code:`clu_algo` flag
 
 Depending on which method has been chosen, different parameters are set as tunable for 
 the optimizer (e.g. :math:`$\epsilon$` for DBSCAN or minimum population for HDBSCAN).
-With :code:`cparmrange` one can set the range to be explored. By default, this is set
+With :code:`cparm_range` one can set the range to be explored. By default, this is set
 as :code:`guess` which allows the algorithm to find an ideal range based on the elbow method.
 
 If :code:`'DBSCAN'` is chosen as clustering algorithm, its minimum value of cluster size can also be set
@@ -404,8 +403,8 @@ with the wrapper function :code:`resume`. This takes the same inputs as :code:`c
   
   import aroughcun as rc
 
-  cluster_membership, tree = rc.resume(data, lab=labels, dim=2, popcut=20, maxdepth=3,
-                                     chkpath='path_to_original_run', savemap=True)
+  cluster_membership, tree = rc.resume(data, lab=labels, dim=2, pop_cut=20, max_depth=3,
+                                     chkpath='path_to_original_run', save_map=True)
 
 To resume, the original run needs checkpoint files. To create them, activate the :code:`chk` boolean flag during your original run. 
 This will automatically build a :code:`chk`  subdirectory in the data folder and populate it with temporary class assignments. 
@@ -415,7 +414,7 @@ larger jobs to avoid losing all progress if something were to go wrong.
 When resuming a run, all new data will be saved in the original directory tree.
 
 :code:`resume` takes most of the same arguments as :code:`cluster`, you are free to change them,  
-e.g to allow for a finer or deeper search by decreasing :code:`popcut` or increasing :code:`maxdepth`. The algorithm will automatically search for all
+e.g to allow for a finer or deeper search by decreasing :code:`pop_cut` or increasing :code:`max_depth`. The algorithm will automatically search for all
 candidate classes and extend the search. This includes classes higher up in the hierarchy that fell below the population threshold. 
 Classes that were discarded as noise by the clustering algorithm or were below the :code:`min_csize` cutoff
 cannot be recovered.

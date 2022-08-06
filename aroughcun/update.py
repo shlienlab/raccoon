@@ -36,7 +36,7 @@ class UpdateClusters:
     """
     
     def __init__(self, data, ori_data, ori_clu,
-            refpath="./rc_data/", outpath="./",
+            refpath="./rc_data/", out_path="./",
             tolerance=1e-1, prob_cut=.25, min_csize=None,
             score='silhouette', metric_clu='cosine', 
             root='0', debug=False, gpu=False, **kwargs):
@@ -52,7 +52,7 @@ class UpdateClusters:
                 (samples as row, classes as columns).
             refpath (string): path to the location where trained umap files (pkl) are stored
                 (default subdirectory raaroughcun_data of current folder).
-            outpath (string): path to the location where outputs will be saved
+            out_path (string): path to the location where outputs will be saved
                 (default save to the current folder).
             tolerance (float): objective score change threshold, beyond which
                 clusters will have to be recalculated (default 1e-1).
@@ -121,7 +121,7 @@ class UpdateClusters:
         self.data = data[self.ori_data.columns].astype(self.interface.num.float)
         self.ori_clu = ori_clu
         self.refpath = refpath
-        self.outpath = outpath
+        self.out_path = out_path
         self.tolerance = tolerance
         self.prob_cut = prob_cut
         self.min_csize = min_csize
@@ -175,7 +175,7 @@ class UpdateClusters:
         """
 
         obj = KNN(self.data, self.ori_data, self.ori_clu, 
-                    refpath=self.refpath, outpath=self.outpath,
+                    refpath=self.refpath, out_path=self.out_path,
                     root=self.root, debug=self.debug, gpu=self.gpu)
         obj.assign_membership()
 
@@ -205,10 +205,10 @@ class UpdateClusters:
         
         """ Load projection. """
         
-        proj = self.interface.df.read_hdf(os.path.join(self.outpath,
+        proj = self.interface.df.read_hdf(os.path.join(self.out_path,
             'rc_data/' + clu_name + '_knn.h5'))
          
-        proj2d = self.interface.df.read_hdf(os.path.join(self.outpath,
+        proj2d = self.interface.df.read_hdf(os.path.join(self.out_path,
             'rc_data/' + clu_name + '_2d_knn.h5')) \
                 if proj.shape[1] != 2 \
                 else  proj
@@ -270,7 +270,7 @@ class UpdateClusters:
                 pandas=True),
             'proj_update_' +
             clu_name,
-            self.outpath)
+            self.out_path)
         
         """ Reformat class assignment vector. """
 
@@ -309,7 +309,7 @@ class UpdateClusters:
 
             obj = IterativeClustering(self.interface.df.concat([self.ori_data.loc[ori_samples.index],self.data.loc[samples.index]]), 
                 depth=clu_name.count('_'), name=clu_name+'u', score=self.score, metric_clu=self.metric_clu, 
-                outpath=self.outpath, debug=self.debug, gpu=self.gpu, **self.kwargs)
+                out_path=self.out_path, debug=self.debug, gpu=self.gpu, **self.kwargs)
             obj.iterate()
 
             return obj.clus_opt
@@ -361,7 +361,7 @@ class UpdateClusters:
                                      if x.count('_') == children[0].count('_')]],
                             pandas=True),
                         'homogen' + to_check[0],
-                        self.outpath)
+                        self.out_path)
 
             else:
                 #if to_check[0]  == self.root:

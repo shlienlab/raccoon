@@ -114,7 +114,7 @@ class KNN:
     """ To perform a basic distance-weighted k-nearest neighbours classification. """
 
     def __init__(self, data, ori_data, ori_clust,
-            refpath="./rc_data/", outpath="",
+            refpath="./rc_data/", out_path="",
             root='0', debug=False, gpu=False):
         """ Initialize the the class.
 
@@ -128,7 +128,7 @@ class KNN:
                 (samples as row, classes as columns).
             refpath (string): path to the location where trained umap files (pkl) are stored
                 (default subdirectory raaroughcun_data of current folder).
-            outpath (string): path to the location where outputs will be saved
+            out_path (string): path to the location where outputs will be saved
                 (default save to the current folder).
             root (string): name of the root node, parent of all the classes within the first
                 clustering level. Needed to identify the appropriate pkl file (default '0').
@@ -183,7 +183,7 @@ class KNN:
         self.data = data[self.ori_data.columns].astype(self.interface.num.float)
         self.ori_clust = ori_clust.loc[self.ori_data.index]
         self.refpath = refpath
-        self.outpath = outpath
+        self.out_path = out_path
         self.root = root
         self.debug = debug
 
@@ -200,7 +200,7 @@ class KNN:
 
         #logging.basicConfig(
         #    level=logging.INFO,
-        #    filename=os.path.join(outpath, logname),
+        #    filename=os.path.join(out_path, logname),
         #    filemode="a+",
         #    format="%(asctime)-15s %(levelname)-8s %(message)s")
         #logging.getLogger('matplotlib.font_manager').disabled = True
@@ -399,7 +399,7 @@ class KNN:
                 """ Save projection to disk. """
 
                 proj_all.to_hdf(
-                os.path.join(self.outpath,
+                os.path.join(self.out_path,
                     'rc_data/' + names[-1] + '_knn.h5'),
                     key='proj')
 
@@ -424,7 +424,7 @@ class KNN:
                     proj2d = self.interface.df.concat([proj2d, proj_ref2d], axis=0)
                 
                     proj2d.to_hdf(
-                    os.path.join(self.outpath,
+                    os.path.join(self.out_path,
                         'rc_data/' + names[-1] + '_2d_knn.h5'),
                         key='proj')
 
@@ -448,7 +448,7 @@ class KNN:
                         pandas=True),
                     'proj_knn_datasets' +
                     names[-1],
-                    self.outpath)
+                    self.out_path)
 
                 """ Assign clusters membership. """
                 
