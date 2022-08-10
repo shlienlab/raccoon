@@ -5,11 +5,10 @@
 ### v 0.5.1
 
 [![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/releases/tag/v0.5.1)
-[![PyPI](https://img.shields.io/pypi/v/raccoon)](https://pypi.org/project/raccoon/)
+[![PyPI](https://img.shields.io/pypi/v/raccoon-cluster)](https://pypi.org/project/raccoon-cluster/)
 [![Licence](https://img.shields.io/github/license/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/blob/main/LICENSE)
 [![GitHub top language](https://img.shields.io/github/languages/top/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/search?l=python)
-[![Documentation Status](https://readthedocs.org/projects/raccoon/badge/?version=latest)](https://raccoon.readthedocs.io/en/latest/?badge=latest)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6970014.svg)](https://doi.org/10.5281/zenodo.6970014)
+[![Documentation Status](https://readthedocs.org/projects/raccoon-cluster/badge/?version=latest)](https://raccoon-cluster.readthedocs.io/en/latest/?badge=latest)
 
 
 RACCOON (`raccoon`) is a Python 3 package for top-down clustering automatization. 
@@ -24,7 +23,7 @@ This library includes
 * k-NN classification
 * GPU implementation with RAPIDS
 
-Detailed documentation, API references, FAQ and tutorials can be found at this [link](https://raccoon.readthedocs.io/en/latest/).
+Detailed documentation, API references, FAQ and tutorials can be found at this [link](https://raccoon-cluster.readthedocs.io/en/latest/).
 
 ### Dependencies
 
