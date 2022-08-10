@@ -2,10 +2,10 @@
 	:width: 400px
 
 |
-Welcome to raccoon's documentation!
+Welcome to RACCOON's documentation!
 ===================================
 
-Resolution-Adaptive Coarse-to-fine Clusters OptimizatiON (raccoon) is a python 3 package for top-down clustering automatization. 
+Resolution-Adaptive Coarse-to-fine Clusters OptimizatiON (RACCOON) is a Python 3 package for top-down clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set as to maximize a clustering "goodness" score.
 This process is then repeated iteratively within each cluster identified.
 
@@ -32,13 +32,13 @@ This process is then repeated iteratively within each cluster identified.
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: API
+   :caption: Tutorial
 
-   api.rst
+   tutorial_MNIST.rst
 
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Tutorial
+   :caption: API
 
-   tutorial_MNIST.rst
+   api.rst

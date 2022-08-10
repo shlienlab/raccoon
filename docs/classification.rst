@@ -20,7 +20,7 @@ A wrapper function is available
 
 .. code-block:: python
   
-  import aroughcun as rc
+  import raccoon as rc
 
   projected_membership  = rc.classify(df_to_predict, original_df, cluster_membership, 
                                       refpath=r'./raccoon_data', out_path=r'./')
@@ -30,7 +30,7 @@ called directly.
 
 .. code-block:: python
   
-  from aroughcun.utils.classification import KNN
+  from raccoon.utils.classification import KNN
 
   obj = KNN(df_to_predict, original_df, cluster_membership, 
             refpath=r'./raccoon_data', out_path=r'./',

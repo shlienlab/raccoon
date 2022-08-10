@@ -13,9 +13,9 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('../aroughcun'))
-sys.path.insert(0, os.path.abspath('../aroughcun/utils'))
-sys.path.insert(0, os.path.abspath('../aroughcun/optim'))
+sys.path.insert(0, os.path.abspath('../raccoon'))
+sys.path.insert(0, os.path.abspath('../raccoon/utils'))
+sys.path.insert(0, os.path.abspath('../raccoon/optim'))
 
 # -- Project information -----------------------------------------------------
 

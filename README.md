@@ -5,14 +5,14 @@
 ### v 0.5.1
 
 [![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/releases/tag/v0.5.1)
-[![PyPI](https://img.shields.io/pypi/v/aroughcun)](https://pypi.org/project/aroughcun/)
+[![PyPI](https://img.shields.io/pypi/v/raccoon)](https://pypi.org/project/raccoon/)
 [![Licence](https://img.shields.io/github/license/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/blob/main/LICENSE)
 [![GitHub top language](https://img.shields.io/github/languages/top/shlienlab/raccoon)](https://github.com/shlienlab/raccoon/search?l=python)
-[![Documentation Status](https://readthedocs.org/projects/aroughcun/badge/?version=latest)](https://aroughcun.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/raccoon/badge/?version=latest)](https://raccoon.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6970014.svg)](https://doi.org/10.5281/zenodo.6970014)
 
 
-RACCOON (`aroughcun` in Algonquian) is a python 3 package for top-down clustering automatization. 
+RACCOON (`raccoon`) is a Python 3 package for top-down clustering automatization. 
 It searches for the optimal clusters in your data by running low information features removal, non-linear dimensionality reduction, and clusters identification. Tunable parameters at each of these steps are automatically set to maximize a clustering "goodness" score. This process is then repeated iteratively within each cluster identified.
 
 This library includes
@@ -24,7 +24,7 @@ This library includes
 * k-NN classification
 * GPU implementation with RAPIDS
 
-Detailed documentation, API references, FAQ and tutorials can be found at this [link](https://aroughcun.readthedocs.io/en/latest/).
+Detailed documentation, API references, FAQ and tutorials can be found at this [link](https://raccoon.readthedocs.io/en/latest/).
 
 ### Dependencies
 
@@ -70,7 +70,7 @@ See the documentation for more details.
 ### Installation
 
 Raccoon releases can be easily installed through the python standard package manager  
-`pip install aroughcun`.
+`pip install raccoon-cluster`.
 
 To install the latest (unreleased) version you can download it from this repository by running 
  
@@ -83,7 +83,7 @@ To install the latest (unreleased) version you can download it from this reposit
 Given an `input` dataset in pandas-like format (samples X features), the `run` function will
 automatically set up a clusters search with just some basic options. 
 
-    import aroughcun as rc
+    import raccoon as rc
 
     cluster_membership, tree = rc.cluster(input, dim=2, pop_cut=25,
                                      optimizer='auto', dyn_mesh=True,

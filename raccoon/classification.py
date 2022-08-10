@@ -18,8 +18,8 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import aroughcun.interface as interface
-import aroughcun.utils.plots as plotting
+import raccoon.interface as interface
+import raccoon.utils.plots as plotting
 
 
 def local_KNN(proj, labs, nnei, metric, interface, as_series=False):
@@ -127,7 +127,7 @@ class KNN:
                 membership in pandas dataframe-compatible format
                 (samples as row, classes as columns).
             refpath (string): path to the location where trained umap files (pkl) are stored
-                (default subdirectory raaroughcun_data of current folder).
+                (default subdirectory raraccoon_data of current folder).
             out_path (string): path to the location where outputs will be saved
                 (default save to the current folder).
             root (string): name of the root node, parent of all the classes within the first

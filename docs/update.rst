@@ -18,7 +18,7 @@ This will set up the necessary folders and run the update automatically.
 
 .. code-block:: python
   
-  import aroughcun as rc
+  import raccoon as rc
 
   updated_membership  = rc.update(new_df, original_df, cluster_membership, tolerance=1e-2,
                             prob_cut=.2, refpath=r'original_clusters/raccoon_data',
@@ -52,7 +52,7 @@ called directly.
 
 .. code-block:: python
   
-  from aroughcun.utils.update import UpdateClusters
+  from raccoon.utils.update import UpdateClusters
 
   obj = UpdateClusters(new_data, old_data, membership, refpath=r'./raccoon_data',
       out_path=out_path, tolerance=1e-2, prob_cut=.2, **kwargs)

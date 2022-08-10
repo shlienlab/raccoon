@@ -44,7 +44,7 @@ here we select some default values as explained in the following paragraphs.
 
 .. code-block:: python
 
-  import aroughcun as rc
+  import raccoon as rc
 
   cluster_membership, tree = rc.cluster(input_df, lab=labels, dim=2, pop_cut=50, 
                       filter_feat='t_sVD', optimizer='de', depop=25, deiter=25,  
@@ -156,8 +156,8 @@ A json file containing an :code:`anytree` object is also saved in output and can
 
 .. code-block:: python
 
-  import aroughcun.trees as trees
-  nodes = trees.load_tree('raccaroughcun_data/tree.json')
+  import raccoon.trees as trees
+  nodes = trees.load_tree('raccraccoon_data/tree.json')
 
 
 :code:`read_output.R` in :code:`scripts` is available for R users to read the hdf5 file as an R dataframe and the tree-structure json as a data.tree.
@@ -284,7 +284,7 @@ The results will be stored in the :code:`membership` attribute.
 
 .. code-block:: python
 
-  from aroughcun.utils.classification import KNN
+  from raccoon.utils.classification import KNN
 
   rcknn=KNN(df_to_predict, df, cluster_membership, refpath=r'./raccoon_data', out_path=r'./')
   rcknn.assign_membership()

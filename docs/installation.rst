@@ -9,7 +9,7 @@ With pip
 
 .. code-block:: bash
 
-   pip install aroughcun
+   pip install raccoon-cluster
 
 To install the latest (unreleased) version 
 you can download it from our GitHub repository by running 

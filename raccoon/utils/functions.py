@@ -17,7 +17,7 @@ from scipy.stats import gaussian_kde
 from scipy.stats import median_absolute_deviation as mad
 from scipy.signal import argrelextrema
 
-from aroughcun.utils.plots import plot_violin
+from raccoon.utils.plots import plot_violin
 
 def sort_len_num(lista):
     """ Sort elements of a list by length first, then by numbers.

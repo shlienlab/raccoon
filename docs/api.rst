@@ -5,7 +5,7 @@ API
 Wrapper functions
 -----------------
 
-.. automodule:: aroughcun.main
+.. automodule:: raccoon.main
     :members:
     :undoc-members:
     :private-members:
@@ -14,7 +14,7 @@ Wrapper functions
 CPU/GPU interface
 -----------------
 
-.. automodule:: aroughcun.interface
+.. automodule:: raccoon.interface
     :members:
     :undoc-members:
     :private-members:
@@ -23,7 +23,7 @@ CPU/GPU interface
 Clustering
 ---------------------------
 
-.. automodule:: aroughcun.clustering
+.. automodule:: raccoon.clustering
     :members:
     :undoc-members:
     :private-members:
@@ -32,7 +32,7 @@ Clustering
 Classification
 ------------------------
 
-.. automodule:: aroughcun.classification
+.. automodule:: raccoon.classification
     :members:
     :undoc-members:
     :private-members:
@@ -41,7 +41,7 @@ Classification
 Update
 --------------------------------
 
-.. automodule:: aroughcun.update
+.. automodule:: raccoon.update
     :members:
     :undoc-members:
     :private-members:

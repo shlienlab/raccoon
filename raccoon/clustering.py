@@ -30,16 +30,16 @@ warnings.filterwarnings(
 from math import nan
 import random
 
-from aroughcun import interface
-from aroughcun.classification import local_KNN
+from raccoon import interface
+from raccoon.classification import local_KNN
 
-import aroughcun.utils.plots as plotting
-import aroughcun.utils.functions as functions
-import aroughcun.utils.trees as trees
-import aroughcun.optim.de as de 
-import aroughcun.optim.tpe as tpe 
-import aroughcun.utils.classes as classes
-from aroughcun.utils.option import OptionalImports
+import raccoon.utils.plots as plotting
+import raccoon.utils.functions as functions
+import raccoon.utils.trees as trees
+import raccoon.optim.de as de 
+import raccoon.optim.tpe as tpe 
+import raccoon.utils.classes as classes
+from raccoon.utils.option import OptionalImports
 
 """ Search for optional libraries.  """
 

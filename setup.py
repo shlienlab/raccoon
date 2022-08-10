@@ -3,14 +3,14 @@ from codecs import open
 from os import path
 
 here    = path.abspath(path.dirname(__file__))
-version = open("aroughcun/_version.py").readlines()[-1].split()[-1].strip("\"'")
+version = open("raccoon/_version.py").readlines()[-1].split()[-1].strip("\"'")
 
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
 
-    name='aroughcun',
+    name='raccoon-cluster',
 
     version=version,
 

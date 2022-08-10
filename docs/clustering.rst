@@ -13,7 +13,7 @@ and call the iteration by themselves.
 
 .. code-block:: python
 
-  from aroughcun.clustering import iterativeClustering
+  from raccoon.clustering import iterativeClustering
   
   obj = IterativeClustering(data, **kwargs)
   obj.iterate()
@@ -368,7 +368,7 @@ However, auxiliary functions are available to store the hierarchy information as
 
 .. code-block:: python
   
-  import aroughcun.utils.trees as trees
+  import raccoon.utils.trees as trees
 
   tree = trees.buildTree(obj.clusOpt)
 
@@ -401,7 +401,7 @@ with the wrapper function :code:`resume`. This takes the same inputs as :code:`c
 
 .. code-block:: python
   
-  import aroughcun as rc
+  import raccoon as rc
 
   cluster_membership, tree = rc.resume(data, lab=labels, dim=2, pop_cut=20, max_depth=3,
                                      chkpath='path_to_original_run', save_map=True)

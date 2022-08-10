@@ -5,7 +5,7 @@ F. Comitani     @2020-2021
 import os
 import pandas as pd
 
-import aroughcun
+import raccoon
 
 def update_test(data, ori_data, reftab, refpath, gpu=False):
     """ Update clustering test, euclidean grid.
@@ -20,7 +20,7 @@ def update_test(data, ori_data, reftab, refpath, gpu=False):
             gpu (bool): if True use gpu implementation.
     """
     
-    new_membership = aroughcun.update(data, ori_data,
+    new_membership = raccoon.update(data, ori_data,
         pd.read_hdf(reftab), tolerance=1e-2,
         refpath=os.path.join(refpath,'rc_data'),
         dim=2, filter_feat='variance', optimizer='grid', 

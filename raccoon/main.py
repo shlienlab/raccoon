@@ -17,13 +17,13 @@ import warnings
 
 import csv
 
-from aroughcun._version import __version__
-from aroughcun.clustering import IterativeClustering, DataGlobal
-from aroughcun.classification import KNN
-from aroughcun.update import UpdateClusters
-import aroughcun.interface as interface
-import aroughcun.utils.functions as functions
-import aroughcun.utils.trees as trees
+from raccoon._version import __version__
+from raccoon.clustering import IterativeClustering, DataGlobal
+from raccoon.classification import KNN
+from raccoon.update import UpdateClusters
+import raccoon.interface as interface
+import raccoon.utils.functions as functions
+import raccoon.utils.trees as trees
 
 def cluster(data, **kwargs):
     """ Wrapper function to setup, create a IterativeClustering object,
@@ -95,7 +95,7 @@ def resume(data, refpath='./rc_data', lab=None, **kwargs):
     Args:
         data (pandas dataframe): dataframe with sampels as rows and features as columns.
         refpath (string): path to checkpoint files parent folder
-            (default subdirectory raaroughcun_data of current folder).
+            (default subdirectory raraccoon_data of current folder).
         lab (list, array or pandas series): list of labels corresponding to each sample
             (for plotting only).
         kwargs (dict): keyword arguments for KNN and IterativeClustering. 
@@ -273,7 +273,7 @@ def classify(new_data, old_data, membership, refpath='./rc_data', **kwargs):
         membership (matrix or pandas dataframe): one-hot-encoded clusters assignment 
             table from the original run. 
         refpath (string): path to the location where trained umap files (pkl) are 
-            stored (default subdirectory raaroughcun_data of current folder).
+            stored (default subdirectory raraccoon_data of current folder).
         kwargs (dict): keyword arguments for KNN.
 
     Returns:
@@ -337,7 +337,7 @@ def update(new_data, old_data, membership, tolerance=1e-1, prob_cut=.25, refpath
             with less than this value of probability to any assigned class will be
             treated as noise and won't impact the clusters score review.
         refpath (string): path to the location where trained umap files (pkl) are
-            stored (default subdirectory raaroughcun_data of current folder).
+            stored (default subdirectory raraccoon_data of current folder).
         out_path (string): path to the location where output files will be saved
             (default current folder).
         kwargs (dict): keyword arguments for KNN and IterativeClustering.

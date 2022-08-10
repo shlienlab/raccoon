@@ -18,11 +18,11 @@ import random
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from aroughcun.clustering import IterativeClustering
-from aroughcun.classification import KNN
-import aroughcun.interface as interface
-import aroughcun.utils.functions as functions
-import aroughcun.utils.plots as plotting
+from raccoon.clustering import IterativeClustering
+from raccoon.classification import KNN
+import raccoon.interface as interface
+import raccoon.utils.functions as functions
+import raccoon.utils.plots as plotting
 
 
 class UpdateClusters:
@@ -51,7 +51,7 @@ class UpdateClusters:
                 membership in pandas dataframe-compatible format
                 (samples as row, classes as columns).
             refpath (string): path to the location where trained umap files (pkl) are stored
-                (default subdirectory raaroughcun_data of current folder).
+                (default subdirectory raraccoon_data of current folder).
             out_path (string): path to the location where outputs will be saved
                 (default save to the current folder).
             tolerance (float): objective score change threshold, beyond which
